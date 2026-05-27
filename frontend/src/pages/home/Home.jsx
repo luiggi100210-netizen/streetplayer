@@ -244,7 +244,7 @@ export default function Home() {
                 <p className="text-gray-500 text-xs">Partidos</p>
               </div>
               <div>
-                <p className="text-sp-orange font-bold">{usuario?.nivel || 'Principiante'}</p>
+                <p className="text-sp-green-light font-bold uppercase">{usuario?.nivel_xp || 'rookie'}</p>
                 <p className="text-gray-500 text-xs">Nivel</p>
               </div>
             </div>

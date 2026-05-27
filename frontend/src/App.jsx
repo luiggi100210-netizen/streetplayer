@@ -12,6 +12,7 @@ import Perfil        from './pages/profile/Perfil';
 import Ranking       from './pages/ranking/Ranking';
 import Torneos       from './pages/tournaments/Torneos';
 import Calificaciones from './pages/Calificaciones';
+import Buscar         from './pages/Buscar';
 
 function PrivateRoute({ children }) {
   const { usuario, cargando } = useAuth();
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="ranking"        element={<Ranking />} />
         <Route path="torneos"        element={<Torneos />} />
         <Route path="calificaciones" element={<Calificaciones />} />
+        <Route path="buscar"         element={<Buscar />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

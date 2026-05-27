@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const COLORES_NIVEL = {
@@ -38,6 +38,12 @@ const MEDALLAS = [
 
 const DEPORTES_LIST = ['futbol','basquet','tenis','padel','voley','running','ciclismo','otro'];
 
+const TAG_LABELS = {
+  buen_companero: 'Buen compañero', tecnico: 'Técnico', puntual: 'Puntual',
+  goleador: 'Goleador', rapido: 'Rápido', lider: 'Líder',
+  agresivo: 'Agresivo', no_se_presento: 'No se presentó', tramposo: 'Tramposo',
+};
+
 function StatBox({ valor, label, color }) {
   return (
     <div className="text-center">
@@ -52,12 +58,15 @@ export default function Perfil() {
   const { usuario: yo } = useAuth();
   const [perfil, setPerfil]       = useState(null);
   const [publicaciones, setPubs]  = useState([]);
+  const [historial, setHistorial] = useState([]);
+  const [reputacion, setReputacion] = useState(null);
   const [cargando, setCargando]   = useState(true);
   const [siguiendo, setSiguiendo] = useState(false);
   const [accion, setAccion]       = useState(false);
   const [editando, setEditando]   = useState(false);
   const [form, setForm]           = useState({});
   const [guardando, setGuardando] = useState(false);
+  const [tab, setTab]             = useState('publicaciones');
 
   const esMio = yo?.id === id;
 
@@ -65,13 +74,17 @@ export default function Perfil() {
     const cargar = async () => {
       setCargando(true);
       try {
-        const [pRes, pubRes] = await Promise.all([
+        const [pRes, pubRes, histRes, repRes] = await Promise.all([
           api.get(`/usuarios/${id}`),
           api.get(`/usuarios/${id}/publicaciones`),
+          api.get(`/usuarios/${id}/historial`),
+          api.get(`/usuarios/${id}/reputacion`),
         ]);
         setPerfil(pRes.data);
         setSiguiendo(pRes.data.siguiendo_yo || false);
         setPubs(pubRes.data);
+        setHistorial(histRes.data);
+        setReputacion(repRes.data);
         setForm({
           nombre:           pRes.data.nombre       || '',
           apodo:            pRes.data.apodo        || '',
@@ -299,25 +312,135 @@ export default function Perfil() {
         </div>
       )}
 
-      {/* PUBLICACIONES */}
-      <div className="space-y-3">
-        <h2 className="font-impact text-lg">PUBLICACIONES</h2>
-        {publicaciones.length === 0 ? (
-          <div className="card text-center py-10 text-sp-muted text-sm">Sin publicaciones aún</div>
-        ) : (
-          publicaciones.map(pub => (
-            <div key={pub.id} className="card">
-              {pub.contenido && <p className="text-white/90 text-sm leading-relaxed mb-3">{pub.contenido}</p>}
-              {pub.imagen_url && <img src={pub.imagen_url} alt="" className="w-full rounded-lg mb-3 max-h-64 object-cover" />}
-              <div className="flex items-center gap-4 text-xs text-sp-muted border-t border-sp-border pt-2">
-                <span>❤️ {pub.likes_count || 0}</span>
-                <span>💬 {pub.comentarios_count || 0}</span>
-                <span className="ml-auto">{formatDistanceToNow(new Date(pub.fecha), { addSuffix: true, locale: es })}</span>
-              </div>
-            </div>
-          ))
-        )}
+      {/* TABS */}
+      <div className="flex gap-1 border-b border-sp-border">
+        {['publicaciones','historial','reputacion'].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px ${tab === t ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}
+          >
+            {t === 'publicaciones' ? 'Posts' : t === 'historial' ? 'Historial' : 'Reputación'}
+          </button>
+        ))}
       </div>
+
+      {/* TAB: PUBLICACIONES */}
+      {tab === 'publicaciones' && (
+        <div className="space-y-3">
+          {publicaciones.length === 0 ? (
+            <div className="card text-center py-10 text-sp-muted text-sm">Sin publicaciones aún</div>
+          ) : (
+            publicaciones.map(pub => (
+              <div key={pub.id} className="card">
+                {pub.contenido && <p className="text-white/90 text-sm leading-relaxed mb-3">{pub.contenido}</p>}
+                {pub.imagen_url && <img src={pub.imagen_url} alt="" className="w-full rounded-lg mb-3 max-h-64 object-cover" />}
+                <div className="flex items-center gap-4 text-xs text-sp-muted border-t border-sp-border pt-2">
+                  <span>❤️ {pub.likes_count || 0}</span>
+                  <span>💬 {pub.comentarios_count || 0}</span>
+                  <span className="ml-auto">{formatDistanceToNow(new Date(pub.fecha), { addSuffix: true, locale: es })}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* TAB: HISTORIAL */}
+      {tab === 'historial' && (
+        <div className="space-y-2">
+          {historial.length === 0 ? (
+            <div className="card text-center py-10 text-sp-muted text-sm">Sin partidos registrados</div>
+          ) : (
+            historial.map((p, i) => {
+              const res = p.resultado;
+              const resColor = res === 'victoria' ? '#1D9E75' : res === 'derrota' ? '#f87171' : '#888';
+              const resLabel = res === 'victoria' ? 'V' : res === 'derrota' ? 'D' : 'E';
+              return (
+                <div key={i} className="card flex items-center gap-4">
+                  {/* Resultado badge */}
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 border-2" style={{ borderColor: resColor, color: resColor }}>
+                    {resLabel}
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{p.titulo}</p>
+                    <p className="text-sp-muted text-xs capitalize">{p.tipo} · {p.deporte}</p>
+                  </div>
+                  {/* Stats */}
+                  <div className="flex gap-3 text-xs text-sp-muted shrink-0">
+                    {p.goles > 0 && <span className="text-yellow-400 font-bold">{p.goles}⚽</span>}
+                    {p.asistencias > 0 && <span>{p.asistencias} asist.</span>}
+                    {p.tarjeta_amarilla && <span className="text-yellow-400">🟨</span>}
+                    {p.tarjeta_roja && <span className="text-red-400">🟥</span>}
+                    {p.calificacion > 0 && <span style={{ color: colorNivel }}>★ {Number(p.calificacion).toFixed(1)}</span>}
+                  </div>
+                  {/* Fecha */}
+                  <span className="text-sp-muted text-xs shrink-0">
+                    {format(new Date(p.fecha), 'dd/MM/yy', { locale: es })}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* TAB: REPUTACIÓN */}
+      {tab === 'reputacion' && (
+        <div className="card space-y-4">
+          {reputacion?.total_calificaciones > 0 ? (
+            <>
+              {/* Promedio */}
+              <div className="flex items-center gap-3">
+                <span className="font-impact text-4xl" style={{ color: colorNivel }}>
+                  {Number(reputacion.promedio_estrellas).toFixed(1)}
+                </span>
+                <div>
+                  <div className="flex gap-0.5 text-yellow-400 text-lg">
+                    {[1,2,3,4,5].map(s => (
+                      <span key={s} className={Number(reputacion.promedio_estrellas) >= s ? 'opacity-100' : 'opacity-20'}>★</span>
+                    ))}
+                  </div>
+                  <p className="text-sp-muted text-xs">{reputacion.total_calificaciones} calificaciones recibidas</p>
+                </div>
+              </div>
+
+              {/* Tags positivos */}
+              {reputacion.positivos?.length > 0 && (
+                <div>
+                  <p className="text-xs text-sp-muted uppercase tracking-wider mb-2">Puntos fuertes</p>
+                  <div className="flex flex-wrap gap-2">
+                    {reputacion.positivos.map(t => (
+                      <span key={t.tag} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sp-green/15 border border-sp-green/40 text-sp-green-light text-xs">
+                        {TAG_LABELS[t.tag] || t.tag}
+                        <span className="bg-sp-green/30 rounded-full px-1.5 py-0.5 text-sp-green font-bold">{t.total}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags negativos */}
+              {reputacion.negativos?.length > 0 && (
+                <div>
+                  <p className="text-xs text-sp-muted uppercase tracking-wider mb-2">Áreas de mejora</p>
+                  <div className="flex flex-wrap gap-2">
+                    {reputacion.negativos.map(t => (
+                      <span key={t.tag} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-900/20 border border-red-500/30 text-red-400 text-xs">
+                        {TAG_LABELS[t.tag] || t.tag}
+                        <span className="bg-red-900/30 rounded-full px-1.5 py-0.5 font-bold">{t.total}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-sp-muted text-sm">Sin calificaciones aún</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
