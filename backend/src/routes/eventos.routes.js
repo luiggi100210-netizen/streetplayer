@@ -1,0 +1,10 @@
+const router = require('express').Router();
+const { verificarToken } = require('../middleware/auth');
+const { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, editarEvento } = require('../controllers/eventos.controller');
+router.get('/',           verificarToken, listarEventos);
+router.post('/',          verificarToken, crearEvento);
+router.get('/:id',        verificarToken, obtenerEvento);
+router.put('/:id',        verificarToken, editarEvento);
+router.post('/:id/unirse',verificarToken, unirseEvento);
+router.delete('/:id/salir',verificarToken, salirEvento);
+module.exports = router;

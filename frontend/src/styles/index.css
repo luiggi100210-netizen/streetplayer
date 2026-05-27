@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-[#0a0a0f] text-[#e2e8f0] font-sans; }
+}
+
+@layer components {
+  .card        { @apply bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-4; }
+  .btn-green   { @apply bg-[#00e676] hover:bg-[#00c853] text-black font-bold px-4 py-2 rounded-xl transition-all; }
+  .btn-orange  { @apply bg-[#ff6b2b] hover:bg-[#e55a1e] text-white font-bold px-4 py-2 rounded-xl transition-all; }
+  .btn-ghost   { @apply border border-[#1e1e2e] text-[#64748b] hover:border-[#2e2e3e] hover:text-white px-4 py-2 rounded-xl transition-all; }
+  .input       { @apply w-full bg-[#0d0d14] border border-[#1e1e2e] text-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#00e676] transition-colors placeholder:text-[#64748b]; }
+  .label       { @apply block text-xs text-[#64748b] uppercase tracking-wide mb-1.5 font-medium; }
+  .badge-green { @apply text-xs px-2 py-0.5 rounded-full bg-[#00e676]/10 border border-[#00e676]/30 text-[#00e676] font-medium; }
+  .badge-orange{ @apply text-xs px-2 py-0.5 rounded-full bg-[#ff6b2b]/10 border border-[#ff6b2b]/30 text-[#ff6b2b] font-medium; }
+}

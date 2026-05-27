@@ -1,0 +1,13 @@
+const router = require('express').Router();
+const { verificarAdmin } = require('../middleware/auth');
+const a = require('../controllers/admin.controller');
+router.get('/dashboard',                verificarAdmin, a.dashboard);
+router.get('/usuarios',                 verificarAdmin, a.listarUsuarios);
+router.put('/usuarios/:id/estado',      verificarAdmin, a.cambiarEstadoUsuario);
+router.get('/reportes',                 verificarAdmin, a.listarReportes);
+router.put('/reportes/:id',             verificarAdmin, a.resolverReporte);
+router.get('/torneos',                  verificarAdmin, a.listarTorneosAdmin);
+router.put('/torneos/:id/aprobar',      verificarAdmin, a.aprobarTorneo);
+router.get('/anuncios',                 verificarAdmin, a.listarAnuncios);
+router.post('/anuncios',               verificarAdmin, a.crearAnuncio);
+module.exports = router;
