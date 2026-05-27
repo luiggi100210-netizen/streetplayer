@@ -5,20 +5,21 @@ export default {
     extend: {
       colors: {
         sp: {
-          bg:      '#0a0a0f',
-          card:    '#12121a',
-          border:  '#1e1e2e',
-          green:   '#00e676',
-          orange:  '#ff6b2b',
-          purple:  '#7c3aed',
-          text:    '#e2e8f0',
-          muted:   '#64748b',
+          bg:           '#0a0a0a',
+          card:         '#1a1a1a',
+          border:       '#333333',
+          green:        '#1D9E75',
+          'green-dark': '#0F6E56',
+          'green-light':'#9FE1CB',
+          text:         '#FFFFFF',
+          muted:        '#888888',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        impact: ['Anton', 'Impact', 'Arial Black', 'sans-serif'],
+        sans:   ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },
   plugins: [],
-}
+};

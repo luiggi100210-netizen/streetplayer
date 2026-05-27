@@ -5,38 +5,84 @@ import api from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+const COLORES_NIVEL = {
+  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
+  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
+};
+
+const XP_NIVELES = {
+  rookie: 0, amateur: 100, intermedio: 300,
+  avanzado: 600, pro: 1000, elite: 2000, leyenda: 5000,
+};
+const ORDEN_NIVELES = ['rookie','amateur','intermedio','avanzado','pro','elite','leyenda'];
+
+function calcularProgreso(xp, nivel) {
+  const idx = ORDEN_NIVELES.indexOf(nivel);
+  if (idx === ORDEN_NIVELES.length - 1) return 100;
+  const siguiente = ORDEN_NIVELES[idx + 1];
+  const base = XP_NIVELES[nivel];
+  const tope = XP_NIVELES[siguiente];
+  return Math.min(100, Math.round(((xp - base) / (tope - base)) * 100));
+}
+
+const MEDALLAS = [
+  { id: 'campeon',    emoji: '🏆', label: 'Campeón',      desc: 'Ganar un torneo oficial' },
+  { id: 'goleador',   emoji: '🎯', label: 'Goleador',      desc: '20 goles registrados' },
+  { id: 'relampago',  emoji: '⚡', label: 'Relámpago',     desc: '10 partidos sin fallar' },
+  { id: 'capitan',    emoji: '👑', label: 'Capitán Nato',  desc: 'Crear 5 eventos exitosos' },
+  { id: 'muralla',    emoji: '🧤', label: 'Muralla',        desc: '10 partidos sin goles (portero)' },
+  { id: 'teamplayer', emoji: '🤝', label: 'Team Player',   desc: '50 recomendaciones positivas' },
+  { id: 'infalible',  emoji: '💀', label: 'Infalible',     desc: '0 inasistencias en 20 partidos' },
+  { id: 'leyenda',    emoji: '🌟', label: 'Leyenda',        desc: 'Llegar al nivel máximo' },
+];
+
+const DEPORTES_LIST = ['futbol','basquet','tenis','padel','voley','running','ciclismo','otro'];
+
+function StatBox({ valor, label, color }) {
+  return (
+    <div className="text-center">
+      <p className="font-impact text-2xl" style={{ color: color || 'white' }}>{valor ?? 0}</p>
+      <p className="text-sp-muted text-xs uppercase tracking-wider mt-0.5">{label}</p>
+    </div>
+  );
+}
+
 export default function Perfil() {
   const { id } = useParams();
   const { usuario: yo } = useAuth();
-  const [perfil, setPerfil] = useState(null);
-  const [publicaciones, setPublicaciones] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const [perfil, setPerfil]       = useState(null);
+  const [publicaciones, setPubs]  = useState([]);
+  const [cargando, setCargando]   = useState(true);
   const [siguiendo, setSiguiendo] = useState(false);
-  const [accionando, setAccionando] = useState(false);
-  const [editando, setEditando] = useState(false);
-  const [form, setForm] = useState({});
+  const [accion, setAccion]       = useState(false);
+  const [editando, setEditando]   = useState(false);
+  const [form, setForm]           = useState({});
   const [guardando, setGuardando] = useState(false);
 
-  const esMiPerfil = yo?.id === id;
+  const esMio = yo?.id === id;
 
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
       try {
-        const [perfilRes, pubRes] = await Promise.all([
+        const [pRes, pubRes] = await Promise.all([
           api.get(`/usuarios/${id}`),
           api.get(`/usuarios/${id}/publicaciones`),
         ]);
-        setPerfil(perfilRes.data);
-        setPublicaciones(pubRes.data);
-        setSiguiendo(perfilRes.data.siguiendo_yo || false);
+        setPerfil(pRes.data);
+        setSiguiendo(pRes.data.siguiendo_yo || false);
+        setPubs(pubRes.data);
         setForm({
-          nombre: perfilRes.data.nombre || '',
-          bio: perfilRes.data.bio || '',
-          ciudad: perfilRes.data.ciudad || '',
-          deportes: perfilRes.data.deportes || [],
-          nivel: perfilRes.data.nivel || 'principiante',
-          foto_url: perfilRes.data.foto_url || '',
+          nombre:           pRes.data.nombre       || '',
+          apodo:            pRes.data.apodo        || '',
+          bio:              pRes.data.bio          || '',
+          ciudad:           pRes.data.ciudad       || '',
+          departamento:     pRes.data.departamento || '',
+          deportes:         pRes.data.deportes     || [],
+          posicion:         pRes.data.posicion     || '',
+          pie_dominante:    pRes.data.pie_dominante|| '',
+          formato_preferido: pRes.data.formato_preferido || '',
+          foto_url:         pRes.data.foto_url     || '',
         });
       } catch {}
       setCargando(false);
@@ -45,177 +91,227 @@ export default function Perfil() {
   }, [id]);
 
   const handleSeguir = async () => {
-    setAccionando(true);
+    setAccion(true);
     try {
       await api.post(`/usuarios/${id}/seguir`);
-      setSiguiendo(!siguiendo);
-      setPerfil(prev => ({
-        ...prev,
-        seguidores: siguiendo ? prev.seguidores - 1 : prev.seguidores + 1,
-      }));
+      setSiguiendo(p => !p);
+      setPerfil(p => ({ ...p, seguidores: siguiendo ? (p.seguidores - 1) : (p.seguidores + 1) }));
     } catch {}
-    setAccionando(false);
+    setAccion(false);
   };
 
   const handleGuardar = async () => {
     setGuardando(true);
     try {
       const { data } = await api.put('/usuarios/perfil', form);
-      setPerfil(prev => ({ ...prev, ...data }));
+      setPerfil(p => ({ ...p, ...data }));
       setEditando(false);
     } catch {}
     setGuardando(false);
   };
 
+  const toggleDeporte = (d) => setForm(p => ({
+    ...p,
+    deportes: p.deportes.includes(d) ? p.deportes.filter(x => x !== d) : [...p.deportes, d],
+  }));
+
   if (cargando) return (
-    <div className="max-w-3xl mx-auto px-4 py-6 animate-pulse">
-      <div className="card mb-6">
-        <div className="flex gap-4 items-start">
-          <div className="w-20 h-20 rounded-full bg-sp-border" />
-          <div className="flex-1 space-y-2">
-            <div className="h-5 bg-sp-border rounded w-1/3" />
-            <div className="h-3 bg-sp-border rounded w-1/4" />
-            <div className="h-3 bg-sp-border rounded w-1/2" />
-          </div>
-        </div>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 py-12 animate-pulse space-y-4">
+      <div className="h-32 bg-sp-card rounded-xl" />
+      <div className="h-24 bg-sp-card rounded-xl" />
     </div>
   );
 
-  if (!perfil) return <div className="text-center py-20 text-gray-400">Usuario no encontrado</div>;
+  if (!perfil) return <div className="text-center py-20 text-sp-muted">Usuario no encontrado</div>;
 
-  const DEPORTES_LIST = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo', 'otro'];
+  const nivel   = perfil.nivel_xp ?? 'rookie';
+  const xp      = perfil.xp ?? 0;
+  const progreso = calcularProgreso(xp, nivel);
+  const idxNivel = ORDEN_NIVELES.indexOf(nivel);
+  const nivelSig  = idxNivel < ORDEN_NIVELES.length - 1 ? ORDEN_NIVELES[idxNivel + 1] : null;
+  const colorNivel = COLORES_NIVEL[nivel];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="card mb-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      {/* HEADER */}
+      <div className="card">
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4 items-start flex-1">
-            {perfil.foto_url ? (
-              <img src={perfil.foto_url} className="w-20 h-20 rounded-full object-cover border-2 border-sp-green" alt={perfil.username} />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-sp-green/20 flex items-center justify-center text-sp-green text-3xl font-bold border-2 border-sp-green">
-                {perfil.username?.[0]?.toUpperCase()}
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              {perfil.foto_url ? (
+                <img src={perfil.foto_url} className="w-20 h-20 rounded-full object-cover border-2" style={{ borderColor: colorNivel }} alt="" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-sp-green flex items-center justify-center text-3xl font-bold text-white border-2" style={{ borderColor: colorNivel }}>
+                  {perfil.username?.[0]?.toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                <h1 className="font-impact text-2xl">{perfil.nombre || perfil.username}</h1>
+                {perfil.apodo && <span className="text-sp-muted text-sm">"{perfil.apodo}"</span>}
               </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-white">{perfil.nombre || perfil.username}</h1>
-              <p className="text-gray-400 text-sm">@{perfil.username}</p>
-              {perfil.ciudad && <p className="text-gray-500 text-xs mt-1">{perfil.ciudad}</p>}
-              {perfil.bio && <p className="text-gray-300 text-sm mt-2 leading-relaxed">{perfil.bio}</p>}
+              <p className="text-sp-muted text-sm">@{perfil.username}</p>
+              {perfil.ciudad && <p className="text-sp-muted text-xs mt-0.5">📍 {perfil.departamento ? `${perfil.ciudad}, ${perfil.departamento}` : perfil.ciudad}</p>}
+              {perfil.bio && <p className="text-white/80 text-sm mt-2 leading-relaxed">{perfil.bio}</p>}
+
+              {/* Posición */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {perfil.posicion && <span className="badge-white capitalize">{perfil.posicion}</span>}
+                {perfil.pie_dominante && <span className="badge-white capitalize">Pie {perfil.pie_dominante}</span>}
+                {perfil.formato_preferido && <span className="badge-white">{perfil.formato_preferido}v{perfil.formato_preferido}</span>}
+              </div>
             </div>
           </div>
-          {esMiPerfil ? (
-            <button onClick={() => setEditando(!editando)} className="btn-ghost text-sm">
-              {editando ? 'Cancelar' : 'Editar perfil'}
+
+          {esMio ? (
+            <button onClick={() => setEditando(p => !p)} className="btn-ghost text-xs shrink-0">
+              {editando ? 'Cancelar' : 'Editar'}
             </button>
           ) : (
-            <button onClick={handleSeguir} disabled={accionando} className={siguiendo ? 'btn-ghost text-sm' : 'btn-green text-sm'}>
-              {accionando ? '...' : siguiendo ? 'Siguiendo' : 'Seguir'}
+            <button onClick={handleSeguir} disabled={accion} className={`text-xs shrink-0 ${siguiendo ? 'btn-ghost' : 'btn-primary'}`}>
+              {accion ? '...' : siguiendo ? 'Siguiendo' : 'Seguir'}
             </button>
           )}
         </div>
 
+        {/* XP Bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-xs mb-1.5">
+            <span className="font-bold uppercase" style={{ color: colorNivel }}>{nivel}</span>
+            {nivelSig && <span className="text-sp-muted">{xp} / {XP_NIVELES[nivelSig]} XP → {nivelSig.toUpperCase()}</span>}
+            {!nivelSig && <span className="text-sp-muted">NIVEL MÁXIMO · {xp} XP</span>}
+          </div>
+          <div className="xp-bar">
+            <div className="xp-bar-fill" style={{ width: `${progreso}%`, background: colorNivel }} />
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-sp-border text-center">
-          <div>
-            <p className="text-sp-green font-bold text-lg">{perfil.partidos_jugados || 0}</p>
-            <p className="text-gray-500 text-xs">Partidos</p>
-          </div>
-          <div>
-            <p className="text-white font-bold text-lg">{perfil.seguidores || 0}</p>
-            <p className="text-gray-500 text-xs">Seguidores</p>
-          </div>
-          <div>
-            <p className="text-white font-bold text-lg">{perfil.siguiendo || 0}</p>
-            <p className="text-gray-500 text-xs">Siguiendo</p>
-          </div>
-          <div>
-            <p className="text-sp-orange font-bold text-lg capitalize">{perfil.nivel || '-'}</p>
-            <p className="text-gray-500 text-xs">Nivel</p>
-          </div>
+        <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-sp-border">
+          <StatBox valor={perfil.partidos_jugados} label="Partidos" color={colorNivel} />
+          <StatBox valor={perfil.seguidores || 0}  label="Seguidores" />
+          <StatBox valor={perfil.siguiendo || 0}   label="Siguiendo" />
+          <StatBox valor={`${xp} XP`}              label="Experiencia" color={colorNivel} />
+        </div>
+
+        {/* Estadísticas detalladas */}
+        <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-sp-border">
+          <StatBox valor={perfil.partidos_ganados}    label="Victorias"    color="#1D9E75" />
+          <StatBox valor={perfil.partidos_empatados}  label="Empates"      color="#888" />
+          <StatBox valor={perfil.goles_totales}       label="Goles"        color="#fbbf24" />
+          <StatBox valor={perfil.asistencias_totales} label="Asistencias" />
         </div>
 
         {/* Deportes */}
         {perfil.deportes?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
-            {perfil.deportes.map(d => (
-              <span key={d} className="badge-green text-xs capitalize">{d}</span>
-            ))}
+            {perfil.deportes.map(d => <span key={d} className="badge-green capitalize">{d}</span>)}
           </div>
         )}
       </div>
 
-      {/* Formulario edicion */}
+      {/* MEDALLAS */}
+      <div className="card">
+        <h2 className="font-impact text-lg mb-3">MEDALLAS E INSIGNIAS</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {MEDALLAS.map(m => {
+            const desbloqueada = false; // TODO: conectar con backend
+            return (
+              <div
+                key={m.id}
+                title={m.desc}
+                className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-all cursor-help ${desbloqueada ? 'border-sp-green/50 bg-sp-green/10' : 'border-sp-border opacity-30'}`}
+              >
+                <span className="text-2xl">{m.emoji}</span>
+                <span className="text-[10px] text-center text-sp-muted leading-tight uppercase tracking-wide">{m.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* EDITOR */}
       {editando && (
-        <div className="card mb-6 space-y-4">
-          <h2 className="font-semibold text-white">Editar perfil</h2>
+        <div className="card border-sp-green/30 space-y-4">
+          <h2 className="font-impact text-lg">EDITAR PERFIL</h2>
+
           <div className="grid grid-cols-2 gap-4">
+            <div><label className="label">Nombre</label><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} className="input" /></div>
+            <div><label className="label">Apodo</label><input value={form.apodo} onChange={e => setForm(p => ({ ...p, apodo: e.target.value }))} className="input" placeholder='"El Tigre"' /></div>
+          </div>
+
+          <div><label className="label">Bio</label><textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={2} className="input resize-none" /></div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="label">Ciudad</label><input value={form.ciudad} onChange={e => setForm(p => ({ ...p, ciudad: e.target.value }))} className="input" /></div>
+            <div><label className="label">Departamento</label><input value={form.departamento} onChange={e => setForm(p => ({ ...p, departamento: e.target.value }))} className="input" /></div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="label">Nombre</label>
-              <input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} className="input w-full" />
+              <label className="label">Posición</label>
+              <select value={form.posicion} onChange={e => setForm(p => ({ ...p, posicion: e.target.value }))} className="input">
+                <option value="">-</option>
+                {['portero','defensa','mediocampista','delantero'].map(p => <option key={p} value={p} className="capitalize">{p}</option>)}
+              </select>
             </div>
             <div>
-              <label className="label">Ciudad</label>
-              <input value={form.ciudad} onChange={e => setForm(p => ({ ...p, ciudad: e.target.value }))} className="input w-full" />
+              <label className="label">Pie dominante</label>
+              <select value={form.pie_dominante} onChange={e => setForm(p => ({ ...p, pie_dominante: e.target.value }))} className="input">
+                <option value="">-</option>
+                {['derecho','izquierdo','ambos'].map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Formato preferido</label>
+              <select value={form.formato_preferido} onChange={e => setForm(p => ({ ...p, formato_preferido: e.target.value }))} className="input">
+                <option value="">-</option>
+                {[5,7,8,9,10,11].map(n => <option key={n} value={n}>{n}v{n}</option>)}
+              </select>
             </div>
           </div>
-          <div>
-            <label className="label">Bio</label>
-            <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={3} className="input w-full resize-none" placeholder="Cuéntanos sobre ti..." />
-          </div>
-          <div>
-            <label className="label">Nivel</label>
-            <select value={form.nivel} onChange={e => setForm(p => ({ ...p, nivel: e.target.value }))} className="input w-full">
-              {['principiante', 'intermedio', 'avanzado', 'profesional'].map(n => (
-                <option key={n} value={n} className="capitalize">{n}</option>
-              ))}
-            </select>
-          </div>
+
           <div>
             <label className="label">Deportes</label>
             <div className="flex flex-wrap gap-2">
-              {DEPORTES_LIST.map(d => {
-                const seleccionado = form.deportes?.includes(d);
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, deportes: seleccionado ? p.deportes.filter(x => x !== d) : [...(p.deportes || []), d] }))}
-                    className={`px-3 py-1 rounded-full text-xs capitalize border transition-all ${seleccionado ? 'bg-sp-green text-sp-bg border-sp-green' : 'border-sp-border text-gray-400 hover:text-white'}`}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
+              {DEPORTES_LIST.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => toggleDeporte(d)}
+                  className={`px-3 py-1 rounded-full text-xs border capitalize transition-colors ${form.deportes.includes(d) ? 'bg-sp-green border-sp-green text-white' : 'border-sp-border text-sp-muted hover:text-white'}`}
+                >
+                  {d}
+                </button>
+              ))}
             </div>
           </div>
-          <div>
-            <label className="label">URL de foto</label>
-            <input value={form.foto_url} onChange={e => setForm(p => ({ ...p, foto_url: e.target.value }))} className="input w-full" placeholder="https://..." />
-          </div>
-          <button onClick={handleGuardar} disabled={guardando} className="btn-green w-full">
-            {guardando ? 'Guardando...' : 'Guardar cambios'}
+
+          <div><label className="label">URL de foto</label><input value={form.foto_url} onChange={e => setForm(p => ({ ...p, foto_url: e.target.value }))} className="input" placeholder="https://..." /></div>
+
+          <button onClick={handleGuardar} disabled={guardando} className="btn-primary w-full">
+            {guardando ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
           </button>
         </div>
       )}
 
-      {/* Publicaciones */}
-      <div className="space-y-4">
-        <h2 className="font-semibold text-white">Publicaciones</h2>
+      {/* PUBLICACIONES */}
+      <div className="space-y-3">
+        <h2 className="font-impact text-lg">PUBLICACIONES</h2>
         {publicaciones.length === 0 ? (
-          <div className="card text-center py-10">
-            <p className="text-gray-400 text-sm">Sin publicaciones aun</p>
-          </div>
+          <div className="card text-center py-10 text-sp-muted text-sm">Sin publicaciones aún</div>
         ) : (
           publicaciones.map(pub => (
             <div key={pub.id} className="card">
-              {pub.contenido && <p className="text-gray-200 text-sm mb-3">{pub.contenido}</p>}
-              {pub.imagen_url && <img src={pub.imagen_url} alt="Post" className="w-full rounded-lg mb-3 max-h-80 object-cover" />}
-              <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t border-sp-border">
-                <span>{pub.likes_count || 0} likes</span>
-                <span>{pub.comentarios_count || 0} comentarios</span>
+              {pub.contenido && <p className="text-white/90 text-sm leading-relaxed mb-3">{pub.contenido}</p>}
+              {pub.imagen_url && <img src={pub.imagen_url} alt="" className="w-full rounded-lg mb-3 max-h-64 object-cover" />}
+              <div className="flex items-center gap-4 text-xs text-sp-muted border-t border-sp-border pt-2">
+                <span>❤️ {pub.likes_count || 0}</span>
+                <span>💬 {pub.comentarios_count || 0}</span>
                 <span className="ml-auto">{formatDistanceToNow(new Date(pub.fecha), { addSuffix: true, locale: es })}</span>
               </div>
             </div>

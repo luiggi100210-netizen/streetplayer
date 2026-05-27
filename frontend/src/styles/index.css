@@ -3,16 +3,80 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-[#0a0a0f] text-[#e2e8f0] font-sans; }
+  body {
+    @apply bg-sp-bg text-white font-sans antialiased;
+  }
+  h1, h2 {
+    font-family: Impact, 'Arial Black', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 }
 
 @layer components {
-  .card        { @apply bg-[#12121a] border border-[#1e1e2e] rounded-2xl p-4; }
-  .btn-green   { @apply bg-[#00e676] hover:bg-[#00c853] text-black font-bold px-4 py-2 rounded-xl transition-all; }
-  .btn-orange  { @apply bg-[#ff6b2b] hover:bg-[#e55a1e] text-white font-bold px-4 py-2 rounded-xl transition-all; }
-  .btn-ghost   { @apply border border-[#1e1e2e] text-[#64748b] hover:border-[#2e2e3e] hover:text-white px-4 py-2 rounded-xl transition-all; }
-  .input       { @apply w-full bg-[#0d0d14] border border-[#1e1e2e] text-[#e2e8f0] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#00e676] transition-colors placeholder:text-[#64748b]; }
-  .label       { @apply block text-xs text-[#64748b] uppercase tracking-wide mb-1.5 font-medium; }
-  .badge-green { @apply text-xs px-2 py-0.5 rounded-full bg-[#00e676]/10 border border-[#00e676]/30 text-[#00e676] font-medium; }
-  .badge-orange{ @apply text-xs px-2 py-0.5 rounded-full bg-[#ff6b2b]/10 border border-[#ff6b2b]/30 text-[#ff6b2b] font-medium; }
+  /* Tarjeta base */
+  .card {
+    @apply bg-sp-card border border-sp-border rounded-xl p-4;
+  }
+
+  /* Botones */
+  .btn-primary {
+    @apply bg-sp-green hover:bg-sp-green-dark text-white font-bold
+           px-5 py-2.5 rounded-lg transition-colors disabled:opacity-40
+           disabled:cursor-not-allowed uppercase tracking-wide text-sm;
+  }
+  .btn-outline {
+    @apply border border-white/30 hover:border-sp-green hover:text-sp-green
+           text-white font-bold px-5 py-2.5 rounded-lg transition-colors
+           uppercase tracking-wide text-sm;
+  }
+  .btn-ghost {
+    @apply border border-sp-border hover:border-sp-green/50 hover:text-sp-green
+           text-sp-muted px-4 py-2 rounded-lg transition-colors text-sm;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-bold
+           px-4 py-2 rounded-lg transition-colors text-sm;
+  }
+
+  /* Formularios */
+  .input {
+    @apply w-full bg-black/40 border border-sp-border text-white rounded-lg
+           px-4 py-2.5 text-sm focus:outline-none focus:border-sp-green
+           transition-colors placeholder:text-sp-muted;
+  }
+  .label {
+    @apply block text-xs text-sp-muted uppercase tracking-widest mb-1.5 font-semibold;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold
+           uppercase tracking-wide;
+  }
+  .badge-green  { @apply badge bg-sp-green/20 text-sp-green-light border border-sp-green/30; }
+  .badge-white  { @apply badge bg-white/10 text-white border border-white/20; }
+  .badge-red    { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
+  .badge-yellow { @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30; }
+
+  /* Niveles XP */
+  .level-rookie     { @apply text-gray-400; }
+  .level-amateur    { @apply text-sp-green-light; }
+  .level-intermedio { @apply text-blue-400; }
+  .level-avanzado   { @apply text-purple-400; }
+  .level-pro        { @apply text-yellow-400; }
+  .level-elite      { @apply text-red-400; }
+  .level-leyenda    { @apply text-yellow-300; }
+
+  /* Barra de progreso XP */
+  .xp-bar {
+    @apply h-1.5 bg-sp-border rounded-full overflow-hidden;
+  }
+  .xp-bar-fill {
+    @apply h-full bg-sp-green rounded-full transition-all;
+  }
+
+  /* Tabla */
+  .th { @apply text-left text-xs text-sp-muted uppercase tracking-widest px-4 py-3 font-semibold; }
+  .td { @apply px-4 py-3 border-b border-sp-border/50; }
 }
