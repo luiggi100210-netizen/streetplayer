@@ -9,6 +9,7 @@ usuarios ──< evento_participantes >── eventos
 usuarios ──< jugador_stats >── eventos
 usuarios ──< calificaciones (calificador_id / calificado_id) >── eventos
 usuarios ──< xp_log
+usuarios ──── ranking (1:1)
 usuarios ──< publicaciones ──< publicacion_likes >── usuarios
                             ──< comentarios >── usuarios
 usuarios ──< notificaciones
@@ -209,6 +210,35 @@ Historial de cada ganancia o pérdida de XP.
 | invitar_amigo | +30 |
 | no_asistir | -15 |
 | no_calificar | -10 |
+
+---
+
+### `ranking`
+Puntos y posición global de cada jugador. Se crea una fila por usuario al registrarse y se actualiza tras cada partido.
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `usuario_id` | UUID PK FK → usuarios | Un registro por jugador |
+| `puntos` | INTEGER | Puntos acumulados (victoria +3, empate +1, derrota +0) |
+| `posicion` | INTEGER | Posición calculada por `ROW_NUMBER() OVER (ORDER BY puntos DESC)` |
+| `victorias` | INTEGER | Total de victorias |
+| `derrotas` | INTEGER | Total de derrotas |
+| `empates` | INTEGER | Total de empates |
+| `actualizado` | TIMESTAMPTZ | Última vez que se recalculó |
+
+> **Nota:** esta tabla no está en `schema.sql` — debe añadirse. DDL sugerido:
+> ```sql
+> CREATE TABLE IF NOT EXISTS ranking (
+>   usuario_id  UUID PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+>   puntos      INTEGER     DEFAULT 0,
+>   posicion    INTEGER,
+>   victorias   INTEGER     DEFAULT 0,
+>   derrotas    INTEGER     DEFAULT 0,
+>   empates     INTEGER     DEFAULT 0,
+>   actualizado TIMESTAMPTZ DEFAULT NOW()
+> );
+> CREATE INDEX IF NOT EXISTS idx_ranking_puntos ON ranking(puntos DESC);
+> ```
 
 ---
 

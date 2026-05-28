@@ -168,6 +168,21 @@ CREATE TABLE IF NOT EXISTS xp_log (
 );
 
 -- ============================================================
+-- RANKING
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ranking (
+  usuario_id  UUID        PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+  puntos      INTEGER     DEFAULT 0,
+  posicion    INTEGER,
+  victorias   INTEGER     DEFAULT 0,
+  derrotas    INTEGER     DEFAULT 0,
+  empates     INTEGER     DEFAULT 0,
+  actualizado TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ranking_puntos ON ranking(puntos DESC);
+
+-- ============================================================
 -- EQUIPOS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS equipos (
