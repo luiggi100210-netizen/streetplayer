@@ -6,8 +6,13 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? [];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) ?? [];
+const corsOptions = {
+  origin: allowedOrigins.length === 0 || allowedOrigins.includes('*') ? '*' : allowedOrigins,
+  credentials: true,
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
