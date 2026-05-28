@@ -1,31 +1,37 @@
 const jwt = require('jsonwebtoken');
 
-function verificarToken(req, res, next) {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token requerido' });
+function _extraerPayload(authHeader) {
+  if (!authHeader?.startsWith('Bearer ')) {
+    const err = new Error('Token requerido');
+    err.status = 401;
+    throw err;
   }
   try {
-    const payload = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
-    req.usuario = payload;
-    next();
+    return jwt.verify(authHeader.slice(7), process.env.JWT_SECRET);
   } catch {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    const err = new Error('Token inválido o expirado');
+    err.status = 401;
+    throw err;
+  }
+}
+
+function verificarToken(req, res, next) {
+  try {
+    req.usuario = _extraerPayload(req.headers.authorization);
+    next();
+  } catch (err) {
+    res.status(err.status).json({ error: err.message });
   }
 }
 
 function verificarAdmin(req, res, next) {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token requerido' });
-  }
   try {
-    const payload = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
+    const payload = _extraerPayload(req.headers.authorization);
     if (!payload.esAdmin) return res.status(403).json({ error: 'Acceso solo para administradores' });
     req.admin = payload;
     next();
-  } catch {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+  } catch (err) {
+    res.status(err.status).json({ error: err.message });
   }
 }
 

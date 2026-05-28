@@ -1,13 +1,13 @@
 const pool = require('../config/database');
+const { verificarMedallas } = require('./medallas.service');
 
-// Tabla de XP por acción
 const XP_TABLA = {
   asistir_pichanga:     10,
   ganar_partido:        20,
   empatar:               8,
   crear_evento:         15,
   calificar_jugadores:   5,
-  buena_calificacion:   10,  // recibir 4-5 estrellas
+  buena_calificacion:   10,
   perfil_completo:      20,
   inscribir_torneo:     25,
   ganar_torneo:        100,
@@ -17,7 +17,6 @@ const XP_TABLA = {
   no_calificar:        -10,
 };
 
-// Umbrales de nivel
 const NIVELES = [
   { nombre: 'rookie',      min: 0    },
   { nombre: 'amateur',     min: 100  },
@@ -28,13 +27,30 @@ const NIVELES = [
   { nombre: 'leyenda',     min: 5000 },
 ];
 
-function calcularNivel(xp) {
-  let nivel = NIVELES[0].nombre;
-  for (const n of NIVELES) {
-    if (xp >= n.min) nivel = n.nombre;
-    else break;
+function _encontrarNivel(xp) {
+  let actual = NIVELES[0];
+  let siguiente = NIVELES[1] ?? null;
+  for (let i = 0; i < NIVELES.length; i++) {
+    if (xp >= NIVELES[i].min) {
+      actual    = NIVELES[i];
+      siguiente = NIVELES[i + 1] ?? null;
+    } else {
+      break;
+    }
   }
-  return nivel;
+  return { actual, siguiente };
+}
+
+function calcularNivel(xp) {
+  return _encontrarNivel(xp).actual.nombre;
+}
+
+function calcularProgreso(xp) {
+  const { actual, siguiente } = _encontrarNivel(xp);
+  const progreso = siguiente
+    ? Math.round(((xp - actual.min) / (siguiente.min - actual.min)) * 100)
+    : 100;
+  return { nivel: actual.nombre, siguiente: siguiente?.nombre ?? null, progreso, xpSiguiente: siguiente?.min ?? null };
 }
 
 async function darXP(usuarioId, motivo, referenciaId = null) {
@@ -45,13 +61,11 @@ async function darXP(usuarioId, motivo, referenciaId = null) {
   try {
     await client.query('BEGIN');
 
-    // Registrar en log
     await client.query(
       'INSERT INTO xp_log (usuario_id, cantidad, motivo, referencia_id) VALUES ($1,$2,$3,$4)',
       [usuarioId, cantidad, motivo, referenciaId]
     );
 
-    // Actualizar XP y nivel
     const { rows } = await client.query(
       'UPDATE usuarios SET xp = GREATEST(0, xp + $1) WHERE id = $2 RETURNING xp',
       [cantidad, usuarioId]
@@ -66,6 +80,8 @@ async function darXP(usuarioId, motivo, referenciaId = null) {
     );
 
     await client.query('COMMIT');
+    // fire-and-forget — no bloquea la respuesta
+    verificarMedallas(usuarioId).catch(() => {});
     return { xp: nuevoXp, nivel };
   } catch (err) {
     await client.query('ROLLBACK');
@@ -73,26 +89,6 @@ async function darXP(usuarioId, motivo, referenciaId = null) {
   } finally {
     client.release();
   }
-}
-
-function calcularProgreso(xp) {
-  let actual = NIVELES[0], siguiente = NIVELES[1];
-  for (let i = 0; i < NIVELES.length - 1; i++) {
-    if (xp >= NIVELES[i].min && xp < NIVELES[i + 1].min) {
-      actual    = NIVELES[i];
-      siguiente = NIVELES[i + 1];
-      break;
-    }
-    if (xp >= NIVELES[NIVELES.length - 1].min) {
-      actual    = NIVELES[NIVELES.length - 1];
-      siguiente = null;
-      break;
-    }
-  }
-  const progreso = siguiente
-    ? Math.round(((xp - actual.min) / (siguiente.min - actual.min)) * 100)
-    : 100;
-  return { nivel: actual.nombre, siguiente: siguiente?.nombre ?? null, progreso, xpSiguiente: siguiente?.min ?? null };
 }
 
 module.exports = { darXP, calcularNivel, calcularProgreso, XP_TABLA };

@@ -1,17 +1,30 @@
 require('dotenv').config();
-const http = require('http');
+const http      = require('http');
 const { Server } = require('socket.io');
+const { verify } = require('jsonwebtoken');
 const app    = require('./app');
 const { iniciarCronSanciones } = require('./services/sanciones.cron');
 
 const PORT   = process.env.PORT || 4000;
 const server = http.createServer(app);
 
-const io = new Server(server, { cors: { origin: '*' } });
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? [];
+const io = new Server(server, { cors: { origin: allowedOrigins, credentials: true } });
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('Token requerido'));
+  try {
+    const payload = verify(token, process.env.JWT_SECRET);
+    socket.userId = payload.id;
+    next();
+  } catch {
+    next(new Error('Token inválido'));
+  }
+});
 
 io.on('connection', (socket) => {
-  const userId = socket.handshake.auth?.userId;
-  if (userId) socket.join(`user:${userId}`);
+  socket.join(`user:${socket.userId}`);
   socket.on('disconnect', () => {});
 });
 

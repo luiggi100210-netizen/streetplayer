@@ -370,12 +370,4 @@ CREATE INDEX IF NOT EXISTS idx_calif_pendientes  ON calificaciones_pendientes(ve
 -- ============================================================
 -- DATOS INICIALES
 -- ============================================================
--- Admin por defecto (password: admin123)
-INSERT INTO admins (username, email, password_hash, nombre, rol)
-VALUES (
-  'admin',
-  'admin@streetplayer.pe',
-  '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-  'Administrador StreetPlayer',
-  'superadmin'
-) ON CONFLICT DO NOTHING;
+-- Admin inicial: ejecutar backend/src/db/seed.js con ADMIN_PASSWORD en .env

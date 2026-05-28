@@ -67,6 +67,7 @@ export default function Perfil() {
   const [form, setForm]           = useState({});
   const [guardando, setGuardando] = useState(false);
   const [tab, setTab]             = useState('publicaciones');
+  const [medallas, setMedallas]   = useState([]);
 
   const esMio = yo?.id === id;
 
@@ -74,17 +75,19 @@ export default function Perfil() {
     const cargar = async () => {
       setCargando(true);
       try {
-        const [pRes, pubRes, histRes, repRes] = await Promise.all([
+        const [pRes, pubRes, histRes, repRes, medRes] = await Promise.all([
           api.get(`/usuarios/${id}`),
           api.get(`/usuarios/${id}/publicaciones`),
           api.get(`/usuarios/${id}/historial`),
           api.get(`/usuarios/${id}/reputacion`),
+          api.get(`/usuarios/${id}/medallas`),
         ]);
         setPerfil(pRes.data);
         setSiguiendo(pRes.data.siguiendo_yo || false);
         setPubs(pubRes.data);
         setHistorial(histRes.data);
         setReputacion(repRes.data);
+        setMedallas(medRes.data || []);
         setForm({
           nombre:           pRes.data.nombre       || '',
           apodo:            pRes.data.apodo        || '',
@@ -232,7 +235,7 @@ export default function Perfil() {
         <h2 className="font-impact text-lg mb-3">MEDALLAS E INSIGNIAS</h2>
         <div className="grid grid-cols-4 gap-3">
           {MEDALLAS.map(m => {
-            const desbloqueada = false; // TODO: conectar con backend
+            const desbloqueada = medallas.includes(m.id);
             return (
               <div
                 key={m.id}

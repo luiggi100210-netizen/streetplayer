@@ -42,9 +42,9 @@ function iniciarCronSanciones() {
           await client.query(
             `UPDATE usuarios SET
                estado = 'suspendido',
-               suspendido_hasta = NOW() + INTERVAL '${diasSuspension} days'
+               suspendido_hasta = NOW() + make_interval(days => $2)
              WHERE id = $1`,
-            [usuario_id]
+            [usuario_id, diasSuspension]
           );
         }
 

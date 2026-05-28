@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useGeolocation } from '../../hooks/useGeolocation'
 import api from '../../services/api'
 
 const DEPORTES_DISPONIBLES = ['fútbol','básquet','voley','tenis','natación','ciclismo','running','boxeo','padel','otro']
@@ -8,6 +9,7 @@ const DEPORTES_DISPONIBLES = ['fútbol','básquet','voley','tenis','natación','
 export default function Registro() {
   const { login } = useAuth()
   const navigate  = useNavigate()
+  const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation()
   const [form, setForm]   = useState({ username:'', email:'', password:'', nombre:'', ciudad:'', deportes:[] })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
@@ -24,7 +26,8 @@ export default function Registro() {
     if (form.deportes.length === 0) { setError('Selecciona al menos un deporte'); return }
     setCargando(true); setError('')
     try {
-      const { data } = await api.post('/auth/registro', form)
+      const payload = { ...form, ...(coords && !form.ciudad ? { lat: coords.lat, lng: coords.lng } : {}) }
+      const { data } = await api.post('/auth/registro', payload)
       login(data.token, data.usuario)
       navigate('/')
     } catch (err) {
@@ -66,8 +69,16 @@ export default function Registro() {
             </div>
             <div>
               <label className="label">Ciudad</label>
-              <input className="input" placeholder="Lima, Arequipa..." value={form.ciudad}
-                onChange={(e) => setForm({...form, ciudad: e.target.value})} />
+              <div className="flex gap-2">
+                <input className="input flex-1" placeholder="Lima, Arequipa..." value={form.ciudad}
+                  onChange={(e) => setForm({...form, ciudad: e.target.value})} />
+                <button type="button" onClick={solicitarGeo} disabled={geoLoading}
+                  className="px-3 py-2 rounded-xl border border-[#1e1e2e] text-[#64748b] hover:text-white text-sm transition-colors shrink-0"
+                  title="Detectar mi ciudad automáticamente">
+                  {geoLoading ? '...' : coords ? '✓' : '📍'}
+                </button>
+              </div>
+              {coords && !form.ciudad && <p className="text-xs text-[#00e676] mt-1">Ubicación detectada — se autocompletará al registrarte</p>}
             </div>
 
             <div>
