@@ -108,13 +108,13 @@ function TarjetaPublicacion({ pub }) {
 
         {/* Contenido */}
         {pub.contenido && (
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.82)', lineHeight: 1.65, marginBottom: pub.imagen_url ? 10 : 12 }}>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.82)', lineHeight: 1.65, marginBottom: pub.foto_url ? 10 : 12 }}>
             {pub.contenido}
           </p>
         )}
 
-        {pub.imagen_url && (
-          <img src={pub.imagen_url} alt="" style={{ width: '100%', borderRadius: 8, maxHeight: 360, objectFit: 'cover', marginBottom: 12 }} />
+        {pub.foto_url && (
+          <img src={pub.foto_url} alt="" style={{ width: '100%', borderRadius: 8, maxHeight: 360, objectFit: 'cover', marginBottom: 12 }} />
         )}
 
         {/* Evento vinculado */}
