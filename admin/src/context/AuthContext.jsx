@@ -21,8 +21,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (username, password) => {
-    const { data } = await api.post('/auth/admin/login', { username, password });
+  const login = async (email, password) => {
+    const { data } = await api.post('/auth/admin/login', { email, password });
     localStorage.setItem('sp_admin_token', data.token);
     setAdmin(data.admin);
   };

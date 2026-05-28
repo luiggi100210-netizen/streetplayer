@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const { login } = useAuth();
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
 
@@ -12,7 +12,7 @@ export default function Login() {
     setCargando(true);
     setError('');
     try {
-      await login(form.username, form.password);
+      await login(form.email, form.password);
     } catch (err) {
       setError(err.response?.data?.error || 'Credenciales incorrectas');
     }
@@ -24,17 +24,18 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-sp-green">StreetPlayer</h1>
-          <p className="text-gray-400 mt-2">Panel de Administracion</p>
+          <p className="text-gray-400 mt-2">Panel de Administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div>
-            <label className="label">Usuario</label>
+            <label className="label">Email</label>
             <input
-              value={form.username}
-              onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
+              type="email"
+              value={form.email}
+              onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
               className="input w-full"
-              placeholder="admin"
+              placeholder="admin@streetplayer.pe"
               autoFocus
             />
           </div>
