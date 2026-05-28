@@ -16,7 +16,10 @@ async function init() {
   for (const file of SQL_FILES) {
     const filePath = path.join(__dirname, file);
     if (!fs.existsSync(filePath)) continue;
-    const sql = fs.readFileSync(filePath, 'utf8');
+    let sql = fs.readFileSync(filePath, 'utf8');
+    // Neon no tiene uuid-ossp — reemplazar con gen_random_uuid() nativo de PG13+
+    sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS "uuid-ossp";?/g, '');
+    sql = sql.replace(/uuid_generate_v4\(\)/g, 'gen_random_uuid()');
     try {
       await pool.query(sql);
       console.log(`[DB] ${file} aplicado`);
