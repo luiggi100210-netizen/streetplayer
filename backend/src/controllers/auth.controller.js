@@ -24,7 +24,7 @@ const registro = asyncHandler(async (req, res) => {
   const hash = await bcrypt.hash(password, 10);
   const { rows } = await pool.query(
     `INSERT INTO usuarios (username, email, password_hash, nombre, ciudad, departamento, deportes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, username, email, nombre, foto_url, puntos, nivel`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
     [username.toLowerCase(), email.toLowerCase(), hash, nombre, ciudadFinal, departamentoFinal, deportes || []]
   );
 
@@ -39,7 +39,7 @@ const registro = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const { rows } = await pool.query(
-    `SELECT id, username, email, nombre, foto_url, password_hash, puntos, nivel, estado
+    `SELECT id, username, email, nombre, foto_url, password_hash, xp, nivel_xp, estado
      FROM usuarios WHERE email = $1`,
     [email.toLowerCase()]
   );
