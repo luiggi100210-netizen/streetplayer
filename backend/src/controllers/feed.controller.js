@@ -9,7 +9,7 @@ const obtenerFeed = asyncHandler(async (req, res) => {
 
   const { rows } = await pool.query(
     `SELECT p.*,
-      u.username, u.nombre, u.foto_url, u.verificado, u.nivel,
+      u.username, u.nombre, u.foto_url, u.verificado, u.nivel_xp,
       (SELECT COUNT(*) FROM publicacion_likes WHERE publicacion_id = p.id) AS total_likes,
       (SELECT COUNT(*) FROM comentarios WHERE publicacion_id = p.id) AS total_comentarios,
       EXISTS(SELECT 1 FROM publicacion_likes WHERE publicacion_id = p.id AND usuario_id = $1) AS yo_di_like,

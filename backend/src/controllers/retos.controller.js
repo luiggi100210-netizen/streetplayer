@@ -84,4 +84,21 @@ const responderReto = asyncHandler(async (req, res) => {
   res.json(rows[0]);
 });
 
-module.exports = { obtenerRetos, crearReto, responderReto };
+// GET /api/retos/comunidad — feed público de retos recientes
+const obtenerRetosComunidad = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT r.*,
+       er.nombre AS retador_nombre, er.escudo_url AS retador_escudo,
+       ed.nombre AS retado_nombre,  ed.escudo_url AS retado_escudo,
+       ur.username AS retador_capitan, ud.username AS retado_capitan
+     FROM retos r
+     JOIN equipos er ON er.id = r.retador_id
+     JOIN equipos ed ON ed.id = r.retado_id
+     LEFT JOIN usuarios ur ON ur.id = er.capitan_id
+     LEFT JOIN usuarios ud ON ud.id = ed.capitan_id
+     ORDER BY r.fecha DESC LIMIT 30`
+  );
+  res.json(rows);
+});
+
+module.exports = { obtenerRetos, crearReto, responderReto, obtenerRetosComunidad };
