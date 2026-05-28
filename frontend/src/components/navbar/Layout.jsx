@@ -2,6 +2,7 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
+import { getSocket } from '../../services/socket';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -16,19 +17,21 @@ const TIPO_NOTIF_ICON = {
 };
 
 const NAV = [
-  { to: '/home',    label: 'Inicio',   icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-  { to: '/eventos', label: 'Eventos',  icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-  { to: '/ranking', label: 'Ranking',  icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-  { to: '/torneos', label: 'Torneos',  icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
-  { to: '/equipos', label: 'Equipos',  icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
-  { to: '/buscar',  label: 'Buscar',   icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+  { to: '/',         label: 'Inicio',    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { to: '/eventos',  label: 'Eventos',   icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+  { to: '/ranking',  label: 'Ranking',   icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { to: '/torneos',  label: 'Torneos',   icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
+  { to: '/equipos',  label: 'Equipos',   icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+  { to: '/buscar',   label: 'Buscar',    icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+  { to: '/mensajes', label: 'Mensajes',  icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
 ];
 
 export default function Layout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
-  const [notifs, setNotifs]         = useState([]);
-  const [pendientes, setPendientes] = useState(0);
+  const [notifs, setNotifs]             = useState([]);
+  const [pendientes, setPendientes]     = useState(0);
+  const [msgsNoLeidos, setMsgsNoLeidos] = useState(0);
   const [menuAbierto, setMenuAbierto]   = useState(false);
   const [notifAbierto, setNotifAbierto] = useState(false);
   const notifRef = useRef(null);
@@ -37,12 +40,14 @@ export default function Layout() {
 
   const cargarNotifs = async () => {
     try {
-      const [nRes, pRes] = await Promise.all([
+      const [nRes, pRes, mRes] = await Promise.all([
         api.get('/notificaciones'),
         api.get('/calificaciones/pendientes'),
+        api.get('/mensajes/no-leidos'),
       ]);
       setNotifs(nRes.data);
       setPendientes(pRes.data.length);
+      setMsgsNoLeidos(mRes.data.total || 0);
     } catch {}
   };
 
@@ -50,6 +55,15 @@ export default function Layout() {
     cargarNotifs();
     const t = setInterval(cargarNotifs, 60_000);
     return () => clearInterval(t);
+  }, []);
+
+  // Socket: actualizar badge de mensajes en tiempo real
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = () => setMsgsNoLeidos(n => n + 1);
+    socket.on('nuevo_mensaje', handler);
+    return () => socket.off('nuevo_mensaje', handler);
   }, []);
 
   const marcarLeidas = async () => {
@@ -72,7 +86,7 @@ export default function Layout() {
     <div className="min-h-screen bg-sp-bg flex flex-col">
       <header className="sticky top-0 z-40 bg-sp-bg/95 backdrop-blur border-b border-sp-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <Link to="/home" className="font-impact text-lg tracking-wider shrink-0">
+          <Link to="/" className="font-impact text-lg tracking-wider shrink-0">
             <span className="text-white">STREET</span><span className="text-sp-green">PLAYER</span>
           </Link>
 
@@ -82,10 +96,15 @@ export default function Layout() {
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
+                  `relative px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
                 }
               >
                 {label}
+                {to === '/mensajes' && msgsNoLeidos > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-sp-green text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
+                  </span>
+                )}
               </NavLink>
             ))}
             <NavLink
@@ -202,6 +221,10 @@ export default function Layout() {
                     <Link to="/buscar" onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
                       Buscar jugadores
                     </Link>
+                    <Link to="/mensajes" onClick={() => { setMenuAbierto(false); setMsgsNoLeidos(0); }} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
+                      Mensajes
+                      {msgsNoLeidos > 0 && <span className="ml-auto bg-sp-green text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{msgsNoLeidos}</span>}
+                    </Link>
                     <Link to="/calificaciones" onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm">
                       <span className="text-yellow-400">Calificar</span>
                       {pendientes > 0 && <span className="ml-auto bg-yellow-400 text-black text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{pendientes}</span>}
@@ -227,19 +250,24 @@ export default function Layout() {
 
       {/* Bottom nav móvil */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-sp-card border-t border-sp-border z-40">
-        <div className="grid grid-cols-7 h-14">
+        <div className="grid grid-cols-8 h-14">
           {NAV.map(({ to, label, icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
+                `relative flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
               }
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
               </svg>
               <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+              {to === '/mensajes' && msgsNoLeidos > 0 && (
+                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-sp-green text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                  {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
+                </span>
+              )}
             </NavLink>
           ))}
           <NavLink

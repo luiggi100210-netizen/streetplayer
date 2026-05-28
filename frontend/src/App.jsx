@@ -15,6 +15,7 @@ import Calificaciones from './pages/Calificaciones';
 import Buscar         from './pages/Buscar';
 import Equipos        from './pages/teams/Equipos';
 import EquipoDetalle  from './pages/teams/EquipoDetalle';
+import Mensajes       from './pages/messages/Mensajes';
 
 function PrivateRoute({ children }) {
   const { usuario, cargando } = useAuth();
@@ -46,7 +47,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Landing pública */}
-      <Route path="/"          element={<PublicRoute><Landing /></PublicRoute>} />
+      <Route path="/"          element={<Landing />} />
       <Route path="/login"     element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/registro"  element={<PublicRoute><Registro /></PublicRoute>} />
 
@@ -63,6 +64,7 @@ function AppRoutes() {
         <Route path="buscar"         element={<Buscar />} />
         <Route path="equipos"        element={<Equipos />} />
         <Route path="equipos/:id"    element={<EquipoDetalle />} />
+        <Route path="mensajes"       element={<Mensajes />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -41,6 +41,7 @@ app.use('/api/notificaciones',  require('./routes/notificaciones.routes'));
 app.use('/api/equipos',         require('./routes/equipos.routes'));
 app.use('/api/retos',           require('./routes/retos.routes'));
 app.use('/api/upload',          require('./routes/upload.routes'));
+app.use('/api/mensajes',        require('./routes/mensajes.routes'));
 app.use('/api/admin',           require('./routes/admin.routes'));
 
 // 404
