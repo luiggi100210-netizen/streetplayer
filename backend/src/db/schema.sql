@@ -312,14 +312,14 @@ CREATE TABLE IF NOT EXISTS notificaciones (
 -- REPORTES Y SANCIONES
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reportes (
-  id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-  reportado_por UUID         REFERENCES usuarios(id),
-  usuario_id    UUID         REFERENCES usuarios(id),
-  evento_id     UUID         REFERENCES eventos(id),
-  motivo        VARCHAR(100) NOT NULL,
-  descripcion   TEXT,
-  estado        VARCHAR(20)  DEFAULT 'pendiente' CHECK (estado IN ('pendiente','revisado','resuelto','desestimado')),
-  fecha         TIMESTAMPTZ  DEFAULT NOW()
+  id             UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+  reportador_id  UUID         REFERENCES usuarios(id) ON DELETE SET NULL,
+  reportado_id   UUID         REFERENCES usuarios(id) ON DELETE CASCADE,
+  evento_id      UUID         REFERENCES eventos(id)  ON DELETE SET NULL,
+  motivo         VARCHAR(100) NOT NULL,
+  descripcion    TEXT,
+  estado         VARCHAR(20)  DEFAULT 'pendiente' CHECK (estado IN ('pendiente','revisado','resuelto','desestimado')),
+  fecha          TIMESTAMPTZ  DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS sanciones (

@@ -385,8 +385,8 @@ Denuncias de usuarios contra otros jugadores.
 
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `reportado_por` | UUID FK → usuarios | Quien reporta (= `reportador_id` en controller) |
-| `usuario_id` | UUID FK → usuarios | Reportado (= `reportado_id` en controller) |
+| `reportador_id` | UUID FK → usuarios | Quien hace el reporte |
+| `reportado_id` | UUID FK → usuarios | Usuario reportado |
 | `evento_id` | UUID FK → eventos | Evento donde ocurrió (opcional) |
 | `motivo` | VARCHAR(100) | |
 | `descripcion` | TEXT | Detalle adicional |
