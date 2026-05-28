@@ -3,6 +3,7 @@ const http      = require('http');
 const { Server } = require('socket.io');
 const { verify } = require('jsonwebtoken');
 const app    = require('./app');
+const initDB = require('./db/init');
 const { iniciarCronSanciones } = require('./services/sanciones.cron');
 
 const PORT   = process.env.PORT || 4000;
@@ -30,7 +31,9 @@ io.on('connection', (socket) => {
 
 global.io = io;
 
-server.listen(PORT, () => {
-  console.log(`🏃 StreetPlayer Backend corriendo en puerto ${PORT}`);
-  iniciarCronSanciones();
+initDB().then(() => {
+  server.listen(PORT, () => {
+    console.log(`StreetPlayer Backend corriendo en puerto ${PORT}`);
+    iniciarCronSanciones();
+  });
 });
