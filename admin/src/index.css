@@ -3,41 +3,70 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-sp-bg text-white font-sans antialiased; }
-  h1, h2 { font-family: Impact, 'Arial Black', sans-serif; text-transform: uppercase; }
+  body { @apply text-white font-sans antialiased; background: #080810; }
 }
 
 @layer components {
-  .card    { @apply bg-sp-card border border-sp-border rounded-xl p-4; }
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    @apply rounded-xl p-4;
+  }
 
-  .btn-primary {
-    @apply bg-sp-green hover:bg-sp-green-dark text-white font-bold
-           px-4 py-2 rounded-lg transition-colors text-sm
+  .btn-green {
+    @apply text-white font-semibold px-4 py-2 rounded-lg transition-all text-sm
            disabled:opacity-40 disabled:cursor-not-allowed;
+    background: linear-gradient(90deg,#1D9E75,#16805e);
   }
+  .btn-green:hover { filter: brightness(1.1); }
+
   .btn-ghost {
-    @apply border border-sp-border hover:border-sp-green/50 text-sp-muted
-           hover:text-white px-4 py-2 rounded-lg transition-colors text-sm;
+    @apply border text-white/40 hover:text-white px-4 py-2 rounded-lg transition-colors text-sm;
+    border-color: rgba(255,255,255,0.1);
   }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+
   .btn-danger {
-    @apply bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30
-           px-4 py-2 rounded-lg transition-colors text-sm;
+    @apply text-red-400 border border-red-500/30 px-4 py-2 rounded-lg transition-colors text-sm;
+    background: rgba(239,68,68,0.1);
   }
+  .btn-danger:hover { background: rgba(239,68,68,0.18); }
+
+  .btn-orange {
+    @apply text-yellow-400 border border-yellow-500/30 px-4 py-2 rounded-lg transition-colors text-sm;
+    background: rgba(240,195,130,0.1);
+  }
+  .btn-orange:hover { background: rgba(240,195,130,0.18); }
 
   .input {
-    @apply bg-black/40 border border-sp-border text-white rounded-lg
-           px-3 py-2 text-sm focus:outline-none focus:border-sp-green
-           transition-colors placeholder:text-sp-muted;
+    @apply text-white rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors
+           placeholder:text-white/20 w-full;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
   }
-  .label { @apply block text-xs text-sp-muted uppercase tracking-widest mb-1 font-semibold; }
+  .input:focus { border-color: #1D9E75; }
 
-  .badge        { @apply inline-block text-xs px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide; }
-  .badge-green  { @apply badge bg-sp-green/20 text-sp-green-light border border-sp-green/30; }
-  .badge-red    { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
-  .badge-yellow { @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30; }
-  .badge-gray   { @apply badge bg-white/10 text-sp-muted border border-sp-border; }
+  .label { @apply block text-xs text-white/40 uppercase tracking-widest mb-1.5 font-semibold; }
 
-  .th { @apply text-left text-xs text-sp-muted uppercase tracking-widest px-4 py-3 font-semibold; }
-  .td { @apply px-4 py-3 border-b border-sp-border/50 text-sm; }
-  .tr { @apply hover:bg-white/5 transition-colors; }
+  .badge        { @apply inline-block text-[11px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide; }
+  .badge-green  { @apply badge; background: rgba(29,158,117,0.15); color: #9FE1CB; border: 1px solid rgba(29,158,117,0.3); }
+  .badge-red    { @apply badge; background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .badge-orange { @apply badge; background: rgba(240,195,130,0.15); color: #f0c382; border: 1px solid rgba(240,195,130,0.3); }
+  .badge-yellow { @apply badge; background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .badge-gray   { @apply badge; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
+
+  .table-row { @apply transition-colors cursor-default; }
+  .table-row:hover { background: rgba(255,255,255,0.03); }
+
+  .page-header {
+    @apply mb-7;
+  }
+  .page-title {
+    @apply text-xl font-bold text-white;
+    font-family: Anton, Impact, sans-serif;
+    letter-spacing: 0.05em;
+  }
+  .page-sub {
+    @apply text-white/30 text-sm mt-0.5;
+  }
 }
