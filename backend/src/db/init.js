@@ -25,8 +25,14 @@ async function init() {
     // Neon pooler no acepta multi-statement — ejecutar cada sentencia por separado
     const statements = sql
       .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map(s =>
+        // Quitar líneas de comentarios al inicio/medio, dejar solo el SQL
+        s.split('\n')
+          .filter(line => !line.trim().startsWith('--'))
+          .join('\n')
+          .trim()
+      )
+      .filter(s => s.length > 0);
 
     let ok = 0;
     for (const stmt of statements) {
