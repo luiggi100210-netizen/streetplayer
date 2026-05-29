@@ -3,6 +3,17 @@ const bcrypt            = require('bcryptjs');
 const jwt               = require('jsonwebtoken');
 const asyncHandler      = require('../middleware/asyncHandler');
 const { reverseGeocode } = require('../utils/geocoding');
+const admin             = require('../services/firebase');
+
+function generarUsername(nombre, email) {
+  const base = (nombre || email.split('@')[0])
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+    .substring(0, 14);
+  const sufijo = Math.random().toString(36).substring(2, 6);
+  return `${base || 'player'}_${sufijo}`;
+}
 
 function generarToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -91,4 +102,71 @@ const me = asyncHandler(async (req, res) => {
   res.json(datos);
 });
 
-module.exports = { registro, login, loginAdmin, me };
+// POST /api/auth/firebase — login con Google o Facebook
+const loginFirebase = asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) return res.status(400).json({ error: 'idToken requerido' });
+
+  let decoded;
+  try {
+    decoded = await admin.auth().verifyIdToken(idToken);
+  } catch {
+    return res.status(401).json({ error: 'Token de Firebase inválido' });
+  }
+
+  const { uid, email, name, picture } = decoded;
+  if (!email) return res.status(400).json({ error: 'La cuenta no tiene email asociado' });
+
+  // 1. Buscar por firebase_uid (usuario que ya entró antes con OAuth)
+  let { rows } = await pool.query(
+    `SELECT id, username, email, nombre, foto_url, xp, nivel_xp, estado
+     FROM usuarios WHERE firebase_uid = $1`,
+    [uid]
+  );
+
+  // 2. Buscar por email (usuario con cuenta email/password existente)
+  if (rows.length === 0) {
+    const byEmail = await pool.query(
+      `SELECT id, username, email, nombre, foto_url, xp, nivel_xp, estado
+       FROM usuarios WHERE email = $1`,
+      [email.toLowerCase()]
+    );
+    if (byEmail.rows.length > 0) {
+      // Vincular firebase_uid a la cuenta existente
+      await pool.query(
+        `UPDATE usuarios SET firebase_uid = $1, provider = $2 WHERE id = $3`,
+        [uid, decoded.firebase?.sign_in_provider?.split('.')[0] || 'google', byEmail.rows[0].id]
+      );
+      rows = byEmail.rows;
+    }
+  }
+
+  // 3. Crear usuario nuevo
+  if (rows.length === 0) {
+    const username = generarUsername(name, email);
+    const provider = decoded.firebase?.sign_in_provider?.split('.')[0] || 'google';
+    const inserted = await pool.query(
+      `INSERT INTO usuarios
+         (username, email, nombre, foto_url, firebase_uid, provider, deportes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
+      [username, email.toLowerCase(), name || username, picture || null, uid, provider, []]
+    );
+    await pool.query(
+      'INSERT INTO ranking (usuario_id) VALUES ($1) ON CONFLICT DO NOTHING',
+      [inserted.rows[0].id]
+    );
+    rows = inserted.rows;
+  }
+
+  const usuario = rows[0];
+  if (usuario.estado === 'baneado')    return res.status(403).json({ error: 'Tu cuenta fue suspendida permanentemente' });
+  if (usuario.estado === 'suspendido') return res.status(403).json({ error: 'Tu cuenta está suspendida temporalmente' });
+
+  await pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
+
+  const token = generarToken({ id: usuario.id, username: usuario.username, esAdmin: false });
+  res.json({ token, usuario });
+});
+
+module.exports = { registro, login, loginAdmin, me, loginFirebase };

@@ -2,7 +2,7 @@ const router   = require('express').Router();
 const { body } = require('express-validator');
 const { verificarToken } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { registro, login, loginAdmin, me } = require('../controllers/auth.controller');
+const { registro, login, loginAdmin, me, loginFirebase } = require('../controllers/auth.controller');
 
 const validarRegistro = [
   body('username').trim().notEmpty().withMessage('username requerido')
@@ -25,6 +25,7 @@ const validarLogin = [
 
 router.post('/registro',    validarRegistro, validate, registro);
 router.post('/login',       validarLogin,    validate, login);
+router.post('/firebase',    loginFirebase);
 router.post('/admin/login', validarLogin,    validate, loginAdmin);
 router.get('/me',           verificarToken, me);
 

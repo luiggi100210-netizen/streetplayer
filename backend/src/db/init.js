@@ -10,6 +10,7 @@ const SQL_FILES = [
   'schema.sql',
   'medallas_migration.sql',
   'chat_migration.sql',
+  'firebase_migration.sql',
 ];
 
 async function init() {
