@@ -10,7 +10,7 @@ const obtenerRanking = asyncHandler(async (req, res) => {
   let query = `
     SELECT
       r.posicion, r.puntos, r.victorias, r.derrotas, r.empates,
-      u.id, u.username, u.nombre, u.foto_url, u.nivel, u.ciudad,
+      u.id, u.username, u.nombre, u.foto_url, u.nivel_xp AS nivel, u.ciudad,
       u.deportes, u.partidos_jugados, u.partidos_ganados
     FROM ranking r
     JOIN usuarios u ON r.usuario_id = u.id

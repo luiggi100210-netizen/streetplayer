@@ -9,7 +9,7 @@ const listarTorneos = asyncHandler(async (req, res) => {
       u.username AS organizador_username, u.nombre AS organizador_nombre, u.foto_url AS organizador_foto,
       (SELECT COUNT(*) FROM torneo_equipos WHERE torneo_id = t.id) AS equipos_inscritos
     FROM torneos t JOIN usuarios u ON t.organizador_id = u.id
-    WHERE t.aprobado = true
+    WHERE 1=1
   `;
   const params = [];
   let idx = 1;
@@ -76,7 +76,7 @@ const inscribirEquipo = asyncHandler(async (req, res) => {
   if (!equipo_id) return res.status(400).json({ error: 'equipo_id requerido' });
 
   const { rows: torneos } = await pool.query(
-    `SELECT * FROM torneos WHERE id = $1 AND aprobado = true AND estado = 'aprobado'`,
+    `SELECT * FROM torneos WHERE id = $1`,
     [torneo_id]
   );
   if (torneos.length === 0) return res.status(400).json({ error: 'Torneo no disponible para inscripción' });

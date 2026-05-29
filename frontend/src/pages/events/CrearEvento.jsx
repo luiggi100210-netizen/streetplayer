@@ -37,12 +37,15 @@ export default function CrearEvento() {
     try {
       const payload = {
         ...form,
+        foto_url: form.foto_url || undefined,
         ...(ubicacion && { latitud: ubicacion.lat, longitud: ubicacion.lng }),
       };
       const { data } = await api.post('/eventos', payload);
       navigate(`/eventos/${data.id}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear el evento');
+      const data = err.response?.data;
+      const msg = data?.errors?.map(e => e.mensaje).join(', ') || data?.error || 'Error al crear el evento';
+      setError(msg);
       setCargando(false);
     }
   };

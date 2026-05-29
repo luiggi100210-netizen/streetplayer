@@ -11,7 +11,7 @@ const obtenerPerfil = asyncHandler(async (req, res) => {
   const yo = req.usuario?.id;
   const { rows } = await pool.query(
     `SELECT
-      u.id, u.username, u.nombre, u.apellidos, u.apodo, u.foto_url, u.bio,
+      u.id, u.username, u.nombre, u.apodo, u.foto_url, u.bio,
       u.ciudad, u.departamento, u.deportes,
       u.posicion, u.pie_dominante, u.formato_preferido,
       u.nivel_xp, u.xp,
@@ -131,7 +131,7 @@ const historialUsuario = asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT
       e.id, e.titulo, e.fecha_evento AS fecha, e.tipo, e.deporte,
-      ep.resultado, ep.asistio,
+      ep.estado AS resultado,
       COALESCE(js.goles, 0)       AS goles,
       COALESCE(js.asistencias, 0) AS asistencias,
       COALESCE(js.calificacion_promedio, 0) AS calificacion,
@@ -141,7 +141,7 @@ const historialUsuario = asyncHandler(async (req, res) => {
      LEFT JOIN jugador_stats js ON js.evento_id = e.id AND js.usuario_id = ep.usuario_id
      WHERE ep.usuario_id = $1
        AND e.estado = 'finalizado'
-       AND ep.asistio = TRUE
+       AND ep.estado IN ('asistio','confirmado')
      ORDER BY e.fecha_evento DESC
      LIMIT 20`,
     [id]
