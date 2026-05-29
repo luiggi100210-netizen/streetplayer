@@ -41,4 +41,10 @@ router.get('/eventos',                     verificarAdmin, a.listarEventosAdmin)
 router.get('/anuncios',                    verificarAdmin, a.listarAnuncios);
 router.post('/anuncios',                   verificarAdmin, validarAnuncio, validate, a.crearAnuncio);
 
+router.get('/usuarios/:id',                verificarAdmin, validarId(), validate, a.detalleUsuario);
+
+router.get('/publicidad/solicitudes',      verificarAdmin, a.listarSolicitudes);
+router.put('/publicidad/solicitudes/:id',  verificarAdmin, validarId(), validate, a.actualizarSolicitud);
+router.get('/publicidad/tarifas',          verificarAdmin, a.listarTarifas);
+
 module.exports = router;

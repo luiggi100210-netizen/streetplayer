@@ -50,6 +50,7 @@ app.use('/api/retos',           require('./routes/retos.routes'));
 app.use('/api/upload',          require('./routes/upload.routes'));
 app.use('/api/mensajes',        require('./routes/mensajes.routes'));
 app.use('/api/admin',           require('./routes/admin.routes'));
+app.use('/api/publicidad',      require('./routes/publicidad.routes'));
 
 // Anuncios activos — ruta pública para usuarios autenticados
 const { anunciosActivos } = require('./controllers/admin.controller');

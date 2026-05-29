@@ -141,6 +141,89 @@ const crearAnuncio = asyncHandler(async (req, res) => {
   res.status(201).json(rows[0]);
 });
 
+// GET /api/admin/usuarios/:id — detalle completo
+const detalleUsuario = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const [uRes, equipoRes, medallasRes, eventosRes] = await Promise.all([
+    pool.query(
+      `SELECT u.*, r.puntos AS ranking_puntos, r.posicion AS ranking_pos
+       FROM usuarios u LEFT JOIN ranking r ON r.usuario_id = u.id
+       WHERE u.id = $1`, [id]
+    ),
+    pool.query(
+      `SELECT e.id, e.nombre, e.escudo_url, e.deporte, em.rol, em.fecha
+       FROM equipo_miembros em JOIN equipos e ON e.id = em.equipo_id
+       WHERE em.usuario_id = $1 AND e.estado = 'activo' LIMIT 1`, [id]
+    ),
+    pool.query(
+      `SELECT m.nombre, m.icono, mu.fecha_obtenida
+       FROM medallas_usuario mu JOIN medallas m ON m.id = mu.medalla_id
+       WHERE mu.usuario_id = $1 ORDER BY mu.fecha_obtenida DESC LIMIT 10`, [id]
+    ),
+    pool.query(
+      `SELECT ev.titulo, ev.deporte, ev.fecha_evento, i.estado AS inscripcion_estado
+       FROM inscripciones i JOIN eventos ev ON ev.id = i.evento_id
+       WHERE i.usuario_id = $1 ORDER BY ev.fecha_evento DESC LIMIT 5`, [id]
+    ),
+  ]);
+  if (!uRes.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({
+    ...uRes.rows[0],
+    equipo: equipoRes.rows[0] || null,
+    medallas: medallasRes.rows,
+    eventos_recientes: eventosRes.rows,
+  });
+});
+
+// ── Publicidad ────────────────────────────────────────────────────────────────
+// POST /api/publicidad/solicitar (público)
+const solicitarPublicidad = asyncHandler(async (req, res) => {
+  const { empresa, contacto, email, telefono, tipo, duracion_dias, mensaje } = req.body;
+  const { rows } = await pool.query(
+    `INSERT INTO publicidad_solicitudes (empresa, contacto, email, telefono, tipo, duracion_dias, mensaje)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+    [empresa, contacto, email, telefono || null, tipo, duracion_dias || 7, mensaje || null]
+  );
+  res.status(201).json({ mensaje: 'Solicitud recibida. Te contactaremos pronto.', id: rows[0].id });
+});
+
+// GET /api/admin/publicidad/solicitudes
+const listarSolicitudes = asyncHandler(async (req, res) => {
+  const { estado } = req.query;
+  let query = 'SELECT * FROM publicidad_solicitudes WHERE 1=1';
+  const params = [];
+  if (estado) { query += ` AND estado = $1`; params.push(estado); }
+  query += ' ORDER BY fecha_solicitud DESC LIMIT 100';
+  const { rows } = await pool.query(query, params);
+  res.json(rows);
+});
+
+// PUT /api/admin/publicidad/solicitudes/:id
+const actualizarSolicitud = asyncHandler(async (req, res) => {
+  const { estado, precio_acordado, notas_admin } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE publicidad_solicitudes SET
+       estado = COALESCE($1, estado),
+       precio_acordado = COALESCE($2, precio_acordado),
+       notas_admin = COALESCE($3, notas_admin)
+     WHERE id = $4 RETURNING *`,
+    [estado, precio_acordado || null, notas_admin || null, req.params.id]
+  );
+  res.json(rows[0]);
+});
+
+// GET /api/admin/publicidad/tarifas
+const listarTarifas = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM publicidad_tarifas ORDER BY tipo, precio_base ASC');
+  res.json(rows);
+});
+
+// GET /api/publicidad/tarifas (público)
+const tarifasPublicas = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query('SELECT id, nombre, tipo, descripcion, precio_base, duracion_dias FROM publicidad_tarifas WHERE activo = true ORDER BY precio_base ASC');
+  res.json(rows);
+});
+
 // GET /api/admin/equipos
 const listarEquiposAdmin = asyncHandler(async (req, res) => {
   const { buscar, page = 1 } = req.query;
@@ -205,9 +288,10 @@ const statsAmpliadas = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  dashboard, listarUsuarios, cambiarEstadoUsuario,
+  dashboard, listarUsuarios, cambiarEstadoUsuario, detalleUsuario,
   listarReportes, resolverReporte,
   listarTorneosAdmin, aprobarTorneo, rechazarTorneo,
   listarAnuncios, crearAnuncio, anunciosActivos,
   listarEquiposAdmin, listarEventosAdmin, eliminarFotoUsuario, statsAmpliadas,
+  solicitarPublicidad, listarSolicitudes, actualizarSolicitud, listarTarifas, tarifasPublicas,
 };
