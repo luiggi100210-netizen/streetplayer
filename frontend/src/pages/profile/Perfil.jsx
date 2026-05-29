@@ -79,8 +79,25 @@ export default function Perfil() {
   const [tab,          setTab]       = useState('historial');
   const [xpLog,        setXpLog]     = useState([]);
   const [medallasTorneos, setMedallasTorneos] = useState([]);
+  const [guardandoUbic, setGuardandoUbic] = useState(false);
 
   const esMio = yo?.id === id;
+
+  const guardarUbicacionActual = () => {
+    if (!navigator.geolocation) return;
+    setGuardandoUbic(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          await api.put('/usuarios/perfil', { latitud: coords.latitude, longitud: coords.longitude });
+          setPerfil(p => ({ ...p, latitud: coords.latitude, longitud: coords.longitude }));
+        } catch {}
+        setGuardandoUbic(false);
+      },
+      () => setGuardandoUbic(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   useEffect(() => {
     const cargar = async () => {
@@ -244,17 +261,37 @@ export default function Perfil() {
                 ))}
               </div>
 
-              {/* Ciudad */}
-              {perfil.ciudad && (
-                <p className="text-sp-muted text-xs flex items-center gap-1 mb-2">
-                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {[perfil.ciudad, perfil.departamento].filter(Boolean).join(', ')}
-                  <span className="ml-1">🇵🇪</span>
-                </p>
-              )}
+              {/* Ciudad + botón mini ubicación */}
+              <div className="flex items-center gap-2 mb-2">
+                {perfil.ciudad && (
+                  <p className="text-sp-muted text-xs flex items-center gap-1">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {[perfil.ciudad, perfil.departamento].filter(Boolean).join(', ')}
+                    <span className="ml-1">🇵🇪</span>
+                  </p>
+                )}
+                {esMio && !editando && (
+                  <button
+                    type="button"
+                    onClick={guardarUbicacionActual}
+                    disabled={guardandoUbic}
+                    title={perfil.latitud ? 'Actualizar mi ubicación GPS' : 'Establecer mi ubicación GPS'}
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors"
+                    style={{
+                      borderColor: perfil.latitud ? '#00e676' : '#7c3aed',
+                      color: perfil.latitud ? '#00e676' : '#a78bfa',
+                      background: 'transparent',
+                      cursor: guardandoUbic ? 'wait' : 'pointer',
+                    }}
+                  >
+                    {guardandoUbic ? '⏳' : '📍'}
+                    {guardandoUbic ? 'GPS...' : perfil.latitud ? 'Ubicado' : 'Mi ubicación'}
+                  </button>
+                )}
+              </div>
 
               {/* Seguidores */}
               <div className="flex gap-4">
