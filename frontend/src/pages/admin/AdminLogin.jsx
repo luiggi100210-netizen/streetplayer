@@ -11,7 +11,8 @@ export default function AdminLogin({ onLogin }) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await axios.post('/api/auth/admin/login', form);
+      const base = import.meta.env.VITE_BACKEND_URL ?? '';
+      const { data } = await axios.post(`${base}/api/auth/admin/login`, form);
       localStorage.setItem('admin_token', data.token);
       onLogin(data.token, data.admin);
     } catch (err) {
