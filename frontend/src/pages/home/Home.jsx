@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Avatar from '../../components/Avatar';
+import UploadFoto from '../../components/UploadFoto';
 import { COLORES_NIVEL } from '../../constants';
 
 const ESTADO_RETO = {
@@ -248,21 +249,23 @@ function Composer({ usuario, onPublicado }) {
   const [modo,      setModo]      = useState('post'); // 'post' | 'reto'
   const [contenido, setContenido] = useState('');
   const [deporte,   setDeporte]   = useState('futbol');
+  const [fotoUrl,   setFotoUrl]   = useState('');
   const [publicando, setPublicando] = useState(false);
 
   const DEPORTES = ['futbol','basquet','tenis','padel','voley','running'];
 
   const publicar = async e => {
     e.preventDefault();
-    if (!contenido.trim()) return;
+    if (!contenido.trim() && !fotoUrl) return;
     setPublicando(true);
     try {
       const payload = modo === 'reto'
         ? { contenido: `⚔️ RETO: ${contenido}`, deporte }
-        : { contenido };
+        : { contenido, foto_url: fotoUrl || undefined };
       const { data } = await api.post('/feed', payload);
       onPublicado(data);
       setContenido('');
+      setFotoUrl('');
       setModo('post');
     } catch {}
     setPublicando(false);
@@ -318,8 +321,20 @@ function Composer({ usuario, onPublicado }) {
               </div>
             )}
 
+            {/* Foto adjunta (solo modo post) */}
+            {modo === 'post' && (
+              <div style={{ marginBottom: 10 }}>
+                <UploadFoto
+                  label=""
+                  value={fotoUrl}
+                  onChange={setFotoUrl}
+                  size={72}
+                />
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={publicar} disabled={publicando || !contenido.trim()} style={{
+              <button onClick={publicar} disabled={publicando || (!contenido.trim() && !fotoUrl)} style={{
                 fontFamily: 'Anton, Impact, sans-serif', fontSize: 13, letterSpacing: '0.1em',
                 padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 background: modo === 'reto' ? '#e5a000' : '#1D9E75',
@@ -436,29 +451,31 @@ function Sidebar({ usuario, ranking }) {
 // ── Página principal ─────────────────────────────────────────
 export default function Home() {
   const { usuario } = useAuth();
-  const [feed,     setFeed]     = useState([]);
-  const [retos,    setRetos]    = useState([]);
-  const [eventos,  setEventos]  = useState([]);
-  const [ranking,  setRanking]  = useState([]);
-  const [tab,      setTab]      = useState('feed');
-  const [cargando, setCargando] = useState(true);
+  const [feed,      setFeed]      = useState([]);
+  const [retos,     setRetos]     = useState([]);
+  const [eventos,   setEventos]   = useState([]);
+  const [ranking,   setRanking]   = useState([]);
+  const [anuncios,  setAnuncios]  = useState([]);
+  const [tab,       setTab]       = useState('feed');
+  const [cargando,  setCargando]  = useState(true);
   const [miEquipoId, setMiEquipoId] = useState(null);
 
   const cargar = async () => {
     setCargando(true);
     try {
-      const [feedRes, retosRes, eventosRes, rankingRes] = await Promise.all([
+      const [feedRes, retosRes, eventosRes, rankingRes, anunciosRes] = await Promise.all([
         api.get('/feed'),
         api.get('/retos/comunidad'),
         api.get('/eventos?estado=abierto'),
         api.get('/ranking'),
+        api.get('/anuncios').catch(() => ({ data: [] })),
       ]);
       setFeed(feedRes.data);
       setRetos(retosRes.data);
       setEventos(eventosRes.data.slice(0, 6));
       setRanking(rankingRes.data);
+      setAnuncios(anunciosRes.data);
 
-      // Obtener el ID del equipo del que soy capitán para accept/reject
       try {
         const { data: { mi_equipo_id } } = await api.get('/retos');
         if (mi_equipo_id) setMiEquipoId(mi_equipo_id);
@@ -481,8 +498,22 @@ export default function Home() {
 
         {/* Sidebar */}
         <aside className="hidden lg:block">
-          <div className="sticky top-20">
+          <div className="sticky top-20 space-y-4">
             <Sidebar usuario={usuario} ranking={ranking} />
+            {anuncios.map(a => (
+              <a key={a.id} href={a.url_destino || '#'} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: 'block', borderRadius: 10, overflow: 'hidden',
+                  border: '1px solid rgba(255,255,255,0.07)', textDecoration: 'none',
+                  transition: 'border-color .2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+              >
+                <img src={a.imagen_url} alt={a.titulo}
+                  style={{ width: '100%', display: 'block', borderRadius: 9 }} />
+              </a>
+            ))}
           </div>
         </aside>
 

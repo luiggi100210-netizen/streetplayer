@@ -3,7 +3,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 // GET /api/torneos
 const listarTorneos = asyncHandler(async (req, res) => {
-  const { deporte, ciudad, estado = 'abierto' } = req.query;
+  const { deporte, ciudad, estado = 'aprobado' } = req.query;
   let query = `
     SELECT t.*,
       u.username AS organizador_username, u.nombre AS organizador_nombre, u.foto_url AS organizador_foto,
@@ -68,4 +68,66 @@ const crearTorneo = asyncHandler(async (req, res) => {
   res.status(201).json({ ...rows[0], mensaje: 'Torneo enviado para aprobación' });
 });
 
-module.exports = { listarTorneos, obtenerTorneo, crearTorneo };
+// POST /api/torneos/:id/inscribir — el capitán inscribe su equipo
+const inscribirEquipo = asyncHandler(async (req, res) => {
+  const { id: torneo_id } = req.params;
+  const { equipo_id }     = req.body;
+
+  if (!equipo_id) return res.status(400).json({ error: 'equipo_id requerido' });
+
+  const { rows: torneos } = await pool.query(
+    `SELECT * FROM torneos WHERE id = $1 AND aprobado = true AND estado = 'aprobado'`,
+    [torneo_id]
+  );
+  if (torneos.length === 0) return res.status(400).json({ error: 'Torneo no disponible para inscripción' });
+
+  const torneo = torneos[0];
+
+  const { rows: cap } = await pool.query(
+    'SELECT 1 FROM equipos WHERE id = $1 AND capitan_id = $2',
+    [equipo_id, req.usuario.id]
+  );
+  if (cap.length === 0) return res.status(403).json({ error: 'Solo el capitán puede inscribir el equipo' });
+
+  const { rows: yaInscrito } = await pool.query(
+    'SELECT 1 FROM torneo_equipos WHERE torneo_id = $1 AND equipo_id = $2',
+    [torneo_id, equipo_id]
+  );
+  if (yaInscrito.length > 0) return res.status(409).json({ error: 'El equipo ya está inscrito' });
+
+  const { rows: count } = await pool.query(
+    `SELECT COUNT(*) FROM torneo_equipos WHERE torneo_id = $1 AND estado != 'eliminado'`,
+    [torneo_id]
+  );
+  if (parseInt(count[0].count) >= torneo.max_equipos) {
+    return res.status(400).json({ error: 'El torneo está lleno' });
+  }
+
+  await pool.query(
+    `INSERT INTO torneo_equipos (torneo_id, equipo_id, estado) VALUES ($1, $2, 'inscrito')`,
+    [torneo_id, equipo_id]
+  );
+  res.status(201).json({ mensaje: 'Equipo inscrito correctamente' });
+});
+
+// DELETE /api/torneos/:id/inscribir — el capitán retira su equipo
+const desinscribirEquipo = asyncHandler(async (req, res) => {
+  const { id: torneo_id } = req.params;
+  const { equipo_id }     = req.body;
+
+  if (!equipo_id) return res.status(400).json({ error: 'equipo_id requerido' });
+
+  const { rows: cap } = await pool.query(
+    'SELECT 1 FROM equipos WHERE id = $1 AND capitan_id = $2',
+    [equipo_id, req.usuario.id]
+  );
+  if (cap.length === 0) return res.status(403).json({ error: 'Solo el capitán puede retirar el equipo' });
+
+  await pool.query(
+    'DELETE FROM torneo_equipos WHERE torneo_id = $1 AND equipo_id = $2',
+    [torneo_id, equipo_id]
+  );
+  res.json({ mensaje: 'Equipo retirado del torneo' });
+});
+
+module.exports = { listarTorneos, obtenerTorneo, crearTorneo, inscribirEquipo, desinscribirEquipo };

@@ -51,6 +51,11 @@ app.use('/api/upload',          require('./routes/upload.routes'));
 app.use('/api/mensajes',        require('./routes/mensajes.routes'));
 app.use('/api/admin',           require('./routes/admin.routes'));
 
+// Anuncios activos — ruta pública para usuarios autenticados
+const { anunciosActivos } = require('./controllers/admin.controller');
+const { verificarToken }  = require('./middleware/auth');
+app.get('/api/anuncios', verificarToken, anunciosActivos);
+
 // 404
 app.use((req, res) => res.status(404).json({ error: `Ruta ${req.method} ${req.path} no encontrada` }));
 

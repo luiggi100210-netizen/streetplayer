@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { COLORES_NIVEL } from '../../constants';
+import UploadFoto from '../../components/UploadFoto';
 
 const XP_NIVELES = {
   rookie: 0, amateur: 100, intermedio: 300,
@@ -75,18 +76,20 @@ export default function Perfil() {
   const [form,         setForm]      = useState({});
   const [guardando,    setGuardando] = useState(false);
   const [tab,          setTab]       = useState('historial');
+  const [xpLog,        setXpLog]     = useState([]);
 
   const esMio = yo?.id === id;
 
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
-      const [pRes, pubRes, histRes, repRes, medRes] = await Promise.allSettled([
+      const [pRes, pubRes, histRes, repRes, medRes, xpRes] = await Promise.allSettled([
         api.get(`/usuarios/${id}`),
         api.get(`/usuarios/${id}/publicaciones`),
         api.get(`/usuarios/${id}/historial`),
         api.get(`/usuarios/${id}/reputacion`),
         api.get(`/usuarios/${id}/medallas`),
+        api.get(`/usuarios/${id}/xp-log`),
       ]);
 
       if (pRes.status === 'fulfilled') {
@@ -105,6 +108,7 @@ export default function Perfil() {
       if (histRes.status === 'fulfilled') setHistorial(histRes.value.data);
       if (repRes.status  === 'fulfilled') setRep(repRes.value.data);
       if (medRes.status  === 'fulfilled') setMedallas(medRes.value.data || []);
+      if (xpRes.status   === 'fulfilled') setXpLog(xpRes.value.data || []);
 
       setCargando(false);
     };
@@ -471,7 +475,13 @@ export default function Perfil() {
                   ))}
                 </div>
               </div>
-              <div><label className="label">URL de foto</label><input value={form.foto_url} onChange={e => setForm(p => ({ ...p, foto_url: e.target.value }))} className="input" placeholder="https://..." /></div>
+              <UploadFoto
+                label="Foto de perfil"
+                value={form.foto_url}
+                onChange={url => setForm(p => ({ ...p, foto_url: url }))}
+                rounded
+                size={80}
+              />
               <button onClick={handleGuardar} disabled={guardando} className="btn-primary w-full">
                 {guardando ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
               </button>
@@ -484,6 +494,7 @@ export default function Perfil() {
               { key: 'historial',     label: '📋 Historial' },
               { key: 'reputacion',    label: '⭐ Reputación' },
               { key: 'publicaciones', label: '📝 Posts' },
+              ...(esMio ? [{ key: 'xplog', label: '⚡ XP Log' }] : []),
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${tab === key ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}>
@@ -647,6 +658,42 @@ export default function Perfil() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          )}
+          {/* ── XP LOG ── */}
+          {tab === 'xplog' && esMio && (
+            <div className="card p-0 overflow-hidden">
+              {xpLog.length === 0 ? (
+                <p className="text-center py-10 text-sp-muted text-sm">Sin movimientos de XP aún</p>
+              ) : (
+                <div className="divide-y divide-sp-border/40">
+                  {xpLog.map((entry, i) => {
+                    const positivo = entry.cantidad > 0;
+                    return (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                          background: positivo ? 'rgba(29,158,117,0.15)' : 'rgba(248,113,113,0.12)',
+                          border: `1.5px solid ${positivo ? '#1D9E7555' : '#f8717155'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 14,
+                        }}>
+                          {positivo ? '⬆' : '⬇'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm capitalize truncate">{entry.motivo || 'Sin descripción'}</p>
+                          <p className="text-sp-muted text-[10px]">
+                            {format(new Date(entry.fecha), "dd MMM yyyy · HH:mm", { locale: es })}
+                          </p>
+                        </div>
+                        <span className="font-impact text-lg shrink-0" style={{ color: positivo ? '#1D9E75' : '#f87171' }}>
+                          {positivo ? '+' : ''}{entry.cantidad} XP
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}

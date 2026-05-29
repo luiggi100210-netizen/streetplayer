@@ -4,11 +4,13 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import { COLORES_NIVEL } from '../constants';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
 
 export default function Buscar() {
   const { usuario } = useAuth();
+  const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation();
   const [q, setQ]               = useState('');
   const [deporte, setDeporte]   = useState('');
   const [ciudad, setCiudad]     = useState('');
@@ -24,11 +26,12 @@ export default function Buscar() {
       if (q)       params.set('q', q);
       if (deporte) params.set('deporte', deporte);
       if (ciudad)  params.set('ciudad', ciudad);
+      if (coords)  { params.set('lat', coords.lat); params.set('lng', coords.lng); }
       const { data } = await api.get(`/usuarios/buscar?${params}`);
       setRes(data);
     } catch {}
     setBuscando(false);
-  }, [q, deporte, ciudad]);
+  }, [q, deporte, ciudad, coords]);
 
   const handleKey = (e) => { if (e.key === 'Enter') buscar(); };
 
@@ -62,7 +65,19 @@ export default function Buscar() {
           </div>
           <div>
             <label className="label">Ciudad</label>
-            <input value={ciudad} onChange={e => setCiudad(e.target.value)} onKeyDown={handleKey} placeholder="Lima, Bogotá..." className="input" />
+            <div className="flex gap-2">
+              <input value={ciudad} onChange={e => setCiudad(e.target.value)} onKeyDown={handleKey} placeholder="Lima, Bogotá..." className="input flex-1" />
+              <button
+                type="button"
+                onClick={solicitarGeo}
+                disabled={geoLoading}
+                title="Usar mi ubicación"
+                className={`btn-ghost text-xs shrink-0 ${coords ? 'text-sp-green border-sp-green/40' : ''}`}
+              >
+                {geoLoading ? '...' : '📍'}
+              </button>
+            </div>
+            {coords && <p className="text-[10px] text-sp-green mt-1">Ubicación activa — buscando cerca de ti</p>}
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import UploadFoto from '../../components/UploadFoto';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo', 'otro'];
 const TIPOS    = [
@@ -168,10 +169,12 @@ export default function CrearEvento() {
             </div>
           </label>
 
-          <div>
-            <label className="label">URL de imagen (opcional)</label>
-            <input value={form.foto_url} onChange={e => set('foto_url', e.target.value)} className="input" placeholder="https://..." />
-          </div>
+          <UploadFoto
+            label="Imagen del evento (opcional)"
+            value={form.foto_url}
+            onChange={url => set('foto_url', url)}
+            size={80}
+          />
         </div>
 
         {error && (

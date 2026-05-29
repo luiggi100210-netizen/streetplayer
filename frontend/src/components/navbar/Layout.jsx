@@ -246,7 +246,7 @@ export default function Layout() {
 
       {/* Bottom nav móvil */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-sp-card border-t border-sp-border z-40">
-        <div className="grid grid-cols-8 h-14">
+        <div className="grid grid-cols-9 h-14">
           {NAV.map(({ to, label, icon }) => (
             <NavLink
               key={to}

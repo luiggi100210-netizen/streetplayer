@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { formatFechaCorta as formatFecha } from '../../utils/date';
 
@@ -17,6 +17,7 @@ const ESTADO_CFG = {
 const FORMATO_LABEL = { eliminacion: 'Eliminación', grupos: 'Grupos', liga: 'Liga' };
 
 function TarjetaTorneo({ torneo }) {
+  const navigate = useNavigate();
   const inscritos = parseInt(torneo.equipos_inscritos) || 0;
   const max       = torneo.max_equipos || 8;
   const pct       = Math.min((inscritos / max) * 100, 100);
@@ -24,11 +25,13 @@ function TarjetaTorneo({ torneo }) {
   const emoji     = DEPORTES_EMOJI[torneo.deporte] || '🏆';
 
   return (
-    <div style={{
-      background: '#111', border: '1px solid rgba(255,255,255,0.07)',
-      borderRadius: 12, overflow: 'hidden',
-      transition: 'transform .15s, border-color .2s, box-shadow .2s',
-    }}
+    <div
+      onClick={() => navigate(`/torneos/${torneo.id}`)}
+      style={{
+        background: '#111', border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
+        transition: 'transform .15s, border-color .2s, box-shadow .2s',
+      }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-2px)';
         e.currentTarget.style.borderColor = 'rgba(251,191,36,0.4)';
@@ -221,7 +224,7 @@ function FormularioTorneo({ onCerrar, onCreado }) {
 export default function Torneos() {
   const [torneos,  setTorneos]  = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '', estado: 'aprobado' });
+  const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '', estado: 'aprobado' }); // 'aprobado' = inscripciones abiertas
   const [formulario, setFormulario] = useState(false);
 
   const cargar = async () => {

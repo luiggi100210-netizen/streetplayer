@@ -192,4 +192,16 @@ const reportarUsuario = asyncHandler(async (req, res) => {
   res.status(201).json({ mensaje: 'Reporte enviado' });
 });
 
-module.exports = { obtenerPerfil, actualizarPerfil, seguir, buscarUsuarios, publicacionesUsuario, historialUsuario, reputacionUsuario, medallasUsuario, reportarUsuario };
+// GET /api/usuarios/:id/xp-log
+const xpLogUsuario = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await pool.query(
+    `SELECT cantidad, motivo, fecha FROM xp_log
+     WHERE usuario_id = $1
+     ORDER BY fecha DESC LIMIT 30`,
+    [id]
+  );
+  res.json(rows);
+});
+
+module.exports = { obtenerPerfil, actualizarPerfil, seguir, buscarUsuarios, publicacionesUsuario, historialUsuario, reputacionUsuario, medallasUsuario, reportarUsuario, xpLogUsuario };

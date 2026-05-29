@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { formatFechaEvento as formatFecha } from '../../utils/date';
+import { useGeolocation } from '../../hooks/useGeolocation';
 
 const DEPORTES = ['', 'futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃', ciclismo: '🚴', otro: '🎯' };
@@ -144,6 +145,7 @@ export default function Eventos() {
   const [eventos,  setEventos]  = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '', estado: 'abierto' });
+  const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation();
 
   useEffect(() => {
     const cargar = async () => {
@@ -153,13 +155,14 @@ export default function Eventos() {
         if (filtros.deporte) p.set('deporte', filtros.deporte);
         if (filtros.ciudad)  p.set('ciudad',  filtros.ciudad);
         if (filtros.estado)  p.set('estado',  filtros.estado);
+        if (coords)          { p.set('lat', coords.lat); p.set('lng', coords.lng); }
         const { data } = await api.get(`/eventos?${p}`);
         setEventos(data);
       } catch {}
       setCargando(false);
     };
     cargar();
-  }, [filtros]);
+  }, [filtros, coords]);
 
   const setF = (k, v) => setFiltros(p => ({ ...p, [k]: v }));
 
@@ -225,6 +228,20 @@ export default function Eventos() {
             </div>
             <input value={filtros.ciudad} onChange={e => setF('ciudad', e.target.value)}
               placeholder="Ciudad..." className="input text-sm flex-1 min-w-0" style={{ maxWidth: 120 }} />
+            <button
+              onClick={solicitarGeo}
+              disabled={geoLoading}
+              title="Cerca de mí"
+              style={{
+                fontSize: 11, fontWeight: 700, padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
+                border: `1px solid ${coords ? '#1D9E75' : 'rgba(255,255,255,0.08)'}`,
+                background: coords ? '#1D9E7522' : 'transparent',
+                color: coords ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                transition: 'all .2s', whiteSpace: 'nowrap',
+              }}
+            >
+              {geoLoading ? '...' : coords ? '📍 Cerca' : '📍 Cerca de mí'}
+            </button>
           </div>
         </div>
       </div>

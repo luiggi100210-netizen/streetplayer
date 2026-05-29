@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import UploadFoto from '../../components/UploadFoto';
 
 export default function EquipoDetalle() {
   const { id }           = useParams();
@@ -242,10 +243,13 @@ export default function EquipoDetalle() {
               <input value={formEdit.ciudad} onChange={e => setFormEdit(p => ({ ...p, ciudad: e.target.value }))} className="input w-full" />
             </div>
           </div>
-          <div>
-            <label className="label">URL del escudo</label>
-            <input value={formEdit.escudo_url} onChange={e => setFormEdit(p => ({ ...p, escudo_url: e.target.value }))} className="input w-full" placeholder="https://..." />
-          </div>
+          <UploadFoto
+            label="Escudo del equipo"
+            value={formEdit.escudo_url}
+            onChange={url => setFormEdit(p => ({ ...p, escudo_url: url }))}
+            rounded
+            size={80}
+          />
           <div className="flex gap-3">
             <button onClick={guardarEdicion} disabled={guardando} className="btn-primary flex-1 text-sm">
               {guardando ? 'GUARDANDO...' : 'GUARDAR'}

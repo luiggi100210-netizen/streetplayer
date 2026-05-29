@@ -2,7 +2,7 @@ const router          = require('express').Router();
 const { body, param } = require('express-validator');
 const { verificarToken } = require('../middleware/auth');
 const validate        = require('../middleware/validate');
-const { listarTorneos, obtenerTorneo, crearTorneo } = require('../controllers/torneos.controller');
+const { listarTorneos, obtenerTorneo, crearTorneo, inscribirEquipo, desinscribirEquipo } = require('../controllers/torneos.controller');
 
 const validarId = param('id').isUUID().withMessage('ID de torneo inválido');
 
@@ -19,8 +19,12 @@ const validarCrear = [
   body('longitud').optional().isFloat({ min: -180, max: 180 }).withMessage('longitud inválida'),
 ];
 
-router.get('/',    verificarToken, listarTorneos);
-router.post('/',   verificarToken, validarCrear, validate, crearTorneo);
-router.get('/:id', verificarToken, validarId,    validate, obtenerTorneo);
+router.get('/',             verificarToken, listarTorneos);
+router.post('/',            verificarToken, validarCrear, validate, crearTorneo);
+router.get('/:id',          verificarToken, validarId,   validate, obtenerTorneo);
+router.post('/:id/inscribir',   verificarToken, validarId, validate,
+  [body('equipo_id').isUUID().withMessage('equipo_id inválido')], validate, inscribirEquipo);
+router.delete('/:id/inscribir', verificarToken, validarId, validate,
+  [body('equipo_id').isUUID().withMessage('equipo_id inválido')], validate, desinscribirEquipo);
 
 module.exports = router;

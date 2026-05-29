@@ -107,13 +107,26 @@ const listarTorneosAdmin = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/torneos/:id/aprobar
 const aprobarTorneo = asyncHandler(async (req, res) => {
-  await pool.query('UPDATE torneos SET aprobado = true, estado = $1 WHERE id = $2', ['abierto', req.params.id]);
+  await pool.query('UPDATE torneos SET aprobado = true, estado = $1 WHERE id = $2', ['aprobado', req.params.id]);
   res.json({ mensaje: 'Torneo aprobado' });
 });
 
 // GET /api/admin/anuncios
 const listarAnuncios = asyncHandler(async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM anuncios ORDER BY fecha_creacion DESC');
+  res.json(rows);
+});
+
+// GET /api/anuncios — anuncios activos para usuarios autenticados
+const anunciosActivos = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, titulo, imagen_url, url_destino
+     FROM anuncios
+     WHERE activo = true
+       AND fecha_inicio <= CURRENT_DATE
+       AND fecha_fin    >= CURRENT_DATE
+     ORDER BY RANDOM() LIMIT 3`
+  );
   res.json(rows);
 });
 
@@ -128,4 +141,4 @@ const crearAnuncio = asyncHandler(async (req, res) => {
   res.status(201).json(rows[0]);
 });
 
-module.exports = { dashboard, listarUsuarios, cambiarEstadoUsuario, listarReportes, resolverReporte, listarTorneosAdmin, aprobarTorneo, listarAnuncios, crearAnuncio };
+module.exports = { dashboard, listarUsuarios, cambiarEstadoUsuario, listarReportes, resolverReporte, listarTorneosAdmin, aprobarTorneo, listarAnuncios, crearAnuncio, anunciosActivos };

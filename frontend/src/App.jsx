@@ -12,7 +12,8 @@ import EventoDetalle from './pages/events/EventoDetalle';
 import CrearEvento   from './pages/events/CrearEvento';
 import Perfil        from './pages/profile/Perfil';
 import Ranking       from './pages/ranking/Ranking';
-import Torneos       from './pages/tournaments/Torneos';
+import Torneos        from './pages/tournaments/Torneos';
+import TorneoDetalle  from './pages/tournaments/TorneoDetalle';
 import Calificaciones from './pages/Calificaciones';
 import Buscar         from './pages/Buscar';
 import Equipos        from './pages/teams/Equipos';
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="mi-perfil"      element={<MiPerfil />} />
         <Route path="ranking"        element={<Ranking />} />
         <Route path="torneos"        element={<Torneos />} />
+        <Route path="torneos/:id"    element={<TorneoDetalle />} />
         <Route path="calificaciones" element={<Calificaciones />} />
         <Route path="buscar"         element={<Buscar />} />
         <Route path="equipos"        element={<Equipos />} />

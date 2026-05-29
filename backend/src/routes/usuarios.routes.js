@@ -5,7 +5,7 @@ const validate        = require('../middleware/validate');
 const {
   obtenerPerfil, actualizarPerfil, seguir, buscarUsuarios,
   publicacionesUsuario, historialUsuario, reputacionUsuario,
-  medallasUsuario, reportarUsuario,
+  medallasUsuario, reportarUsuario, xpLogUsuario,
 } = require('../controllers/usuarios.controller');
 
 const validarId = param('id').isUUID().withMessage('ID de usuario inválido');
@@ -18,7 +18,7 @@ const validarPerfil = [
   body('deportes').optional().isArray().withMessage('deportes debe ser un array'),
   body('posicion').optional().trim().isLength({ max: 30 }).withMessage('posicion: máximo 30 caracteres'),
   body('pie_dominante').optional().isIn(['derecho','izquierdo','ambos']).withMessage('pie_dominante inválido'),
-  body('foto_url').optional().isURL().withMessage('foto_url debe ser una URL válida'),
+  body('foto_url').optional().trim().isLength({ max: 500 }).withMessage('foto_url demasiado larga'),
 ];
 
 const validarBusqueda = [
@@ -34,6 +34,7 @@ router.get('/:id/publicaciones',   verificarToken, validarId,         validate, 
 router.get('/:id/historial',       verificarToken, validarId,         validate, historialUsuario);
 router.get('/:id/reputacion',      verificarToken, validarId,         validate, reputacionUsuario);
 router.get('/:id/medallas',        verificarToken, validarId,         validate, medallasUsuario);
+router.get('/:id/xp-log',          verificarToken, validarId,         validate, xpLogUsuario);
 router.post('/:id/reportar',
   verificarToken, validarId,
   [
