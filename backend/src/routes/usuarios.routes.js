@@ -44,4 +44,13 @@ router.post('/:id/reportar',
   validate, reportarUsuario
 );
 
+// Solicitud de privacidad (GDPR) — usuario autenticado
+const { solicitarPrivacidad } = require('../controllers/admin.extras.controller');
+router.post('/privacidad/solicitar',
+  verificarToken,
+  [body('tipo').isIn(['exportar_datos','eliminar_cuenta','rectificar_datos','portabilidad','oposicion_tratamiento']),
+   body('motivo').optional().trim().isLength({ max: 500 })],
+  validate, solicitarPrivacidad
+);
+
 module.exports = router;

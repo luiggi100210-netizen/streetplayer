@@ -16,6 +16,7 @@ const SQL_FILES = [
   'torneo_full_migration.sql',
   'retos_full_migration.sql',
   'publicidad_migration.sql',
+  'admin_full_migration.sql',
 ];
 
 async function init() {

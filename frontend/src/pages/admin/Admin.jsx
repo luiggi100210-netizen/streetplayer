@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import AdminLogin from './AdminLogin';
+import { Analytics, MapaUsuarios } from './AdminAnalytics';
+import { Configuracion, Medallas, Sanciones, Finanzas, Notificaciones } from './AdminConfig';
+import { AuditLog, Privacidad } from './AdminAuditoria';
 
 function adminApi(token) {
   return axios.create({ baseURL: '/api/admin', headers: { Authorization: `Bearer ${token}` } });
@@ -823,14 +826,23 @@ function GestionarSolicitud({ solicitud, onGuardar, onCerrar }) {
 
 // ─── Panel principal ──────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'dashboard',  label: '📊 Dashboard'  },
-  { id: 'usuarios',   label: '👥 Usuarios'   },
-  { id: 'torneos',    label: '🏆 Torneos'    },
-  { id: 'equipos',    label: '🛡️ Equipos'    },
-  { id: 'eventos',    label: '🗓️ Eventos'    },
-  { id: 'reportes',   label: '🚨 Reportes'   },
-  { id: 'anuncios',   label: '📢 Anuncios'   },
-  { id: 'publicidad', label: '💼 Publicidad' },
+  { id: 'dashboard',     label: '📊 Dashboard',     group: 'General' },
+  { id: 'analytics',     label: '📈 Analytics',     group: 'General' },
+  { id: 'mapa',          label: '🗺️ Mapa usuarios',  group: 'General' },
+  { id: 'finanzas',      label: '💰 Finanzas',       group: 'General' },
+  { id: 'usuarios',      label: '👥 Usuarios',       group: 'Gestión' },
+  { id: 'torneos',       label: '🏆 Torneos',        group: 'Gestión' },
+  { id: 'equipos',       label: '🛡️ Equipos',        group: 'Gestión' },
+  { id: 'eventos',       label: '🗓️ Eventos',        group: 'Gestión' },
+  { id: 'reportes',      label: '🚨 Reportes',       group: 'Gestión' },
+  { id: 'sanciones',     label: '🔒 Sanciones',      group: 'Gestión' },
+  { id: 'medallas',      label: '🏅 Medallas',       group: 'Gestión' },
+  { id: 'notificaciones',label: '📣 Notificaciones', group: 'Gestión' },
+  { id: 'anuncios',      label: '📢 Anuncios',       group: 'Monetización' },
+  { id: 'publicidad',    label: '💼 Publicidad',     group: 'Monetización' },
+  { id: 'config',        label: '⚙️ Configuración',  group: 'Sistema' },
+  { id: 'audit',         label: '📋 Auditoría',      group: 'Sistema' },
+  { id: 'privacidad',    label: '🔐 Privacidad',     group: 'Sistema' },
 ];
 
 function Panel({ token, admin, onLogout }) {
@@ -844,11 +856,16 @@ function Panel({ token, admin, onLogout }) {
           <p style={{ fontFamily: 'Impact, sans-serif', fontSize: 18, color: '#00e676', letterSpacing: 3 }}>STREETPLAYER</p>
           <p style={{ color: '#64748b', fontSize: 10, marginTop: 2, textTransform: 'uppercase', letterSpacing: 2 }}>Admin Panel</p>
         </div>
-        <nav style={{ flex: 1, padding: '12px 0' }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 20px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? '#e2e8f0' : '#64748b', borderLeft: tab === t.id ? '3px solid #7c3aed' : '3px solid transparent', background: tab === t.id ? '#7c3aed11' : 'transparent', transition: 'all 0.15s' }}>
-              {t.label}
-            </button>
+        <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+          {['General','Gestión','Monetización','Sistema'].map(group => (
+            <div key={group}>
+              <p style={{ color: '#334155', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, padding: '10px 20px 4px' }}>{group}</p>
+              {TABS.filter(t => t.group === group).map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 20px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? '#e2e8f0' : '#64748b', borderLeft: tab === t.id ? '3px solid #7c3aed' : '3px solid transparent', background: tab === t.id ? '#7c3aed11' : 'transparent', transition: 'all 0.15s' }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div style={{ padding: '16px 20px', borderTop: '1px solid #1e1e2e' }}>
@@ -861,14 +878,23 @@ function Panel({ token, admin, onLogout }) {
         <h1 style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 700, marginBottom: 24 }}>
           {TABS.find(t => t.id === tab)?.label}
         </h1>
-        {tab === 'dashboard'  && <Dashboard  api={api} />}
-        {tab === 'usuarios'   && <Usuarios   api={api} />}
-        {tab === 'torneos'    && <Torneos    api={api} />}
-        {tab === 'equipos'    && <Equipos    api={api} />}
-        {tab === 'eventos'    && <Eventos    api={api} />}
-        {tab === 'reportes'   && <Reportes   api={api} />}
-        {tab === 'anuncios'   && <Anuncios   api={api} />}
-        {tab === 'publicidad' && <Publicidad api={api} />}
+        {tab === 'dashboard'      && <Dashboard      api={api} />}
+        {tab === 'analytics'      && <Analytics      api={api} />}
+        {tab === 'mapa'           && <MapaUsuarios   api={api} />}
+        {tab === 'finanzas'       && <Finanzas       api={api} />}
+        {tab === 'usuarios'       && <Usuarios       api={api} />}
+        {tab === 'torneos'        && <Torneos        api={api} />}
+        {tab === 'equipos'        && <Equipos        api={api} />}
+        {tab === 'eventos'        && <Eventos        api={api} />}
+        {tab === 'reportes'       && <Reportes       api={api} />}
+        {tab === 'sanciones'      && <Sanciones      api={api} />}
+        {tab === 'medallas'       && <Medallas       api={api} />}
+        {tab === 'notificaciones' && <Notificaciones api={api} />}
+        {tab === 'anuncios'       && <Anuncios       api={api} />}
+        {tab === 'publicidad'     && <Publicidad     api={api} />}
+        {tab === 'config'         && <Configuracion  api={api} />}
+        {tab === 'audit'          && <AuditLog       api={api} />}
+        {tab === 'privacidad'     && <Privacidad     api={api} />}
       </main>
     </div>
   );

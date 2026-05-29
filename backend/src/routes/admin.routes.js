@@ -3,6 +3,7 @@ const { body, param } = require('express-validator');
 const { verificarAdmin } = require('../middleware/auth');
 const validate        = require('../middleware/validate');
 const a               = require('../controllers/admin.controller');
+const x               = require('../controllers/admin.extras.controller');
 
 const validarId = (campo = 'id') => param(campo).isUUID().withMessage(`${campo} inválido`);
 
@@ -46,5 +47,41 @@ router.get('/usuarios/:id',                verificarAdmin, validarId(), validate
 router.get('/publicidad/solicitudes',      verificarAdmin, a.listarSolicitudes);
 router.put('/publicidad/solicitudes/:id',  verificarAdmin, validarId(), validate, a.actualizarSolicitud);
 router.get('/publicidad/tarifas',          verificarAdmin, a.listarTarifas);
+
+// Analytics, mapa, finanzas
+router.get('/analytics',                   verificarAdmin, x.getAnalytics);
+router.get('/mapa',                        verificarAdmin, x.getMapaUsuarios);
+router.get('/finanzas',                    verificarAdmin, x.getFinanzas);
+
+// Sanciones
+router.get('/sanciones',                   verificarAdmin, x.listarSanciones);
+router.delete('/sanciones/:id',            verificarAdmin, validarId(), validate, x.levantarSancion);
+
+// Medallas
+router.get('/medallas',                    verificarAdmin, x.listarMedallasAdmin);
+router.post('/medallas',                   verificarAdmin,
+  [body('nombre').trim().notEmpty(), body('icono').optional().trim(), body('tipo').optional().isIn(['logro','habilidad','participacion','especial'])],
+  validate, x.crearMedalla);
+router.post('/medallas/:id/otorgar',       verificarAdmin,
+  [validarId(), body('usuario_id').isUUID()], validate, x.otorgarMedalla);
+
+// Notificaciones masivas
+router.post('/notificaciones/masiva',      verificarAdmin,
+  [body('mensaje').trim().notEmpty().isLength({ max: 300 })], validate, x.enviarNotifMasiva);
+
+// Configuración
+router.get('/config',                      verificarAdmin, x.getConfig);
+router.put('/config/:clave',               verificarAdmin,
+  [body('valor').notEmpty()], validate, x.updateConfig);
+
+// Audit log
+router.get('/audit-log',                   verificarAdmin, x.getAuditLog);
+
+// Privacidad / GDPR
+router.get('/privacidad/solicitudes',      verificarAdmin, x.listarSolicitudesPrivacidad);
+router.put('/privacidad/solicitudes/:id',  verificarAdmin, validarId(), validate, x.actualizarSolicitudPrivacidad);
+router.get('/privacidad/exportar/:userId', verificarAdmin, [param('userId').isUUID()], validate, x.exportarDatosUsuario);
+router.delete('/privacidad/usuarios/:userId', verificarAdmin,
+  [param('userId').isUUID(), body('motivo').optional().trim()], validate, x.eliminarCuentaUsuario);
 
 module.exports = router;
