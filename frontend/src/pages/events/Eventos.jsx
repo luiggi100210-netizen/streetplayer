@@ -224,7 +224,7 @@ export default function Eventos() {
               ))}
             </div>
             <input value={filtros.ciudad} onChange={e => setF('ciudad', e.target.value)}
-              placeholder="Ciudad..." className="input text-sm" style={{ width: 120 }} />
+              placeholder="Ciudad..." className="input text-sm flex-1 min-w-0" style={{ maxWidth: 120 }} />
           </div>
         </div>
       </div>

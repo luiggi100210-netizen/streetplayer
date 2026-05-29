@@ -294,7 +294,7 @@ export default function Mensajes() {
         {/* Header del chat */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-sp-border shrink-0 bg-sp-bg/80 backdrop-blur">
           <button onClick={() => setVistaMovil('lista')}
-            className="md:hidden p-1.5 rounded-lg hover:bg-white/10 text-sp-muted hover:text-white transition-colors">
+            className="md:hidden p-2.5 rounded-lg hover:bg-white/10 text-sp-muted hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -406,7 +406,7 @@ export default function Mensajes() {
 
   // ── Layout responsivo ────────────────────────────────────
   return (
-    <div className="max-w-6xl mx-auto h-[calc(100vh-56px)] flex">
+    <div className="max-w-6xl mx-auto h-[calc(100vh-112px)] md:h-[calc(100vh-56px)] flex">
       {/* Lista (siempre visible en desktop, condicional en móvil) */}
       <div className={`${vistaMovil === 'chat' ? 'hidden' : 'flex'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-sp-border shrink-0`}>
         {PanelLista()}

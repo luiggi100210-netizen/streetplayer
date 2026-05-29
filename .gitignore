@@ -4,3 +4,5 @@ dist/
 .env.local
 uploads/
 *.log
+*firebase-adminsdk*.json
+*serviceAccount*.json

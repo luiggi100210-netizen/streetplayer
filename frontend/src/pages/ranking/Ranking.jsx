@@ -98,7 +98,8 @@ export default function Ranking() {
             onChange={e => setFiltros(p => ({ ...p, ciudad: e.target.value }))}
             placeholder="Ciudad..."
             className="input text-sm"
-            style={{ width: 130 }}
+            className="input text-sm flex-1 min-w-0"
+          style={{ maxWidth: 130 }}
           />
         </div>
       </div>
@@ -167,9 +168,11 @@ export default function Ranking() {
 
       {/* ── TABLA RANKING ── */}
       <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
         {/* Header tabla */}
         <div style={{
           display: 'grid', gridTemplateColumns: '48px 1fr 90px 70px 70px 80px',
+          minWidth: 440,
           padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)',
           background: '#0a0a0a',
         }}>
@@ -203,6 +206,7 @@ export default function Ranking() {
                 <Link key={item.usuario_id} to={`/perfil/${item.usuario_id}`}
                   style={{
                     display: 'grid', gridTemplateColumns: '48px 1fr 90px 70px 70px 80px',
+                    minWidth: 440,
                     padding: '10px 16px', textDecoration: 'none', alignItems: 'center',
                     borderBottom: '1px solid rgba(255,255,255,0.04)',
                     background: esTuyo ? 'rgba(29,158,117,0.06)' : 'transparent',
@@ -271,6 +275,7 @@ export default function Ranking() {
             })}
           </div>
         )}
+        </div>{/* /overflow-x-auto */}
       </div>
 
       <style>{`

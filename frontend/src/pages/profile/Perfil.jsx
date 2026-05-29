@@ -423,7 +423,8 @@ export default function Perfil() {
               {historial.length === 0 ? (
                 <p className="text-center py-10 text-sp-muted text-sm">Sin partidos registrados</p>
               ) : (
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[380px]">
                   <thead>
                     <tr className="border-b border-sp-border bg-sp-bg">
                       <th className="th w-10 text-center">Res.</th>
@@ -475,6 +476,7 @@ export default function Perfil() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           )}
