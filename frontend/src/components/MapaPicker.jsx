@@ -1,6 +1,6 @@
 import 'leaflet/dist/leaflet.css';
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { useState, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Fix default marker icons broken by Webpack/Vite
@@ -11,13 +11,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Componente interno que captura clicks en el mapa
 function ClickHandler({ onChange }) {
   useMapEvents({
     click(e) {
       onChange({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
+  return null;
+}
+
+function FlyTo({ coords }) {
+  const map = useMap();
+  if (coords) map.flyTo([coords.lat, coords.lng], 16, { duration: 1.2 });
   return null;
 }
 
@@ -31,12 +36,30 @@ function ClickHandler({ onChange }) {
  *   readOnly  bool    (default false)
  */
 export default function MapaPicker({ value, onChange, height = '280px', readOnly = false }) {
+  const [flyTo, setFlyTo] = useState(null);
+  const [locating, setLocating] = useState(false);
+
   const centro = value
     ? [value.lat, value.lng]
     : [-12.0464, -77.0428]; // Lima, Perú por defecto
 
+  function usarUbicacionActual() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        onChange(coords);
+        setFlyTo(coords);
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
   return (
-    <div className="rounded-xl overflow-hidden border border-[#1e1e2e]" style={{ height }}>
+    <div className="rounded-xl overflow-hidden border border-[#1e1e2e] relative" style={{ height }}>
       <MapContainer
         center={centro}
         zoom={value ? 16 : 13}
@@ -51,8 +74,38 @@ export default function MapaPicker({ value, onChange, height = '280px', readOnly
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
         {!readOnly && onChange && <ClickHandler onChange={onChange} />}
+        {flyTo && <FlyTo coords={flyTo} />}
         {value && <Marker position={[value.lat, value.lng]} />}
       </MapContainer>
+
+      {!readOnly && onChange && (
+        <button
+          type="button"
+          onClick={usarUbicacionActual}
+          disabled={locating}
+          title="Usar mi ubicación actual"
+          style={{
+            position: 'absolute',
+            bottom: 12,
+            right: 12,
+            zIndex: 1000,
+            background: '#7c3aed',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '7px 12px',
+            cursor: locating ? 'wait' : 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+          }}
+        >
+          {locating ? '⏳' : '📍'} {locating ? 'Obteniendo...' : 'Mi ubicación'}
+        </button>
+      )}
     </div>
   );
 }
