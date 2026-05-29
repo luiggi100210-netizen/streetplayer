@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./config/env');   // fail fast if required vars are missing
 const http      = require('http');
 const { Server } = require('socket.io');
 const { verify } = require('jsonwebtoken');
