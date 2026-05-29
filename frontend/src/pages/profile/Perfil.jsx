@@ -290,8 +290,17 @@ export default function Perfil() {
             </div>
           </div>
 
-          {/* Botones móvil */}
+          {/* Botones + XP móvil */}
           <div className="flex gap-2 mt-3 sm:hidden">
+            {/* XP compacto */}
+            <div style={{
+              background: '#0a0a0a', border: `1px solid ${colorNivel}33`,
+              borderRadius: 10, padding: '8px 14px', textAlign: 'center', flexShrink: 0,
+            }}>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-sp-muted leading-none mb-0.5">XP</p>
+              <p className="font-impact leading-none" style={{ fontSize: 22, color: colorNivel }}>{xp.toLocaleString()}</p>
+              {rating && <p className="text-[9px] font-bold mt-0.5" style={{ color: '#fbbf24' }}>★{rating}</p>}
+            </div>
             {esMio ? (
               <button onClick={() => setEditando(p => !p)} className="btn-ghost text-xs flex-1">
                 {editando ? 'Cancelar' : '✏️ Editar perfil'}
