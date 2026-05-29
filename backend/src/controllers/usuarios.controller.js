@@ -126,7 +126,7 @@ const historialUsuario = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { rows } = await pool.query(
     `SELECT
-      e.id, e.titulo, e.fecha, e.tipo, e.deporte,
+      e.id, e.titulo, e.fecha_evento AS fecha, e.tipo, e.deporte,
       ep.resultado, ep.asistio,
       COALESCE(js.goles, 0)       AS goles,
       COALESCE(js.asistencias, 0) AS asistencias,
@@ -138,7 +138,7 @@ const historialUsuario = asyncHandler(async (req, res) => {
      WHERE ep.usuario_id = $1
        AND e.estado = 'finalizado'
        AND ep.asistio = TRUE
-     ORDER BY e.fecha DESC
+     ORDER BY e.fecha_evento DESC
      LIMIT 20`,
     [id]
   );

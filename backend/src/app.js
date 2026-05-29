@@ -35,6 +35,8 @@ const authLimiter = rateLimit({
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
+// /auth/me no lleva rate limit — es verificación de sesión, no login
+app.use('/api/auth/me',         require('./routes/auth.routes'));
 app.use('/api/auth',            authLimiter, require('./routes/auth.routes'));
 app.use('/api/usuarios',        require('./routes/usuarios.routes'));
 app.use('/api/eventos',         require('./routes/eventos.routes'));
