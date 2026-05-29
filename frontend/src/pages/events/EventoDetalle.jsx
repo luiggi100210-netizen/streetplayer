@@ -106,6 +106,199 @@ function ModalFinalizar({ evento, onClose, onFinalizado }) {
   );
 }
 
+function ModalConfirmarAsistencia({ equipo, onConfirmar, onCancelar, cargando }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-sp-card border border-sp-border rounded-2xl w-full max-w-sm p-6 space-y-4">
+        <h2 className="font-impact text-xl text-center">CONFIRMAR ASISTENCIA</h2>
+        <div className="text-center space-y-3">
+          <div className="text-5xl">{equipo === 'A' ? '🟢' : '🔵'}</div>
+          <p className="text-white font-medium">
+            Te unes al <span className={`font-bold ${equipo === 'A' ? 'text-sp-green' : 'text-blue-400'}`}>
+              {equipo === 'A' ? 'Equipo A' : 'Equipo B'}
+            </span>
+          </p>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-left">
+            <p className="text-red-400 text-sm font-semibold mb-1">⚠️ Aviso importante</p>
+            <p className="text-sp-muted text-xs leading-relaxed">
+              Si confirmas y <span className="text-white font-medium">no asistes</span> el día del evento,
+              recibirás una <span className="text-red-400 font-semibold">sanción</span> y
+              perderás <span className="text-red-400 font-semibold">15 XP</span>.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3 pt-1">
+          <button onClick={onCancelar} disabled={cargando} className="btn-ghost flex-1">Cancelar</button>
+          <button onClick={onConfirmar} disabled={cargando} className="btn-primary flex-1">
+            {cargando ? '...' : '¡Voy a jugar!'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlotJugador({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
+  const esMio = jugador?.id === usuarioId;
+  const colorEquipo = equipo === 'A' ? 'text-sp-green' : 'text-blue-400';
+  const borderEquipo = equipo === 'A' ? 'border-sp-green/50 bg-sp-green/10' : 'border-blue-400/50 bg-blue-400/10';
+
+  return (
+    <button
+      onClick={clickable ? onClickSlot : undefined}
+      disabled={!clickable && !jugador}
+      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all text-left ${
+        esMio
+          ? `border ${borderEquipo}`
+          : clickable
+            ? 'border border-dashed border-sp-border hover:border-white/40 hover:bg-white/5 cursor-pointer'
+            : 'border border-transparent cursor-default'
+      }`}
+    >
+      {jugador ? (
+        <>
+          {jugador.foto_url ? (
+            <img src={jugador.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt={jugador.username} />
+          ) : (
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${esMio ? `bg-sp-green/30 ${colorEquipo}` : 'bg-white/10 text-white'}`}>
+              {jugador.username?.[0]?.toUpperCase()}
+            </div>
+          )}
+          <span className={`text-xs font-medium truncate ${esMio ? colorEquipo : 'text-white/90'}`}>
+            {jugador.nombre || jugador.username}
+          </span>
+          {esMio && <span className={`text-[10px] ml-auto shrink-0 font-bold ${colorEquipo}`}>Tú</span>}
+        </>
+      ) : (
+        <>
+          <div className="w-7 h-7 rounded-full border border-dashed border-white/20 flex items-center justify-center shrink-0">
+            {clickable && <span className="text-white/30 text-base leading-none">+</span>}
+          </div>
+          <span className={`text-xs ${clickable ? 'text-white/40' : 'text-white/15'}`}>
+            {clickable ? 'Unirme aquí' : 'Libre'}
+          </span>
+        </>
+      )}
+    </button>
+  );
+}
+
+function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
+  const [modalEquipo, setModalEquipo] = useState(null);
+  const formato = evento.formato || 5;
+  const participantes = evento.participantes || [];
+  const teamA = participantes.filter(p => p.equipo === 'A');
+  const teamB = participantes.filter(p => p.equipo === 'B');
+  const slotsA = Array.from({ length: formato }, (_, i) => teamA[i] || null);
+  const slotsB = Array.from({ length: formato }, (_, i) => teamB[i] || null);
+
+  const inscripto  = participantes.some(p => p.id === usuario?.id);
+  const esCreador  = evento.creador_id === usuario?.id;
+  const puedeUnirse = evento.estado === 'abierto' && !inscripto && !esCreador;
+  const puedeSalir  = evento.estado === 'abierto' && inscripto && !esCreador;
+
+  const confirmar = async () => {
+    await onUnirse(modalEquipo);
+    setModalEquipo(null);
+  };
+
+  const inscritos = parseInt(evento.cupos_ocupados) || 0;
+  const total     = evento.cupos_total || 10;
+
+  return (
+    <>
+      {modalEquipo && (
+        <ModalConfirmarAsistencia
+          equipo={modalEquipo}
+          onConfirmar={confirmar}
+          onCancelar={() => setModalEquipo(null)}
+          cargando={accionando}
+        />
+      )}
+
+      <div className="card overflow-hidden p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-sp-border">
+          <p className="text-sp-muted text-xs uppercase tracking-wider font-semibold">
+            Cancha — {formato}v{formato}
+          </p>
+          <p className={`text-xs font-bold ${inscritos >= total ? 'text-red-400' : 'text-sp-green'}`}>
+            {inscritos}/{total} jugadores
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 bg-sp-border">
+          <div
+            className="h-1 transition-all"
+            style={{
+              width: `${Math.min((inscritos / total) * 100, 100)}%`,
+              background: inscritos >= total ? '#f87171' : inscritos / total >= 0.7 ? '#fbbf24' : '#1D9E75',
+            }}
+          />
+        </div>
+
+        {/* Pitch */}
+        <div className="flex divide-x divide-dashed divide-sp-border/50">
+          {/* Equipo A */}
+          <div className="flex-1 p-3 space-y-1.5">
+            <p className="text-[10px] text-sp-green uppercase font-bold tracking-wider text-center mb-2">
+              Equipo A
+            </p>
+            {slotsA.map((j, i) => (
+              <SlotJugador
+                key={i}
+                jugador={j}
+                equipo="A"
+                clickable={puedeUnirse && !j}
+                onClickSlot={() => setModalEquipo('A')}
+                usuarioId={usuario?.id}
+              />
+            ))}
+          </div>
+
+          {/* Equipo B */}
+          <div className="flex-1 p-3 space-y-1.5">
+            <p className="text-[10px] text-blue-400 uppercase font-bold tracking-wider text-center mb-2">
+              Equipo B
+            </p>
+            {slotsB.map((j, i) => (
+              <SlotJugador
+                key={i}
+                jugador={j}
+                equipo="B"
+                clickable={puedeUnirse && !j}
+                onClickSlot={() => setModalEquipo('B')}
+                usuarioId={usuario?.id}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Salir */}
+        {puedeSalir && (
+          <div className="px-4 py-3 border-t border-sp-border">
+            <button
+              onClick={onSalir}
+              disabled={accionando}
+              className="w-full py-2 rounded-xl border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
+            >
+              {accionando ? '...' : 'Salir del evento'}
+            </button>
+          </div>
+        )}
+
+        {/* Lleno */}
+        {inscritos >= total && !inscripto && !esCreador && (
+          <div className="px-4 py-3 border-t border-sp-border text-center">
+            <p className="text-sp-muted text-xs font-semibold uppercase tracking-wide">Evento lleno</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 export default function EventoDetalle() {
   const { id } = useParams();
   const { usuario } = useAuth();
@@ -129,24 +322,28 @@ export default function EventoDetalle() {
 
   useEffect(() => { cargar(); }, [id]);
 
-  const inscripto    = evento?.yo_inscrito || evento?.participantes?.some(p => p.id === usuario?.id);
   const esCreador    = evento?.creador_id === usuario?.id;
-  const lleno        = parseInt(evento?.cupos_ocupados) >= (evento?.cupos_total || 10);
-  const puedeUnirse  = evento?.estado === 'abierto' && !inscripto && !esCreador && !lleno;
-  const puedeSalir   = evento?.estado === 'abierto' && inscripto && !esCreador;
 
-  const handleInscripcion = async () => {
+  const handleUnirse = async (equipo) => {
     setAccionando(true);
     setError('');
     try {
-      if (inscripto) {
-        await api.delete(`/eventos/${id}/salir`);
-      } else {
-        await api.post(`/eventos/${id}/unirse`, {});
-      }
+      await api.post(`/eventos/${id}/unirse`, { equipo });
       await cargar();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al procesar');
+      setError(err.response?.data?.error || 'Error al unirse');
+    }
+    setAccionando(false);
+  };
+
+  const handleSalir = async () => {
+    setAccionando(true);
+    setError('');
+    try {
+      await api.delete(`/eventos/${id}/salir`);
+      await cargar();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al salir');
     }
     setAccionando(false);
   };
@@ -167,9 +364,6 @@ export default function EventoDetalle() {
 
   if (!evento) return null;
 
-  const inscritos  = parseInt(evento.cupos_ocupados) || 0;
-  const total      = evento.cupos_total || 10;
-  const porcentaje = Math.min((inscritos / total) * 100, 100);
   const fechaEvento = evento.fecha_evento ? new Date(evento.fecha_evento) : null;
   const tipoColor  = TIPO_COLOR[evento.tipo] ?? '#888';
 
@@ -287,19 +481,14 @@ export default function EventoDetalle() {
           </div>
         )}
 
-        {/* Cupos */}
-        <div className="card">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-sp-muted">Jugadores inscritos</span>
-            <span className={inscritos >= total ? 'text-red-400 font-bold' : 'text-sp-green font-bold'}>{inscritos}/{total}</span>
-          </div>
-          <div className="w-full bg-sp-border rounded-full h-1.5">
-            <div
-              className="h-1.5 rounded-full transition-all"
-              style={{ width: `${porcentaje}%`, background: porcentaje >= 100 ? '#f87171' : porcentaje >= 70 ? '#fbbf24' : '#1D9E75' }}
-            />
-          </div>
-        </div>
+        {/* Cancha slots */}
+        <CanchaSlots
+          evento={evento}
+          usuario={usuario}
+          onUnirse={handleUnirse}
+          onSalir={handleSalir}
+          accionando={accionando}
+        />
 
         {/* Organizador */}
         <div className="card">
@@ -318,28 +507,6 @@ export default function EventoDetalle() {
             </div>
           </Link>
         </div>
-
-        {/* Participantes */}
-        {evento.participantes?.length > 0 && (
-          <div className="card">
-            <p className="text-sp-muted text-xs uppercase tracking-wider mb-3">
-              Participantes ({evento.participantes.length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {evento.participantes.map(p => (
-                <Link key={p.id} to={`/perfil/${p.id}`} title={`${p.nombre || p.username} — Eq. ${p.equipo}`}>
-                  {p.foto_url ? (
-                    <img src={p.foto_url} className="w-9 h-9 rounded-full object-cover border-2 border-sp-border hover:border-sp-green transition-colors" alt={p.username} />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-sp-green/20 border-2 border-sp-border hover:border-sp-green transition-colors flex items-center justify-center text-sp-green text-xs font-bold">
-                      {p.username?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Código de invitación + WhatsApp */}
         {(evento.codigo_invitacion || evento.link_whatsapp) && (
@@ -384,26 +551,6 @@ export default function EventoDetalle() {
           </div>
         )}
 
-        {/* Botón unirse/salir */}
-        {(puedeUnirse || puedeSalir) && (
-          <button
-            onClick={handleInscripcion}
-            disabled={accionando}
-            className={`w-full py-3 rounded-xl font-bold text-sm transition-all uppercase tracking-wide ${
-              puedeSalir
-                ? 'border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400'
-                : 'btn-primary'
-            }`}
-          >
-            {accionando ? '...' : puedeSalir ? 'Salir del evento' : 'Unirse al evento'}
-          </button>
-        )}
-
-        {lleno && !inscripto && !esCreador && (
-          <div className="w-full py-3 rounded-xl text-center text-sp-muted text-sm border border-sp-border">
-            Evento lleno
-          </div>
-        )}
 
         {/* Panel organizador */}
         {esCreador && (
