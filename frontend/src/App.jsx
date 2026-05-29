@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import api from './services/api';
+import { getToken, getRefresh } from './services/authStorage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout        from './components/navbar/Layout';
 import Landing       from './pages/Landing';
@@ -18,6 +19,7 @@ import Calificaciones from './pages/Calificaciones';
 import Buscar         from './pages/Buscar';
 import Equipos        from './pages/teams/Equipos';
 import EquipoDetalle  from './pages/teams/EquipoDetalle';
+import Retos          from './pages/teams/Retos';
 import Mensajes       from './pages/messages/Mensajes';
 
 function Splash() {
@@ -49,8 +51,7 @@ function MiPerfil() {
     // Fallback: obtener ID real desde el backend con el JWT
     api.get('/auth/me').then(({ data }) => {
       if (data?.id) {
-        // Actualizar localStorage con datos frescos
-        login(localStorage.getItem('sp_token'), data);
+        login(getToken(), getRefresh(), data);
         navigate(`/perfil/${data.id}`, { replace: true });
       } else {
         navigate('/home', { replace: true });
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="buscar"         element={<Buscar />} />
         <Route path="equipos"        element={<Equipos />} />
         <Route path="equipos/:id"    element={<EquipoDetalle />} />
+        <Route path="retos"          element={<Retos />} />
         <Route path="mensajes"       element={<Mensajes />} />
       </Route>
 
