@@ -33,7 +33,8 @@ const obtenerPerfil = asyncHandler(async (req, res) => {
 // PUT /api/usuarios/perfil
 const actualizarPerfil = asyncHandler(async (req, res) => {
   const { nombre, apodo, bio, ciudad, departamento, deportes,
-          posicion, pie_dominante, formato_preferido, foto_url } = req.body;
+          posicion, pie_dominante, formato_preferido, foto_url,
+          latitud, longitud } = req.body;
   const { rows } = await pool.query(
     `UPDATE usuarios SET
       nombre            = COALESCE($1,  nombre),
@@ -45,13 +46,16 @@ const actualizarPerfil = asyncHandler(async (req, res) => {
       posicion          = COALESCE($7,  posicion),
       pie_dominante     = COALESCE($8,  pie_dominante),
       formato_preferido = COALESCE($9,  formato_preferido),
-      foto_url          = COALESCE($10, foto_url)
-     WHERE id = $11
+      foto_url          = COALESCE($10, foto_url),
+      latitud           = $11,
+      longitud          = $12
+     WHERE id = $13
      RETURNING id, username, nombre, apodo, bio, ciudad, departamento,
                deportes, posicion, pie_dominante, formato_preferido,
-               nivel_xp, xp, foto_url`,
+               nivel_xp, xp, foto_url, latitud, longitud`,
     [nombre, apodo, bio, ciudad, departamento, deportes,
-     posicion, pie_dominante, formato_preferido, foto_url, req.usuario.id]
+     posicion, pie_dominante, formato_preferido, foto_url,
+     latitud ?? null, longitud ?? null, req.usuario.id]
   );
   res.json(rows[0]);
 });

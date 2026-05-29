@@ -5,7 +5,8 @@ import api from '../../services/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { COLORES_NIVEL } from '../../constants';
-import UploadFoto from '../../components/UploadFoto';
+import UploadFoto  from '../../components/UploadFoto';
+import MapaPicker  from '../../components/MapaPicker';
 
 const XP_NIVELES = {
   rookie: 0, amateur: 100, intermedio: 300,
@@ -102,6 +103,7 @@ export default function Perfil() {
           departamento: p.departamento || '', deportes: p.deportes || [],
           posicion: p.posicion || '', pie_dominante: p.pie_dominante || '',
           formato_preferido: p.formato_preferido || '', foto_url: p.foto_url || '',
+          latitud: p.latitud ?? null, longitud: p.longitud ?? null,
         });
       }
       if (pubRes.status === 'fulfilled') setPubs(pubRes.value.data);
@@ -482,6 +484,27 @@ export default function Perfil() {
                 rounded
                 size={80}
               />
+              <div>
+                <label className="label">Mi ubicación (para eventos cercanos)</label>
+                <p className="text-xs text-sp-muted mb-2">Toca el mapa para marcar dónde juegas habitualmente</p>
+                <MapaPicker
+                  value={form.latitud && form.longitud ? { lat: parseFloat(form.latitud), lng: parseFloat(form.longitud) } : null}
+                  onChange={({ lat, lng }) => setForm(p => ({ ...p, latitud: lat, longitud: lng }))}
+                  height="220px"
+                />
+                {form.latitud && (
+                  <p className="text-xs text-[#00e676] mt-2">
+                    Ubicación guardada
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, latitud: null, longitud: null }))}
+                      className="ml-3 text-[#64748b] hover:text-red-400 transition-colors"
+                    >
+                      Quitar
+                    </button>
+                  </p>
+                )}
+              </div>
               <button onClick={handleGuardar} disabled={guardando} className="btn-primary w-full">
                 {guardando ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
               </button>

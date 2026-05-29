@@ -113,6 +113,25 @@ const crearEvento = asyncHandler(async (req, res) => {
   await pool.query('UPDATE eventos SET cupos_ocupados = 1 WHERE id = $1', [evento.id]);
   await darXP(req.usuario.id, 'crear_evento', evento.id);
 
+  // Notificar a usuarios cercanos (radio 10 km) que tengan ubicación guardada
+  if (latitud && longitud) {
+    const { rows: cercanos } = await pool.query(
+      `SELECT id FROM usuarios
+       WHERE latitud IS NOT NULL AND longitud IS NOT NULL AND id != $1
+         AND 6371 * acos(LEAST(1,
+           cos(radians($2)) * cos(radians(latitud)) *
+           cos(radians(longitud) - radians($3)) +
+           sin(radians($2)) * sin(radians(latitud))
+         )) <= 10`,
+      [req.usuario.id, parseFloat(latitud), parseFloat(longitud)]
+    );
+    const lugar = evento.nombre_cancha || evento.direccion || 'una cancha cerca de ti';
+    await Promise.all(
+      cercanos.map(u => notificar(u.id, 'evento',
+        `Nuevo evento cerca de ti: "${evento.titulo}" en ${lugar}`, evento.id))
+    );
+  }
+
   res.status(201).json({ ...evento, link_whatsapp: whatsapp });
 });
 
