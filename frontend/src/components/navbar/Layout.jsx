@@ -53,13 +53,21 @@ export default function Layout() {
     return () => clearInterval(t);
   }, []);
 
-  // Socket: actualizar badge de mensajes en tiempo real
+  // Socket: notificaciones y mensajes en tiempo real
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const handler = () => setMsgsNoLeidos(n => n + 1);
-    socket.on('nuevo_mensaje', handler);
-    return () => socket.off('nuevo_mensaje', handler);
+
+    const onMensaje      = () => setMsgsNoLeidos(n => n + 1);
+    const onNotificacion = (notif) => setNotifs(prev => [notif, ...prev]);
+
+    socket.on('nuevo_mensaje',  onMensaje);
+    socket.on('notificacion',   onNotificacion);
+
+    return () => {
+      socket.off('nuevo_mensaje',  onMensaje);
+      socket.off('notificacion',   onNotificacion);
+    };
   }, []);
 
   const marcarLeidas = async () => {
