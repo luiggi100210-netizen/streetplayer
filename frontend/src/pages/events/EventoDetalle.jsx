@@ -239,7 +239,7 @@ function MiniCanchaSVG() {
   );
 }
 
-const MAX_SUPLENTES = 4;
+const MAX_SUPLENTES = 5;
 
 function ModalConfirmarPartido({ evento, onConfirmar, onCancelar, cargando }) {
   return (

@@ -1,6 +1,6 @@
-const pool          = require('../config/database');
-const { darXP }     = require('../services/xp.service');
-const { notificar } = require('../services/notificaciones.service');
+const pool              = require('../config/database');
+const { darXP }         = require('../services/xp.service');
+const { notificar }     = require('../services/notificaciones.service');
 const asyncHandler  = require('../middleware/asyncHandler');
 const crypto        = require('crypto');
 
@@ -17,7 +17,7 @@ function generarLinkWhatsApp(evento) {
 // GET /api/eventos
 const listarEventos = asyncHandler(async (req, res) => {
   const { tipo, deporte, lat, lng, radio = 20, estado = 'abierto', page = 1 } = req.query;
-  const limit  = 20;
+  const limit  = 15;
   const offset = (page - 1) * limit;
   const params = [];
   let idx = 1;
@@ -47,8 +47,7 @@ const listarEventos = asyncHandler(async (req, res) => {
     idx += 3;
   }
 
-  query += ` AND e.fecha_evento >= NOW()`;
-  query += ` ORDER BY e.fecha_evento ASC LIMIT $${idx++} OFFSET $${idx++}`;
+  query += ` ORDER BY e.fecha_evento DESC LIMIT $${idx++} OFFSET $${idx++}`;
   params.push(limit, offset);
 
   const { rows } = await pool.query(query, params);
@@ -160,11 +159,22 @@ const unirseEvento = asyncHandler(async (req, res) => {
   );
   await pool.query('UPDATE eventos SET cupos_ocupados = cupos_ocupados + 1 WHERE id = $1', [id]);
 
-  if (evento.cupos_ocupados + 1 >= evento.cupos_total) {
+  const nuevoTotal = evento.cupos_ocupados + 1;
+  if (nuevoTotal >= evento.cupos_total) {
     await pool.query("UPDATE eventos SET estado = 'lleno' WHERE id = $1", [id]);
-  }
 
-  if (evento.creador_id !== req.usuario.id) {
+    // Notificar a TODOS los participantes que el evento está lleno
+    const { rows: todos } = await pool.query(
+      'SELECT usuario_id FROM evento_participantes WHERE evento_id = $1',
+      [id]
+    );
+    await Promise.all(
+      todos.map(p =>
+        notificar(p.usuario_id, 'evento',
+          `🔥 "${evento.titulo}" está completo. ¡El partido está listo!`, id)
+      )
+    );
+  } else if (evento.creador_id !== req.usuario.id) {
     await notificar(evento.creador_id, 'evento', `${req.usuario.username} se unió a "${evento.titulo}"`, id);
   }
 
@@ -351,11 +361,17 @@ const cancelarEvento = asyncHandler(async (req, res) => {
     'SELECT usuario_id FROM evento_participantes WHERE evento_id = $1',
     [id]
   );
+
+  // Penalizar al creador y notificar + penalizar jugadores
+  await darXP(req.usuario.id, 'cancelar_evento', id).catch(() => {});
   await Promise.all(
-    participantes.map(p =>
-      notificar(p.usuario_id, 'evento',
-        `❌ El evento "${ev.titulo}" fue cancelado por el organizador.`, id)
-    )
+    participantes
+      .filter(p => p.usuario_id !== req.usuario.id)
+      .map(async p => {
+        await notificar(p.usuario_id, 'evento',
+          `❌ El evento "${ev.titulo}" fue cancelado. Perdiste 10 XP.`, id);
+        await darXP(p.usuario_id, 'evento_no_realizado', id).catch(() => {});
+      })
   );
 
   res.json({ mensaje: 'Evento cancelado' });

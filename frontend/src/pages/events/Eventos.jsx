@@ -11,8 +11,9 @@ const TIPO_COLOR  = { pichanga: '#1D9E75', reto: '#e5a000', campeonato: '#e05353
 const TIPO_LABEL  = { pichanga: 'Pichanga', reto: 'Reto', campeonato: 'Campeonato' };
 
 const ESTADO_CFG = {
-  abierto:    { color: '#1D9E75', bg: 'rgba(29,158,117,0.12)', label: 'Abierto' },
+  abierto:    { color: '#1D9E75', bg: 'rgba(29,158,117,0.12)',  label: 'Abierto' },
   lleno:      { color: '#f87171', bg: 'rgba(248,113,113,0.12)', label: 'Lleno' },
+  confirmado: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  label: '✓ Confirmado' },
   en_curso:   { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  label: 'En curso' },
   finalizado: { color: '#888',    bg: 'rgba(136,136,136,0.12)', label: 'Finalizado' },
   cancelado:  { color: '#888',    bg: 'rgba(136,136,136,0.12)', label: 'Cancelado' },
@@ -141,11 +142,19 @@ function TarjetaEvento({ evento }) {
   );
 }
 
+const LIMIT = 15;
+
 export default function Eventos() {
-  const [eventos,  setEventos]  = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '', estado: 'abierto' });
+  const [eventos,   setEventos]   = useState([]);
+  const [cargando,  setCargando]  = useState(true);
+  const [filtros,   setFiltros]   = useState({ deporte: '', ciudad: '', estado: 'abierto' });
+  const [pagina,    setPagina]    = useState(1);
+  const [hayMas,    setHayMas]    = useState(false);
   const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation();
+
+  useEffect(() => {
+    setPagina(1);
+  }, [filtros, coords]);
 
   useEffect(() => {
     const cargar = async () => {
@@ -156,13 +165,15 @@ export default function Eventos() {
         if (filtros.ciudad)  p.set('ciudad',  filtros.ciudad);
         if (filtros.estado)  p.set('estado',  filtros.estado);
         if (coords)          { p.set('lat', coords.lat); p.set('lng', coords.lng); }
+        p.set('page', pagina);
         const { data } = await api.get(`/eventos?${p}`);
         setEventos(data);
+        setHayMas(data.length === LIMIT);
       } catch {}
       setCargando(false);
     };
     cargar();
-  }, [filtros, coords]);
+  }, [filtros, coords, pagina]);
 
   const setF = (k, v) => setFiltros(p => ({ ...p, [k]: v }));
 
@@ -261,9 +272,55 @@ export default function Eventos() {
           <Link to="/eventos/nuevo" className="btn-primary">+ Crear evento</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {eventos.map(ev => <TarjetaEvento key={ev.id} evento={ev} />)}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {eventos.map(ev => <TarjetaEvento key={ev.id} evento={ev} />)}
+          </div>
+
+          {/* Paginación */}
+          {(pagina > 1 || hayMas) && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 8 }}>
+              <button
+                onClick={() => setPagina(p => Math.max(1, p - 1))}
+                disabled={pagina === 1}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  padding: '8px 16px', borderRadius: 999, cursor: pagina === 1 ? 'default' : 'pointer',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'transparent',
+                  color: pagina === 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)',
+                  transition: 'all .2s',
+                }}
+              >
+                ← Anterior
+              </button>
+
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
+                color: 'rgba(255,255,255,0.4)', padding: '0 8px',
+              }}>
+                Página {pagina}
+              </span>
+
+              <button
+                onClick={() => setPagina(p => p + 1)}
+                disabled={!hayMas}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  padding: '8px 16px', borderRadius: 999, cursor: !hayMas ? 'default' : 'pointer',
+                  border: `1px solid ${hayMas ? '#1D9E7555' : 'rgba(255,255,255,0.1)'}`,
+                  background: hayMas ? 'rgba(29,158,117,0.1)' : 'transparent',
+                  color: hayMas ? '#1D9E75' : 'rgba(255,255,255,0.2)',
+                  transition: 'all .2s',
+                }}
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

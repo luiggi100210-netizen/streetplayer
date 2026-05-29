@@ -15,6 +15,8 @@ const XP_TABLA = {
   // Negativos
   no_asistir:          -15,
   no_calificar:        -10,
+  cancelar_evento:     -20,   // creador cancela el evento
+  evento_no_realizado: -10,   // jugador inscripto en evento cancelado
 };
 
 const NIVELES = [
