@@ -174,6 +174,10 @@ const unirseEvento = asyncHandler(async (req, res) => {
 // DELETE /api/eventos/:id/salir
 const salirEvento = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { rows: [ev] } = await pool.query('SELECT estado FROM eventos WHERE id = $1', [id]);
+  if (ev?.estado === 'confirmado') {
+    return res.status(400).json({ error: 'El evento ya fue confirmado. No puedes salir.' });
+  }
   const { rows } = await pool.query(
     'DELETE FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2 RETURNING *',
     [id, req.usuario.id]
@@ -187,6 +191,31 @@ const salirEvento = asyncHandler(async (req, res) => {
     [id]
   );
   res.json({ mensaje: 'Saliste del evento' });
+});
+
+// PUT /api/eventos/:id/confirmar — el creador confirma el partido (bloquea salidas)
+const confirmarEvento = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows: [ev] } = await pool.query('SELECT * FROM eventos WHERE id = $1', [id]);
+  if (!ev) return res.status(404).json({ error: 'Evento no encontrado' });
+  if (ev.creador_id !== req.usuario.id) return res.status(403).json({ error: 'Solo el creador puede confirmar el evento' });
+  if (!['abierto', 'lleno'].includes(ev.estado)) return res.status(400).json({ error: 'El evento no puede confirmarse en este estado' });
+
+  await pool.query("UPDATE eventos SET estado = 'confirmado' WHERE id = $1", [id]);
+
+  // Notificar a todos los participantes
+  const { rows: participantes } = await pool.query(
+    "SELECT usuario_id FROM evento_participantes WHERE evento_id = $1",
+    [id]
+  );
+  await Promise.all(
+    participantes.map(p =>
+      notificar(p.usuario_id, 'evento',
+        `⚽ "${ev.titulo}" ha sido confirmado. ¡Prepárate para jugar!`, id)
+    )
+  );
+
+  res.json({ mensaje: 'Evento confirmado. Los participantes fueron notificados.' });
 });
 
 // POST /api/eventos/:id/finalizar
@@ -306,4 +335,4 @@ const editarEvento = asyncHandler(async (req, res) => {
   res.json(rows[0]);
 });
 
-module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento };
+module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento };

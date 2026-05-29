@@ -239,34 +239,178 @@ function MiniCanchaSVG() {
   );
 }
 
-function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
-  const [modalEquipo, setModalEquipo] = useState(null);
+const MAX_SUPLENTES = 4;
+
+function ModalConfirmarPartido({ evento, onConfirmar, onCancelar, cargando }) {
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-sp-card border border-sp-green/40 rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-[0_0_40px_rgba(29,158,117,0.2)]">
+        <div className="text-center space-y-2">
+          <div className="text-5xl">🎮</div>
+          <h2 className="font-impact text-2xl text-sp-green">¡PARTIDO LISTO!</h2>
+          <p className="text-white/70 text-sm leading-relaxed">
+            Todos los cupos principales están ocupados.<br />
+            Confirma el partido para bloquearlo.
+          </p>
+        </div>
+
+        <div className="bg-sp-border/40 rounded-xl p-3 space-y-1.5 text-sm">
+          <div className="flex justify-between">
+            <span className="text-sp-muted">Evento</span>
+            <span className="text-white font-medium truncate max-w-[160px]">{evento.titulo}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sp-muted">Jugadores</span>
+            <span className="text-sp-green font-bold">{evento.cupos_ocupados}/{evento.cupos_total}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sp-muted">Formato</span>
+            <span className="text-white">{evento.formato}v{evento.formato}</span>
+          </div>
+        </div>
+
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-3 py-2">
+          <p className="text-yellow-400 text-xs leading-relaxed">
+            ⚠️ Una vez confirmado, <strong>nadie podrá salir</strong> del evento. Los jugadores recibirán una notificación.
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onCancelar} disabled={cargando} className="btn-ghost flex-1 text-sm">Más tarde</button>
+          <button onClick={onConfirmar} disabled={cargando} className="btn-primary flex-1 text-sm">
+            {cargando ? '...' : 'CONFIRMAR PARTIDO'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlotSuplente({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
+  const esMio = jugador?.id === usuarioId;
+  if (jugador) {
+    return (
+      <div className={`flex items-center gap-2 px-2 py-1 rounded-lg border ${esMio ? 'border-white/20 bg-white/8' : 'border-white/5 bg-white/3'}`}>
+        {jugador.foto_url
+          ? <img src={jugador.foto_url} className="w-6 h-6 rounded-full object-cover shrink-0" alt={jugador.username} />
+          : <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center text-[10px] font-bold text-white shrink-0">{jugador.username?.[0]?.toUpperCase()}</div>
+        }
+        <span className="text-xs text-white/70 truncate flex-1">{jugador.nombre || jugador.username}</span>
+        <span className="text-[9px] text-sp-muted uppercase shrink-0">Sup {equipo}</span>
+        {esMio && <span className="text-[9px] text-sp-green font-bold">Tú</span>}
+      </div>
+    );
+  }
+  if (clickable) {
+    return (
+      <button
+        onClick={onClickSlot}
+        className="w-full flex items-center gap-2 px-2 py-1 rounded-lg border border-dashed border-white/15 hover:border-white/30 hover:bg-white/5 transition-all group"
+      >
+        <div className="w-6 h-6 rounded-full border border-dashed border-white/20 group-hover:border-white/40 flex items-center justify-center shrink-0">
+          <span className="text-white/25 group-hover:text-white/50 text-sm leading-none">+</span>
+        </div>
+        <span className="text-[11px] text-white/25 group-hover:text-white/50 transition-colors">Suplente {equipo}</span>
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 px-2 py-1">
+      <div className="w-6 h-6 rounded-full border border-dashed border-white/8 shrink-0" />
+      <span className="text-[11px] text-white/10">Suplente libre</span>
+    </div>
+  );
+}
+
+function CanchaSlots({ evento, usuario, onUnirse, onSalir, onConfirmar, accionando }) {
+  const [modalEquipo,       setModalEquipo]       = useState(null);  // 'A'|'B' — unirse
+  const [modalSuplente,     setModalSuplente]      = useState(null);  // 'A'|'B' — suplente
+  const [modalCreador,      setModalCreador]       = useState(false);
+  const [confirmando,       setConfirmando]        = useState(false);
+  const [creadorYaVio,      setCreadorYaVio]       = useState(
+    () => sessionStorage.getItem(`evento_confirmado_${evento.id}`) === '1'
+  );
+
   const formato     = evento.formato || 5;
   const participantes = evento.participantes || [];
-  const teamA       = participantes.filter(p => p.equipo === 'A');
-  const teamB       = participantes.filter(p => p.equipo === 'B');
-  const slotsA      = Array.from({ length: formato }, (_, i) => teamA[i] || null);
-  const slotsB      = Array.from({ length: formato }, (_, i) => teamB[i] || null);
 
+  // Titulares: primeros `formato` por equipo (por orden de inserción, que viene ASC)
+  const titA = participantes.filter(p => p.equipo === 'A').slice(0, formato);
+  const titB = participantes.filter(p => p.equipo === 'B').slice(0, formato);
+  const slotsA = Array.from({ length: formato }, (_, i) => titA[i] || null);
+  const slotsB = Array.from({ length: formato }, (_, i) => titB[i] || null);
+
+  // Suplentes: overflow de cualquier equipo (los que no entraron como titulares)
+  const supA = participantes.filter(p => p.equipo === 'A').slice(formato);
+  const supB = participantes.filter(p => p.equipo === 'B').slice(formato);
+  const suplentes = [...supA, ...supB];                       // los que ya son suplentes
+  const supSlots  = Array.from({ length: MAX_SUPLENTES }, (_, i) => suplentes[i] || null);
+
+  const titularesCubiertos = titA.length >= formato && titB.length >= formato;
   const inscripto   = participantes.some(p => p.id === usuario?.id);
   const esCreador   = evento.creador_id === usuario?.id;
-  const puedeUnirse = evento.estado === 'abierto' && !inscripto && !esCreador;
-  const puedeSalir  = evento.estado === 'abierto' && inscripto && !esCreador;
+  const bloqueado   = ['confirmado', 'finalizado'].includes(evento.estado);
+  const puedeUnirse = ['abierto', 'lleno'].includes(evento.estado) && !inscripto && !esCreador;
+  const puedeSalir  = ['abierto', 'lleno'].includes(evento.estado) && inscripto && !esCreador;
+  const puedeSuplente = puedeUnirse && titularesCubiertos && suplentes.length < MAX_SUPLENTES;
 
-  const inscritos   = parseInt(evento.cupos_ocupados) || 0;
-  const total       = evento.cupos_total || 10;
-  const pct         = Math.min((inscritos / total) * 100, 100);
+  const inscritos = parseInt(evento.cupos_ocupados) || 0;
+  const total     = evento.cupos_total || 10;
+  const pct       = Math.min((inscritos / total) * 100, 100);
 
-  const confirmar = async () => { await onUnirse(modalEquipo); setModalEquipo(null); };
+  // Auto-popup al creador cuando se llenan los titulares
+  useEffect(() => {
+    if (esCreador && titularesCubiertos && !bloqueado && !creadorYaVio) {
+      setModalCreador(true);
+    }
+  }, [titularesCubiertos, esCreador, bloqueado, creadorYaVio]);
+
+  const handleConfirmarPartido = async () => {
+    setConfirmando(true);
+    await onConfirmar();
+    setConfirmando(false);
+    setModalCreador(false);
+    sessionStorage.setItem(`evento_confirmado_${evento.id}`, '1');
+    setCreadorYaVio(true);
+  };
+
+  const handleUnirseConfirmar = async () => {
+    const eq = modalEquipo || modalSuplente;
+    await onUnirse(eq);
+    setModalEquipo(null);
+    setModalSuplente(null);
+  };
+
+  const estadoBadge = {
+    abierto:    { color: 'bg-sp-green/20 text-sp-green',       label: 'Abierto' },
+    lleno:      { color: 'bg-yellow-500/20 text-yellow-400',   label: 'Lleno' },
+    confirmado: { color: 'bg-blue-500/20 text-blue-400',       label: '✓ Confirmado' },
+    finalizado: { color: 'bg-sp-muted/20 text-sp-muted',       label: 'Finalizado' },
+  }[evento.estado] || { color: 'bg-sp-border text-sp-muted', label: evento.estado };
 
   return (
     <>
-      {modalEquipo && (
+      {/* Modal unirse titular */}
+      {(modalEquipo || modalSuplente) && (
         <ModalConfirmarAsistencia
-          equipo={modalEquipo}
-          onConfirmar={confirmar}
-          onCancelar={() => setModalEquipo(null)}
+          equipo={modalEquipo || modalSuplente}
+          onConfirmar={handleUnirseConfirmar}
+          onCancelar={() => { setModalEquipo(null); setModalSuplente(null); }}
           cargando={accionando}
+        />
+      )}
+
+      {/* Modal confirmación para creador */}
+      {modalCreador && (
+        <ModalConfirmarPartido
+          evento={evento}
+          onConfirmar={handleConfirmarPartido}
+          onCancelar={() => {
+            setModalCreador(false);
+            sessionStorage.setItem(`evento_confirmado_${evento.id}`, '1');
+            setCreadorYaVio(true);
+          }}
+          cargando={confirmando}
         />
       )}
 
@@ -276,86 +420,119 @@ function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
         <div className="flex items-center justify-between px-4 py-3 bg-sp-card">
           <div className="flex items-center gap-2">
             <span className="text-base">⚽</span>
-            <span className="text-white text-sm font-bold uppercase tracking-wide">
-              {formato}v{formato}
-            </span>
+            <span className="text-white text-sm font-bold uppercase tracking-wide">{formato}v{formato}</span>
             <span className="text-sp-muted text-xs">· Cancha</span>
           </div>
-          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-            inscritos >= total ? 'bg-red-500/20 text-red-400' : 'bg-sp-green/20 text-sp-green'
-          }`}>
-            {inscritos}/{total}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${estadoBadge.color}`}>
+              {estadoBadge.label}
+            </span>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${inscritos >= total ? 'bg-red-500/20 text-red-400' : 'bg-sp-green/20 text-sp-green'}`}>
+              {inscritos}/{total}
+            </span>
+          </div>
         </div>
 
         {/* ── Progress ── */}
         <div className="h-0.5 bg-white/5">
-          <div
-            className="h-0.5 transition-all duration-500"
-            style={{ width: `${pct}%`, background: inscritos >= total ? '#f87171' : pct >= 70 ? '#fbbf24' : '#1D9E75' }}
-          />
+          <div className="h-0.5 transition-all duration-500"
+            style={{ width: `${pct}%`, background: bloqueado ? '#60a5fa' : inscritos >= total ? '#fbbf24' : '#1D9E75' }} />
         </div>
 
-        {/* ── Pitch area ── */}
-        <div
-          className="flex relative"
-          style={{
-            background: 'linear-gradient(180deg, #071807 0%, #0c2310 40%, #0c2310 60%, #071807 100%)',
-          }}
-        >
-          {/* Grass stripes */}
-          <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: 'repeating-linear-gradient(90deg,transparent,transparent 24px,#fff 24px,#fff 25px)' }}
-          />
+        {/* ── Pitch titulares ── */}
+        <div className="flex relative" style={{ background: 'linear-gradient(180deg,#071807 0%,#0c2310 40%,#0c2310 60%,#071807 100%)' }}>
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'repeating-linear-gradient(90deg,transparent,transparent 24px,#fff 24px,#fff 25px)' }} />
 
-          {/* ── Equipo A ── */}
+          {/* Equipo A */}
           <div className="flex-1 p-3 space-y-2 z-10">
             <div className="flex items-center gap-1.5 justify-center mb-3">
               <div className="w-2.5 h-2.5 rounded-full bg-sp-green shadow-[0_0_6px_#1D9E75]" />
               <span className="text-[10px] text-sp-green uppercase font-bold tracking-widest">Equipo A</span>
             </div>
             {slotsA.map((j, i) => (
-              <SlotJugador key={i} jugador={j} equipo="A" clickable={puedeUnirse && !j}
+              <SlotJugador key={i} jugador={j} equipo="A"
+                clickable={puedeUnirse && !j && !titularesCubiertos}
                 onClickSlot={() => setModalEquipo('A')} usuarioId={usuario?.id} />
             ))}
           </div>
 
-          {/* ── Mini Cancha (center) ── */}
+          {/* Mini cancha central */}
           <div className="w-9 shrink-0 flex items-center justify-center py-4 z-10 relative">
             <div className="absolute inset-y-0 left-1/2 w-px bg-white/8 -translate-x-px" />
             <MiniCanchaSVG />
           </div>
 
-          {/* ── Equipo B ── */}
+          {/* Equipo B */}
           <div className="flex-1 p-3 space-y-2 z-10">
             <div className="flex items-center gap-1.5 justify-center flex-row-reverse mb-3">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
               <span className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Equipo B</span>
             </div>
             {slotsB.map((j, i) => (
-              <SlotJugador key={i} jugador={j} equipo="B" clickable={puedeUnirse && !j}
+              <SlotJugador key={i} jugador={j} equipo="B"
+                clickable={puedeUnirse && !j && !titularesCubiertos}
                 onClickSlot={() => setModalEquipo('B')} usuarioId={usuario?.id} />
             ))}
           </div>
         </div>
 
-        {/* ── Footer actions ── */}
-        {(puedeSalir || (inscritos >= total && !inscripto && !esCreador)) && (
-          <div className="px-4 py-3 bg-sp-card border-t border-sp-border">
-            {puedeSalir ? (
-              <button
-                onClick={onSalir}
-                disabled={accionando}
-                className="w-full py-2 rounded-xl border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
-              >
-                {accionando ? '...' : 'Salir del evento'}
-              </button>
-            ) : (
-              <p className="text-center text-xs text-sp-muted font-semibold uppercase tracking-wide">Evento lleno</p>
-            )}
+        {/* ── Suplentes (se muestran cuando titulares están llenos o ya hay suplentes) ── */}
+        {(titularesCubiertos || suplentes.length > 0) && (
+          <div className="border-t border-dashed border-sp-border/50 bg-black/20 p-3 space-y-1.5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-px flex-1 bg-sp-border/50" />
+              <span className="text-[10px] text-sp-muted uppercase tracking-widest font-semibold px-1">Suplentes</span>
+              <div className="h-px flex-1 bg-sp-border/50" />
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {supSlots.map((j, i) => {
+                // Alternar: pares = Equipo A, impares = Equipo B
+                const eq = i % 2 === 0 ? 'A' : 'B';
+                const puedeEsteSlot = puedeSuplente && !j;
+                return (
+                  <SlotSuplente key={i} jugador={j} equipo={eq}
+                    clickable={puedeEsteSlot}
+                    onClickSlot={() => setModalSuplente(eq)}
+                    usuarioId={usuario?.id} />
+                );
+              })}
+            </div>
           </div>
         )}
+
+        {/* ── Footer ── */}
+        <div className="bg-sp-card border-t border-sp-border px-4 py-3 space-y-2">
+          {/* Creador: botón confirmar si titulares llenos pero aún no confirmó */}
+          {esCreador && titularesCubiertos && !bloqueado && (
+            <button
+              onClick={() => setModalCreador(true)}
+              className="w-full py-2.5 rounded-xl btn-primary text-sm font-bold uppercase tracking-wide"
+            >
+              🎮 CONFIRMAR PARTIDO
+            </button>
+          )}
+
+          {/* Salir (solo si no bloqueado) */}
+          {puedeSalir && (
+            <button onClick={onSalir} disabled={accionando}
+              className="w-full py-2 rounded-xl border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide">
+              {accionando ? '...' : 'Salir del evento'}
+            </button>
+          )}
+
+          {/* Bloqueado: aviso */}
+          {bloqueado && inscripto && (
+            <p className="text-center text-xs text-blue-400/70 font-medium py-1">
+              {evento.estado === 'confirmado' ? '✓ Estás confirmado en este partido' : '✓ Participaste en este partido'}
+            </p>
+          )}
+
+          {/* Lleno sin cupo */}
+          {!inscripto && !esCreador && inscritos >= total && !puedeSuplente && (
+            <p className="text-center text-xs text-sp-muted font-semibold uppercase tracking-wide py-1">Sin cupos disponibles</p>
+          )}
+        </div>
       </div>
     </>
   );
@@ -408,6 +585,15 @@ export default function EventoDetalle() {
       setError(err.response?.data?.error || 'Error al salir');
     }
     setAccionando(false);
+  };
+
+  const handleConfirmar = async () => {
+    try {
+      await api.put(`/eventos/${id}/confirmar`);
+      await cargar();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al confirmar');
+    }
   };
 
   const onFinalizado = () => {
@@ -549,8 +735,26 @@ export default function EventoDetalle() {
           usuario={usuario}
           onUnirse={handleUnirse}
           onSalir={handleSalir}
+          onConfirmar={handleConfirmar}
           accionando={accionando}
         />
+
+        {/* Banner calificación post-partido */}
+        {evento.estado === 'finalizado' && evento.participantes?.some(p => p.id === usuario?.id) && (
+          <div className="rounded-2xl border border-sp-green/30 bg-sp-green/8 px-4 py-4 flex items-center gap-3">
+            <span className="text-3xl shrink-0">⭐</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm">¿Cómo jugaron tus compañeros?</p>
+              <p className="text-sp-muted text-xs mt-0.5">Tienes 24 horas para calificarlos</p>
+            </div>
+            <Link
+              to="/calificaciones"
+              className="shrink-0 bg-sp-green text-sp-bg text-xs font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity uppercase tracking-wide"
+            >
+              Calificar
+            </Link>
+          </div>
+        )}
 
         {/* Organizador */}
         <div className="card">
