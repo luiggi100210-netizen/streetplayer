@@ -329,8 +329,11 @@ export default function Perfil() {
           <StatBox valor={perfil.partidos_empatados} label="Empates"   color="#888" />
           <StatBox valor={perfil.partidos_perdidos}  label="Derrotas"  color="#f87171" />
           <StatBox valor={perfil.goles_totales}      label="Goles"     color="#fbbf24" sub={`${gpj}/PJ`} />
-          <StatBox valor={perfil.asistencias_totales} label="Asist."  color="#a78bfa" className="hidden sm:block" />
-          <StatBox valor={`${winRate}%`}             label="Win Rate"  color={winRate >= 50 ? '#1D9E75' : '#f87171'} className="hidden sm:block" />
+          {/* Ocultos en móvil — sin div wrapper porque el grid los contaría igual */}
+          <div className="hidden sm:contents">
+            <StatBox valor={perfil.asistencias_totales} label="Asist." color="#a78bfa" />
+            <StatBox valor={`${winRate}%`} label="Win Rate" color={winRate >= 50 ? '#1D9E75' : '#f87171'} />
+          </div>
         </div>
 
         {/* XP Progress */}
