@@ -8,7 +8,12 @@ const app = express();
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) ?? [];
 const corsOptions = {
-  origin: allowedOrigins.length === 0 || allowedOrigins.includes('*') ? '*' : allowedOrigins,
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.length === 0 || allowedOrigins.includes('*')) return cb(null, true);
+    const ok = allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin);
+    cb(ok ? null : new Error('CORS'), ok);
+  },
   credentials: true,
 };
 app.use(cors(corsOptions));
