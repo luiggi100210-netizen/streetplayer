@@ -6,6 +6,8 @@ const { obtenerMedallas } = require('../services/medallas.service');
 // GET /api/usuarios/:id
 const obtenerPerfil = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!id || !UUID_RE.test(id)) return res.status(404).json({ error: 'Usuario no encontrado' });
   const yo = req.usuario?.id;
   const { rows } = await pool.query(
     `SELECT

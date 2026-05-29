@@ -104,7 +104,7 @@ export default function Layout() {
               </NavLink>
             ))}
             <NavLink
-              to={`/perfil/${usuario?.id}`}
+              to="/mi-perfil"
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
               }
@@ -211,7 +211,7 @@ export default function Layout() {
                       <p className="text-sm font-semibold text-white truncate">{usuario?.nombre || usuario?.username}</p>
                       <p className="text-xs text-sp-muted">@{usuario?.username}</p>
                     </div>
-                    <Link to={`/perfil/${usuario?.id}`} onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
+                    <Link to="/mi-perfil" onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
                       Mi perfil
                     </Link>
                     <Link to="/buscar" onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
@@ -267,7 +267,7 @@ export default function Layout() {
             </NavLink>
           ))}
           <NavLink
-            to={`/perfil/${usuario?.id}`}
+            to="/mi-perfil"
             className={({ isActive }) =>
               `flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
             }

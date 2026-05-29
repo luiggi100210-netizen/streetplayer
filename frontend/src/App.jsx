@@ -22,6 +22,12 @@ function PrivateRoute({ children }) {
   return usuario ? children : <Navigate to="/login" replace />;
 }
 
+function MiPerfil() {
+  const { usuario } = useAuth();
+  if (!usuario?.id) return <Navigate to="/home" replace />;
+  return <Navigate to={`/perfil/${usuario.id}`} replace />;
+}
+
 function PublicRoute({ children }) {
   const { usuario } = useAuth();
   return !usuario ? children : <Navigate to="/home" replace />;
@@ -42,6 +48,7 @@ function AppRoutes() {
         <Route path="eventos/nuevo"  element={<CrearEvento />} />
         <Route path="eventos/:id"    element={<EventoDetalle />} />
         <Route path="perfil/:id"     element={<Perfil />} />
+        <Route path="mi-perfil"      element={<MiPerfil />} />
         <Route path="ranking"        element={<Ranking />} />
         <Route path="torneos"        element={<Torneos />} />
         <Route path="calificaciones" element={<Calificaciones />} />

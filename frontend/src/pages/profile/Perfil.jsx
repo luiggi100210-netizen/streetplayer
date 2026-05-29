@@ -81,28 +81,31 @@ export default function Perfil() {
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
-      try {
-        const [pRes, pubRes, histRes, repRes, medRes] = await Promise.all([
-          api.get(`/usuarios/${id}`),
-          api.get(`/usuarios/${id}/publicaciones`),
-          api.get(`/usuarios/${id}/historial`),
-          api.get(`/usuarios/${id}/reputacion`),
-          api.get(`/usuarios/${id}/medallas`),
-        ]);
-        setPerfil(pRes.data);
-        setSiguiendo(pRes.data.siguiendo_yo || false);
-        setPubs(pubRes.data);
-        setHistorial(histRes.data);
-        setRep(repRes.data);
-        setMedallas(medRes.data || []);
+      const [pRes, pubRes, histRes, repRes, medRes] = await Promise.allSettled([
+        api.get(`/usuarios/${id}`),
+        api.get(`/usuarios/${id}/publicaciones`),
+        api.get(`/usuarios/${id}/historial`),
+        api.get(`/usuarios/${id}/reputacion`),
+        api.get(`/usuarios/${id}/medallas`),
+      ]);
+
+      if (pRes.status === 'fulfilled') {
+        const p = pRes.value.data;
+        setPerfil(p);
+        setSiguiendo(p.siguiendo_yo || false);
         setForm({
-          nombre: pRes.data.nombre || '', apodo: pRes.data.apodo || '',
-          bio: pRes.data.bio || '', ciudad: pRes.data.ciudad || '',
-          departamento: pRes.data.departamento || '', deportes: pRes.data.deportes || [],
-          posicion: pRes.data.posicion || '', pie_dominante: pRes.data.pie_dominante || '',
-          formato_preferido: pRes.data.formato_preferido || '', foto_url: pRes.data.foto_url || '',
+          nombre: p.nombre || '', apodo: p.apodo || '',
+          bio: p.bio || '', ciudad: p.ciudad || '',
+          departamento: p.departamento || '', deportes: p.deportes || [],
+          posicion: p.posicion || '', pie_dominante: p.pie_dominante || '',
+          formato_preferido: p.formato_preferido || '', foto_url: p.foto_url || '',
         });
-      } catch {}
+      }
+      if (pubRes.status === 'fulfilled') setPubs(pubRes.value.data);
+      if (histRes.status === 'fulfilled') setHistorial(histRes.value.data);
+      if (repRes.status  === 'fulfilled') setRep(repRes.value.data);
+      if (medRes.status  === 'fulfilled') setMedallas(medRes.value.data || []);
+
       setCargando(false);
     };
     cargar();
