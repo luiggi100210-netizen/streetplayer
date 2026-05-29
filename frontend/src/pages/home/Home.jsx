@@ -4,32 +4,15 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Avatar from '../../components/Avatar';
+import { COLORES_NIVEL } from '../../constants';
 
-// ── Colores ──────────────────────────────────────────────────
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
 const ESTADO_RETO = {
   pendiente: { color: '#fbbf24', label: 'Pendiente' },
   aceptado:  { color: '#1D9E75', label: 'Aceptado ✅' },
   rechazado: { color: '#f87171', label: 'Rechazado ❌' },
   finalizado:{ color: '#888',    label: 'Finalizado' },
 };
-
-// ── Avatar pequeño ───────────────────────────────────────────
-function MiniAvatar({ foto, username, size = 40, color = '#1D9E75' }) {
-  return foto ? (
-    <img src={foto} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, flexShrink: 0 }} alt="" />
-  ) : (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: color + '22', border: `2px solid ${color}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Anton, Impact, sans-serif', fontSize: size * 0.38, color,
-    }}>{username?.[0]?.toUpperCase()}</div>
-  );
-}
 
 // ── Tarjeta publicación ──────────────────────────────────────
 function TarjetaPublicacion({ pub }) {
@@ -83,7 +66,7 @@ function TarjetaPublicacion({ pub }) {
         {/* Header autor */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <Link to={`/perfil/${pub.usuario_id}`} style={{ textDecoration: 'none' }}>
-            <MiniAvatar foto={pub.foto_url} username={pub.username} size={38} color={colorNivel} />
+            <Avatar foto={pub.foto_url} username={pub.username} size={38} color={colorNivel} />
           </Link>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Link to={`/perfil/${pub.usuario_id}`} style={{ textDecoration: 'none' }}>
@@ -156,7 +139,7 @@ function TarjetaPublicacion({ pub }) {
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {comments.map(c => (
               <div key={c.id} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <MiniAvatar foto={c.foto_url} username={c.username} size={28} color="#1D9E75" />
+                <Avatar foto={c.foto_url} username={c.username} size={28} color="#1D9E75" />
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '6px 10px' }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#1D9E75', marginBottom: 2 }}>@{c.username}</p>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{c.contenido}</p>
@@ -295,7 +278,7 @@ function Composer({ usuario, onPublicado }) {
       {modo === 'reto' && <div style={{ height: 3, background: 'linear-gradient(to right, #e5a000, #f87171)' }} />}
       <div style={{ padding: 16 }}>
         <div style={{ display: 'flex', gap: 10 }}>
-          <MiniAvatar foto={usuario?.foto_url} username={usuario?.username} size={38} color={colorNivel} />
+          <Avatar foto={usuario?.foto_url} username={usuario?.username} size={38} color={colorNivel} />
           <div style={{ flex: 1 }}>
             {/* Toggle post / reto */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
@@ -364,7 +347,7 @@ function Sidebar({ usuario, ranking }) {
         <div style={{ height: 3, background: colorNivel }} />
         <div style={{ padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <MiniAvatar foto={usuario?.foto_url} username={usuario?.username} size={44} color={colorNivel} />
+            <Avatar foto={usuario?.foto_url} username={usuario?.username} size={44} color={colorNivel} />
             <div>
               <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 15, color: '#fff', letterSpacing: '0.02em' }}>
                 {usuario?.nombre || usuario?.username}
@@ -413,7 +396,7 @@ function Sidebar({ usuario, ranking }) {
                   <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 13, color: posColor, width: 20, textAlign: 'center', flexShrink: 0 }}>
                     {i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}
                   </span>
-                  <MiniAvatar foto={item.foto_url} username={item.username} size={26} color={COLORES_NIVEL[item.nivel_xp] || '#888'} />
+                  <Avatar foto={item.foto_url} username={item.username} size={26} color={COLORES_NIVEL[item.nivel_xp] || '#888'} />
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.username}
                   </span>
@@ -475,10 +458,10 @@ export default function Home() {
       setEventos(eventosRes.data.slice(0, 6));
       setRanking(rankingRes.data);
 
-      // Detectar si soy capitán para habilitar accept/reject
+      // Obtener el ID del equipo del que soy capitán para accept/reject
       try {
-        const { data: misRetos } = await api.get('/retos');
-        if (misRetos.length > 0) setMiEquipoId(misRetos[0].retador_id || misRetos[0].retado_id);
+        const { data: { mi_equipo_id } } = await api.get('/retos');
+        if (mi_equipo_id) setMiEquipoId(mi_equipo_id);
       } catch {}
     } catch {}
     setCargando(false);

@@ -4,27 +4,8 @@ import { useSocket } from '../../hooks/useSocket';
 import api from '../../services/api';
 import { format, isToday, isYesterday } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
-
-function Avatar({ foto, username, size = 40, color }) {
-  const c = color || '#1D9E75';
-  return foto ? (
-    <img src={foto} alt=""
-      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover',
-               border: `2px solid ${c}`, flexShrink: 0 }} />
-  ) : (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: c + '22', border: `2px solid ${c}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Anton, Impact, sans-serif', fontSize: size * 0.38, color: c,
-    }}>{username?.[0]?.toUpperCase()}</div>
-  );
-}
+import Avatar from '../../components/Avatar';
+import { COLORES_NIVEL } from '../../constants';
 
 function fechaMsg(fecha) {
   const d = new Date(fecha);
@@ -51,6 +32,7 @@ export default function Mensajes() {
   const [cargConvs,   setCargConvs]   = useState(true);
   const [cargMsgs,    setCargMsgs]    = useState(false);
   const [enviando,    setEnviando]    = useState(false);
+  const [errorEnvio,  setErrorEnvio]  = useState(false);
   const [buscarQ,     setBuscarQ]     = useState('');
   const [buscarRes,   setBuscarRes]   = useState([]);
   const [vistaMovil,  setVistaMovil]  = useState('lista'); // 'lista' | 'chat'
@@ -81,7 +63,7 @@ export default function Mensajes() {
       setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, no_leidos: 0 } : c));
     } catch {}
     setCargMsgs(false);
-    setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'instant' }), 60);
+    setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'instant' }), 0);
     inputRef.current?.focus();
   }, []);
 
@@ -91,7 +73,7 @@ export default function Mensajes() {
     const handler = (msg) => {
       if (convSel?.id && msg.conversacion_id === convSel.id) {
         setMensajes(prev => [...prev, msg]);
-        setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
         api.put(`/mensajes/${convSel.id}/leer`).catch(() => {});
       }
       setConvs(prev => {
@@ -104,7 +86,8 @@ export default function Mensajes() {
               : c
           )].sort((a, b) => new Date(b.ultima_actividad) - new Date(a.ultima_actividad));
         }
-        cargarConvs();
+        // conv nueva — recargar fuera del ciclo de render
+        setTimeout(cargarConvs, 0);
         return prev;
       });
     };
@@ -143,6 +126,7 @@ export default function Mensajes() {
     const txt = texto.trim();
     setTexto('');
     setEnviando(true);
+    setErrorEnvio(false);
     try {
       const { data } = await api.post(`/mensajes/${convSel.otro_id}`, { contenido: txt });
       setMensajes(prev => [...prev, data]);
@@ -157,8 +141,12 @@ export default function Mensajes() {
             : c
         )].sort((a, b) => new Date(b.ultima_actividad) - new Date(a.ultima_actividad)));
       }
-      setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-    } catch {}
+      setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    } catch {
+      setTexto(txt);
+      setErrorEnvio(true);
+      setTimeout(() => setErrorEnvio(false), 3000);
+    }
     setEnviando(false);
   };
 
@@ -384,6 +372,7 @@ export default function Mensajes() {
               onKeyDown={handleKey}
               placeholder="Escribe un mensaje..."
               rows={1}
+              maxLength={1000}
               className="input flex-1 resize-none text-sm py-2.5 leading-snug"
               style={{ maxHeight: 100, overflowY: 'auto' }}
             />
@@ -401,7 +390,15 @@ export default function Mensajes() {
               )}
             </button>
           </div>
-          <p className="text-[10px] text-sp-muted mt-1.5">Enter para enviar · Shift+Enter nueva línea</p>
+          <div className="flex items-center justify-between mt-1.5">
+            <p className="text-[10px] text-sp-muted">Enter para enviar · Shift+Enter nueva línea</p>
+            {errorEnvio && (
+              <p className="text-[10px] text-red-400">No se pudo enviar. Intenta de nuevo.</p>
+            )}
+            {texto.length > 900 && (
+              <p className="text-[10px] text-sp-muted">{texto.length}/1000</p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -412,12 +409,12 @@ export default function Mensajes() {
     <div className="max-w-6xl mx-auto h-[calc(100vh-56px)] flex">
       {/* Lista (siempre visible en desktop, condicional en móvil) */}
       <div className={`${vistaMovil === 'chat' ? 'hidden' : 'flex'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-sp-border shrink-0`}>
-        <PanelLista />
+        {PanelLista()}
       </div>
 
       {/* Chat */}
       <div className={`${vistaMovil === 'lista' ? 'hidden' : 'flex'} md:flex flex-col flex-1 min-w-0`}>
-        <PanelChat />
+        {PanelChat()}
       </div>
     </div>
   );

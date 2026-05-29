@@ -2,11 +2,9 @@ import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Avatar from '../components/Avatar';
+import { COLORES_NIVEL } from '../constants';
 
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
 
 export default function Buscar() {
@@ -102,14 +100,7 @@ export default function Buscar() {
                 to={`/perfil/${u.id}`}
                 className="card flex items-center gap-4 hover:border-sp-green/40 transition-colors"
               >
-                {/* Avatar */}
-                {u.foto_url ? (
-                  <img src={u.foto_url} className="w-12 h-12 rounded-full object-cover border-2 shrink-0" style={{ borderColor: nivelColor }} alt={u.username} />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-sp-green/20 border-2 shrink-0 flex items-center justify-center text-sp-green text-lg font-bold" style={{ borderColor: nivelColor }}>
-                    {u.username?.[0]?.toUpperCase()}
-                  </div>
-                )}
+                <Avatar foto={u.foto_url} username={u.username} size={48} color={nivelColor} />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

@@ -5,11 +5,9 @@ import api from '../../services/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { COLORES_NIVEL } from '../../constants';
+
 // ── Constantes ───────────────────────────────────────────────
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
 const XP_NIVELES = {
   rookie: 0, amateur: 100, intermedio: 300,
   avanzado: 600, pro: 1000, elite: 2000, leyenda: 5000,

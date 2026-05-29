@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState } from 'react'
+import { disconnectSocket } from '../services/socket'
 
 const AuthContext = createContext(null)
 
@@ -16,11 +17,12 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('sp_token')
     localStorage.removeItem('sp_user')
+    disconnectSocket()
     setUsuario(null)
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout }}>
+    <AuthContext.Provider value={{ usuario, cargando: false, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

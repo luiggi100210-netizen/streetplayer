@@ -6,7 +6,7 @@ export function useSocket() {
 
   useEffect(() => {
     ref.current = getSocket();
-    return () => {};
+    return () => { ref.current = null; };
   }, []);
 
   return ref.current ?? getSocket();

@@ -2,34 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import Avatar from '../../components/Avatar';
+import { COLORES_NIVEL } from '../../constants';
 
 const DEPORTES = ['', 'futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
-
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
 
 const PODIO = [
   { pos: 0, height: 110, medal: '🥇', color: '#fbbf24', shadow: '#fbbf2444' },
   { pos: 1, height: 80,  medal: '🥈', color: '#9ca3af', shadow: '#9ca3af33' },
   { pos: 2, height: 60,  medal: '🥉', color: '#d97706', shadow: '#d9770633' },
 ];
-
-function Avatar({ foto, username, size = 40, color = '#1D9E75' }) {
-  return foto ? (
-    <img src={foto} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, flexShrink: 0 }} alt="" />
-  ) : (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: color + '22', border: `2px solid ${color}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Anton, Impact, sans-serif', fontSize: size * 0.38, color,
-    }}>
-      {username?.[0]?.toUpperCase()}
-    </div>
-  );
-}
 
 export default function Ranking() {
   const { usuario: yo } = useAuth();

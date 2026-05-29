@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { formatFechaEvento as formatFecha } from '../../utils/date';
 
 const DEPORTES = ['', 'futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃', ciclismo: '🚴', otro: '🎯' };
@@ -15,11 +16,6 @@ const ESTADO_CFG = {
   finalizado: { color: '#888',    bg: 'rgba(136,136,136,0.12)', label: 'Finalizado' },
   cancelado:  { color: '#888',    bg: 'rgba(136,136,136,0.12)', label: 'Cancelado' },
 };
-
-function formatFecha(f) {
-  if (!f) return '';
-  return new Date(f).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
 
 function TarjetaEvento({ evento }) {
   const inscritos   = parseInt(evento.cupos_ocupados) || 0;

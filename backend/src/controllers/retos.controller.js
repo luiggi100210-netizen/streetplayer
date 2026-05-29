@@ -8,7 +8,7 @@ const obtenerRetos = asyncHandler(async (req, res) => {
     `SELECT equipo_id FROM equipo_miembros WHERE usuario_id = $1 AND rol = 'capitan'`,
     [req.usuario.id]
   );
-  if (!miembro) return res.json([]);
+  if (!miembro) return res.json({ retos: [], mi_equipo_id: null });
 
   const { rows } = await pool.query(
     `SELECT r.*,
@@ -21,7 +21,7 @@ const obtenerRetos = asyncHandler(async (req, res) => {
      ORDER BY r.fecha DESC LIMIT 20`,
     [miembro.equipo_id]
   );
-  res.json(rows);
+  res.json({ retos: rows, mi_equipo_id: miembro.equipo_id });
 });
 
 // POST /api/retos — lanzar reto

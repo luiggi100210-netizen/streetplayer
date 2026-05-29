@@ -76,8 +76,9 @@ const enviarMensaje = asyncHandler(async (req, res) => {
   const { usuarioId } = req.params;
   const { contenido }  = req.body;
 
-  if (!contenido?.trim())          return res.status(400).json({ error: 'Mensaje vacío' });
-  if (usuarioId === req.usuario.id) return res.status(400).json({ error: 'No puedes escribirte a ti mismo' });
+  if (!contenido?.trim())              return res.status(400).json({ error: 'Mensaje vacío' });
+  if (contenido.trim().length > 1000)  return res.status(400).json({ error: 'Mensaje demasiado largo (máx. 1000 caracteres)' });
+  if (usuarioId === req.usuario.id)    return res.status(400).json({ error: 'No puedes escribirte a ti mismo' });
 
   const { rows: [dest] } = await pool.query(
     'SELECT id, username FROM usuarios WHERE id = $1 AND estado = $2',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { formatFechaCorta as formatFecha } from '../../utils/date';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃' };
@@ -14,11 +15,6 @@ const ESTADO_CFG = {
 };
 
 const FORMATO_LABEL = { eliminacion: 'Eliminación', grupos: 'Grupos', liga: 'Liga' };
-
-function formatFecha(f) {
-  if (!f) return '';
-  return new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 function TarjetaTorneo({ torneo }) {
   const inscritos = parseInt(torneo.equipos_inscritos) || 0;

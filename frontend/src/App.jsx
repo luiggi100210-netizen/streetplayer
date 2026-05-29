@@ -18,29 +18,13 @@ import EquipoDetalle  from './pages/teams/EquipoDetalle';
 import Mensajes       from './pages/messages/Mensajes';
 
 function PrivateRoute({ children }) {
-  const { usuario, cargando } = useAuth();
-  if (cargando) return <Splash />;
+  const { usuario } = useAuth();
   return usuario ? children : <Navigate to="/login" replace />;
 }
 
 function PublicRoute({ children }) {
-  const { usuario, cargando } = useAuth();
-  if (cargando) return null;
+  const { usuario } = useAuth();
   return !usuario ? children : <Navigate to="/home" replace />;
-}
-
-function Splash() {
-  return (
-    <div className="min-h-screen bg-sp-bg flex flex-col items-center justify-center gap-6">
-      <div className="text-center">
-        <p className="font-impact text-4xl text-sp-green tracking-widest">STREETPLAYER</p>
-        <p className="text-sp-muted text-sm mt-1 uppercase tracking-widest">Cargando tu cancha...</p>
-      </div>
-      <div className="w-48 h-1 bg-sp-border rounded-full overflow-hidden">
-        <div className="h-full bg-sp-green rounded-full animate-pulse w-2/3" />
-      </div>
-    </div>
-  );
 }
 
 function AppRoutes() {
