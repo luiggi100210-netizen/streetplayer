@@ -1,4 +1,6 @@
-import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
+import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import api from './services/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout        from './components/navbar/Layout';
 import Landing       from './pages/Landing';
@@ -23,9 +25,27 @@ function PrivateRoute({ children }) {
 }
 
 function MiPerfil() {
-  const { usuario } = useAuth();
-  if (!usuario?.id) return <Navigate to="/home" replace />;
-  return <Navigate to={`/perfil/${usuario.id}`} replace />;
+  const { usuario, login } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (usuario?.id) {
+      navigate(`/perfil/${usuario.id}`, { replace: true });
+      return;
+    }
+    // Fallback: obtener ID real desde el backend con el JWT
+    api.get('/auth/me').then(({ data }) => {
+      if (data?.id) {
+        // Actualizar localStorage con datos frescos
+        login(localStorage.getItem('sp_token'), data);
+        navigate(`/perfil/${data.id}`, { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    }).catch(() => navigate('/home', { replace: true }));
+  }, []);
+
+  return null;
 }
 
 function PublicRoute({ children }) {
