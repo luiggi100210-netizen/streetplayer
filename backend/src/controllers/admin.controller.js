@@ -224,6 +224,39 @@ const tarifasPublicas = asyncHandler(async (req, res) => {
   res.json(rows);
 });
 
+// PUT /api/admin/anuncios/:id
+const editarAnuncio = asyncHandler(async (req, res) => {
+  const { titulo, imagen_url, url_destino, fecha_inicio, fecha_fin } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE anuncios SET
+       titulo      = COALESCE($1, titulo),
+       imagen_url  = COALESCE($2, imagen_url),
+       url_destino = COALESCE($3, url_destino),
+       fecha_inicio = COALESCE($4, fecha_inicio),
+       fecha_fin    = COALESCE($5, fecha_fin)
+     WHERE id = $6 RETURNING *`,
+    [titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Anuncio no encontrado' });
+  res.json(rows[0]);
+});
+
+// PUT /api/admin/anuncios/:id/toggle
+const toggleAnuncio = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `UPDATE anuncios SET activo = NOT activo WHERE id = $1 RETURNING id, activo`,
+    [req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Anuncio no encontrado' });
+  res.json(rows[0]);
+});
+
+// DELETE /api/admin/anuncios/:id
+const eliminarAnuncio = asyncHandler(async (req, res) => {
+  await pool.query('DELETE FROM anuncios WHERE id = $1', [req.params.id]);
+  res.json({ mensaje: 'Anuncio eliminado' });
+});
+
 // GET /api/admin/equipos
 const listarEquiposAdmin = asyncHandler(async (req, res) => {
   const { buscar, page = 1 } = req.query;
@@ -291,7 +324,7 @@ module.exports = {
   dashboard, listarUsuarios, cambiarEstadoUsuario, detalleUsuario,
   listarReportes, resolverReporte,
   listarTorneosAdmin, aprobarTorneo, rechazarTorneo,
-  listarAnuncios, crearAnuncio, anunciosActivos,
+  listarAnuncios, crearAnuncio, editarAnuncio, toggleAnuncio, eliminarAnuncio, anunciosActivos,
   listarEquiposAdmin, listarEventosAdmin, eliminarFotoUsuario, statsAmpliadas,
   solicitarPublicidad, listarSolicitudes, actualizarSolicitud, listarTarifas, tarifasPublicas,
 };

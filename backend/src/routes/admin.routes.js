@@ -41,6 +41,9 @@ router.get('/equipos',                     verificarAdmin, a.listarEquiposAdmin)
 router.get('/eventos',                     verificarAdmin, a.listarEventosAdmin);
 router.get('/anuncios',                    verificarAdmin, a.listarAnuncios);
 router.post('/anuncios',                   verificarAdmin, validarAnuncio, validate, a.crearAnuncio);
+router.put('/anuncios/:id',               verificarAdmin, validarId(), validate, a.editarAnuncio);
+router.put('/anuncios/:id/toggle',        verificarAdmin, validarId(), validate, a.toggleAnuncio);
+router.delete('/anuncios/:id',            verificarAdmin, validarId(), validate, a.eliminarAnuncio);
 
 router.get('/usuarios/:id',                verificarAdmin, validarId(), validate, a.detalleUsuario);
 

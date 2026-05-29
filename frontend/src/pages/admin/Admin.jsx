@@ -584,49 +584,148 @@ function Reportes({ api }) {
 }
 
 // ─── Anuncios ─────────────────────────────────────────────────────────────────
+const EMPTY_FORM = { titulo: '', imagen_url: '', url_destino: '', fecha_inicio: '', fecha_fin: '' };
+
+function FormAnuncio({ inicial, onGuardar, onCancelar, saving, error }) {
+  const [form, setForm] = useState(inicial || EMPTY_FORM);
+  const today = new Date().toISOString().slice(0, 10);
+  const vencido = form.fecha_fin && form.fecha_fin < today;
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); onGuardar(form); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {[['Título', 'titulo', 'text'], ['URL Imagen / Video', 'imagen_url', 'text'], ['URL Destino', 'url_destino', 'text'], ['Fecha inicio', 'fecha_inicio', 'date'], ['Fecha fin', 'fecha_fin', 'date']].map(([lbl, key, type]) => (
+        <div key={key}>
+          <label style={labelS}>{lbl}</label>
+          <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+            required={!['url_destino'].includes(key)} style={inputS} />
+        </div>
+      ))}
+      {form.imagen_url && (
+        form.imagen_url.match(/\.(mp4|webm|mov)/i)
+          ? <video src={form.imagen_url} controls muted style={{ width: '100%', height: 120, borderRadius: 8, objectFit: 'cover' }} />
+          : <img src={form.imagen_url} alt="preview" onError={e => e.target.style.display='none'} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8 }} />
+      )}
+      {vencido && <p style={{ color: '#fbbf24', fontSize: 11 }}>⚠️ La fecha de fin ya pasó — el anuncio estará inactivo.</p>}
+      {error && <p style={{ color: '#f87171', fontSize: 12 }}>{error}</p>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {onCancelar && <Btn onClick={onCancelar} color="#64748b" style={{ flex: 1 }}>Cancelar</Btn>}
+        <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: saving ? '#1e1e2e' : '#7c3aed', color: '#fff', fontWeight: 700, cursor: saving ? 'wait' : 'pointer' }}>
+          {saving ? 'Guardando...' : inicial ? 'Guardar cambios' : '+ Crear anuncio'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function Anuncios({ api }) {
   const [lista, setLista] = useState([]);
-  const [form, setForm] = useState({ titulo: '', imagen_url: '', url_destino: '', fecha_inicio: '', fecha_fin: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [editando, setEditando] = useState(null);
+  const [filtro, setFiltro] = useState('todos');
 
   const cargar = async () => { const { data } = await api.get('/anuncios'); setLista(data); };
   useEffect(() => { cargar(); }, []);
 
-  const crear = async (e) => {
-    e.preventDefault(); setSaving(true); setError('');
-    try { await api.post('/anuncios', form); setForm({ titulo: '', imagen_url: '', url_destino: '', fecha_inicio: '', fecha_fin: '' }); cargar(); }
+  const crear = async (form) => {
+    setSaving(true); setError('');
+    try { await api.post('/anuncios', form); cargar(); }
     catch (err) { setError(err.response?.data?.error || 'Error'); }
     setSaving(false);
   };
 
+  const guardarEdicion = async (form) => {
+    setSaving(true);
+    try { await api.put(`/anuncios/${editando.id}`, form); setEditando(null); cargar(); }
+    catch {}
+    setSaving(false);
+  };
+
+  const toggle = async (id) => { await api.put(`/anuncios/${id}/toggle`); cargar(); };
+  const eliminar = async (id, titulo) => {
+    if (!window.confirm(`¿Eliminar "${titulo}"?`)) return;
+    await api.delete(`/anuncios/${id}`); cargar();
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const filtrados = lista.filter(a => {
+    if (filtro === 'activo')  return a.activo && a.fecha_fin >= today;
+    if (filtro === 'inactivo') return !a.activo;
+    if (filtro === 'vencido')  return a.fecha_fin < today;
+    return true;
+  });
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
-      <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, padding: 24 }}>
-        <p style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 20 }}>Nuevo anuncio</p>
-        <form onSubmit={crear} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[['Título', 'titulo', 'text'], ['URL Imagen', 'imagen_url', 'text'], ['URL Destino', 'url_destino', 'text'], ['Fecha inicio', 'fecha_inicio', 'date'], ['Fecha fin', 'fecha_fin', 'date']].map(([lbl, key, type]) => (
-            <div key={key}><label style={labelS}>{lbl}</label><input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} required={key !== 'url_destino'} style={inputS} /></div>
-          ))}
-          {form.imagen_url && <img src={form.imagen_url} alt="preview" onError={e => e.target.style.display='none'} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8 }} />}
-          {error && <p style={{ color: '#f87171', fontSize: 12 }}>{error}</p>}
-          <button type="submit" disabled={saving} style={{ padding: '10px', borderRadius: 8, border: 'none', background: saving ? '#1e1e2e' : '#7c3aed', color: '#fff', fontWeight: 700, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Guardando...' : 'Crear Anuncio'}</button>
-        </form>
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 24, alignItems: 'start' }}>
+      {/* Form crear */}
+      <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, padding: 22, position: 'sticky', top: 0 }}>
+        <p style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 18 }}>Nuevo anuncio</p>
+        <FormAnuncio onGuardar={crear} saving={saving} error={error} />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {lista.map(a => (
-          <div key={a.id} style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, overflow: 'hidden', display: 'flex' }}>
-            {a.imagen_url && <img src={a.imagen_url} alt="" style={{ width: 120, height: 75, objectFit: 'cover', flexShrink: 0 }} />}
-            <div style={{ padding: '12px 16px', flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <p style={{ color: '#e2e8f0', fontWeight: 700, flex: 1 }}>{a.titulo}</p>
-                <Badge estado={a.activo ? 'activo' : 'inactivo'} />
+
+      {/* Lista */}
+      <div>
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {[['todos','Todos'], ['activo','Activos'], ['inactivo','Inactivos'], ['vencido','Vencidos']].map(([v, l]) => (
+            <button key={v} onClick={() => setFiltro(v)} style={{ padding: '5px 14px', borderRadius: 20, border: '1px solid #1e1e2e', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: filtro === v ? '#7c3aed' : '#0d0d1a', color: filtro === v ? '#fff' : '#64748b' }}>{l}</button>
+          ))}
+          <span style={{ color: '#64748b', fontSize: 11, lineHeight: '28px', marginLeft: 4 }}>{filtrados.length} anuncios</span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filtrados.map(a => {
+            const vencido = a.fecha_fin < today;
+            const esVideo = a.imagen_url?.match(/\.(mp4|webm|mov)/i);
+            return (
+              <div key={a.id} style={{ background: '#0d0d1a', border: `1px solid ${a.activo && !vencido ? '#00e67622' : '#1e1e2e'}`, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ display: 'flex' }}>
+                  {/* Miniatura */}
+                  <div style={{ width: 140, height: 88, flexShrink: 0, background: '#13131f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {a.imagen_url ? (
+                      esVideo
+                        ? <video src={a.imagen_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <img src={a.imagen_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : <span style={{ color: '#1e1e2e', fontSize: 32 }}>📢</span>}
+                    {esVideo && <span style={{ position: 'absolute', background: '#000a', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 4 }}>🎬 Video</span>}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ padding: '12px 16px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <p style={{ color: '#e2e8f0', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.titulo}</p>
+                      <Badge estado={vencido ? 'vencido' : a.activo ? 'activo' : 'inactivo'} />
+                    </div>
+                    <p style={{ color: '#64748b', fontSize: 11, marginBottom: 8 }}>
+                      {new Date(a.fecha_inicio).toLocaleDateString('es')} — {new Date(a.fecha_fin).toLocaleDateString('es')}
+                      {vencido && <span style={{ color: '#f87171', marginLeft: 6 }}>• Vencido</span>}
+                    </p>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <Btn onClick={() => toggle(a.id)} color={a.activo ? '#fbbf24' : '#00e676'} small>
+                        {a.activo ? '⏸ Pausar' : '▶ Activar'}
+                      </Btn>
+                      <Btn onClick={() => setEditando(a)} color="#7c3aed" small>✏️ Editar</Btn>
+                      <Btn onClick={() => eliminar(a.id, a.titulo)} danger small>🗑️</Btn>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal editar inline */}
+                {editando?.id === a.id && (
+                  <div style={{ borderTop: '1px solid #1e1e2e', padding: 16, background: '#13131f' }}>
+                    <FormAnuncio
+                      inicial={{ titulo: a.titulo, imagen_url: a.imagen_url || '', url_destino: a.url_destino || '', fecha_inicio: a.fecha_inicio?.slice(0,10) || '', fecha_fin: a.fecha_fin?.slice(0,10) || '' }}
+                      onGuardar={guardarEdicion}
+                      onCancelar={() => setEditando(null)}
+                      saving={saving}
+                    />
+                  </div>
+                )}
               </div>
-              <p style={{ color: '#64748b', fontSize: 11 }}>{new Date(a.fecha_inicio).toLocaleDateString('es')} — {new Date(a.fecha_fin).toLocaleDateString('es')}</p>
-            </div>
-          </div>
-        ))}
-        {!lista.length && <p style={{ color: '#64748b', textAlign: 'center', padding: 32 }}>Sin anuncios</p>}
+            );
+          })}
+          {!filtrados.length && <p style={{ color: '#64748b', textAlign: 'center', padding: 32 }}>Sin anuncios en este filtro</p>}
+        </div>
       </div>
     </div>
   );
@@ -642,6 +741,8 @@ function Publicidad({ api }) {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [detalleId, setDetalleId] = useState(null);
   const [editando, setEditando] = useState(null);
+  const [publicarModal, setPublicarModal] = useState(null);
+  const [pubSaving, setPubSaving] = useState(false);
 
   useEffect(() => {
     api.get('/publicidad/tarifas').then(r => setTarifas(r.data)).catch(() => {});
@@ -658,6 +759,19 @@ function Publicidad({ api }) {
     await api.put(`/publicidad/solicitudes/${id}`, campos);
     setEditando(null);
     cargarSolicitudes();
+  };
+
+  const iniciarPublicar = (s) => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const fin = new Date(Date.now() + (s.duracion_dias || 7) * 86400000).toISOString().slice(0, 10);
+    setPublicarModal({ titulo: s.empresa, imagen_url: '', url_destino: '', fecha_inicio: hoy, fecha_fin: fin });
+  };
+
+  const publicarAnuncio = async (form) => {
+    setPubSaving(true);
+    try { await api.post('/anuncios', form); setPublicarModal(null); }
+    catch {}
+    setPubSaving(false);
   };
 
   const solicitudDetalle = solicitudes.find(s => s.id === detalleId);
@@ -718,9 +832,12 @@ function Publicidad({ api }) {
                   <TD><Badge estado={s.estado} /></TD>
                   <TD style={{ color: '#64748b', fontSize: 11 }}>{new Date(s.fecha_solicitud).toLocaleDateString('es')}</TD>
                   <TD>
-                    <div style={{ display: 'flex', gap: 5 }}>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                       <Btn onClick={() => setDetalleId(s.id)} color="#38bdf8" small>Ver</Btn>
                       <Btn onClick={() => setEditando(s.id)} color="#7c3aed" small>Gestionar</Btn>
+                      {['activo', 'contactado'].includes(s.estado) && (
+                        <Btn onClick={() => iniciarPublicar(s)} color="#00e676" small>📢 Publicar</Btn>
+                      )}
                     </div>
                   </TD>
                 </tr>
@@ -783,6 +900,22 @@ function Publicidad({ api }) {
             onGuardar={campos => actualizarSolicitud(editando, campos)}
             onCerrar={() => setEditando(null)}
           />
+        </Modal>
+      )}
+
+      {/* Modal publicar como anuncio */}
+      {publicarModal && (
+        <Modal onClose={() => setPublicarModal(null)} width={440}>
+          <div style={{ padding: 28 }}>
+            <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>📢 Publicar como anuncio</p>
+            <p style={{ color: '#64748b', fontSize: 12, marginBottom: 22 }}>Añade la URL de la imagen o video y confirma las fechas para publicar.</p>
+            <FormAnuncio
+              inicial={publicarModal}
+              onGuardar={publicarAnuncio}
+              onCancelar={() => setPublicarModal(null)}
+              saving={pubSaving}
+            />
+          </div>
         </Modal>
       )}
     </div>
