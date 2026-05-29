@@ -26,14 +26,19 @@ const validarAnuncio = [
   body('fecha_fin').isISO8601().withMessage('fecha_fin debe ser una fecha válida'),
 ];
 
-router.get('/dashboard',             verificarAdmin, a.dashboard);
-router.get('/usuarios',              verificarAdmin, a.listarUsuarios);
-router.put('/usuarios/:id/estado',   verificarAdmin, validarEstadoUsuario, validate, a.cambiarEstadoUsuario);
-router.get('/reportes',              verificarAdmin, a.listarReportes);
-router.put('/reportes/:id',          verificarAdmin, validarReporte,       validate, a.resolverReporte);
-router.get('/torneos',               verificarAdmin, a.listarTorneosAdmin);
-router.put('/torneos/:id/aprobar',   verificarAdmin, validarId(),          validate, a.aprobarTorneo);
-router.get('/anuncios',              verificarAdmin, a.listarAnuncios);
-router.post('/anuncios',             verificarAdmin, validarAnuncio,       validate, a.crearAnuncio);
+router.get('/dashboard',                   verificarAdmin, a.dashboard);
+router.get('/stats',                       verificarAdmin, a.statsAmpliadas);
+router.get('/usuarios',                    verificarAdmin, a.listarUsuarios);
+router.put('/usuarios/:id/estado',         verificarAdmin, validarEstadoUsuario, validate, a.cambiarEstadoUsuario);
+router.delete('/usuarios/:id/foto',        verificarAdmin, validarId(), validate, a.eliminarFotoUsuario);
+router.get('/reportes',                    verificarAdmin, a.listarReportes);
+router.put('/reportes/:id',                verificarAdmin, validarReporte, validate, a.resolverReporte);
+router.get('/torneos',                     verificarAdmin, a.listarTorneosAdmin);
+router.put('/torneos/:id/aprobar',         verificarAdmin, validarId(), validate, a.aprobarTorneo);
+router.put('/torneos/:id/rechazar',        verificarAdmin, validarId(), validate, a.rechazarTorneo);
+router.get('/equipos',                     verificarAdmin, a.listarEquiposAdmin);
+router.get('/eventos',                     verificarAdmin, a.listarEventosAdmin);
+router.get('/anuncios',                    verificarAdmin, a.listarAnuncios);
+router.post('/anuncios',                   verificarAdmin, validarAnuncio, validate, a.crearAnuncio);
 
 module.exports = router;

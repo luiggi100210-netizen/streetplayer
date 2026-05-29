@@ -141,4 +141,73 @@ const crearAnuncio = asyncHandler(async (req, res) => {
   res.status(201).json(rows[0]);
 });
 
-module.exports = { dashboard, listarUsuarios, cambiarEstadoUsuario, listarReportes, resolverReporte, listarTorneosAdmin, aprobarTorneo, listarAnuncios, crearAnuncio, anunciosActivos };
+// GET /api/admin/equipos
+const listarEquiposAdmin = asyncHandler(async (req, res) => {
+  const { buscar, page = 1 } = req.query;
+  const limit = 30, offset = (page - 1) * limit;
+  let query = `
+    SELECT e.id, e.nombre, e.deporte, e.ciudad, e.estado, e.escudo_url,
+           e.wins, e.losses, e.draws, e.fecha_creacion,
+           u.username AS capitan_username, u.foto_url AS capitan_foto,
+           (SELECT COUNT(*) FROM equipo_miembros WHERE equipo_id = e.id) AS total_miembros
+    FROM equipos e JOIN usuarios u ON u.id = e.capitan_id WHERE 1=1`;
+  const params = [];
+  let idx = 1;
+  if (buscar) { query += ` AND (LOWER(e.nombre) LIKE $${idx} OR LOWER(u.username) LIKE $${idx})`; params.push(`%${buscar.toLowerCase()}%`); idx++; }
+  query += ` ORDER BY e.fecha_creacion DESC LIMIT $${idx++} OFFSET $${idx++}`;
+  params.push(limit, offset);
+  const { rows } = await pool.query(query, params);
+  res.json(rows);
+});
+
+// GET /api/admin/eventos
+const listarEventosAdmin = asyncHandler(async (req, res) => {
+  const { estado, page = 1 } = req.query;
+  const limit = 30, offset = (page - 1) * limit;
+  let query = `
+    SELECT ev.id, ev.titulo, ev.deporte, ev.ciudad, ev.estado, ev.imagen_url,
+           ev.fecha_evento, ev.fecha_creacion, ev.precio_entrada,
+           u.username AS creador_username, u.foto_url AS creador_foto,
+           (SELECT COUNT(*) FROM inscripciones WHERE evento_id = ev.id) AS total_inscritos
+    FROM eventos ev JOIN usuarios u ON u.id = ev.creador_id WHERE 1=1`;
+  const params = [];
+  let idx = 1;
+  if (estado) { query += ` AND ev.estado = $${idx++}`; params.push(estado); }
+  query += ` ORDER BY ev.fecha_creacion DESC LIMIT $${idx++} OFFSET $${idx++}`;
+  params.push(limit, offset);
+  const { rows } = await pool.query(query, params);
+  res.json(rows);
+});
+
+// DELETE /api/admin/usuarios/:id/foto
+const eliminarFotoUsuario = asyncHandler(async (req, res) => {
+  await pool.query('UPDATE usuarios SET foto_url = NULL WHERE id = $1', [req.params.id]);
+  res.json({ mensaje: 'Foto eliminada' });
+});
+
+// PUT /api/admin/torneos/:id/rechazar
+const rechazarTorneo = asyncHandler(async (req, res) => {
+  await pool.query('UPDATE torneos SET aprobado = false, estado = $1 WHERE id = $2', ['cancelado', req.params.id]);
+  res.json({ mensaje: 'Torneo rechazado' });
+});
+
+// GET /api/admin/stats — stats ampliadas
+const statsAmpliadas = asyncHandler(async (req, res) => {
+  const [topXp, topEquipos, actividadHoy] = await Promise.all([
+    pool.query(`SELECT u.username, u.foto_url, u.nivel_xp, u.ciudad FROM usuarios u ORDER BY u.nivel_xp DESC LIMIT 5`),
+    pool.query(`SELECT e.nombre, e.escudo_url, e.wins, (SELECT COUNT(*) FROM equipo_miembros WHERE equipo_id=e.id) AS miembros FROM equipos e WHERE e.estado='activo' ORDER BY e.wins DESC LIMIT 5`),
+    pool.query(`SELECT
+      (SELECT COUNT(*) FROM usuarios WHERE fecha_registro::date = CURRENT_DATE) AS nuevos_hoy,
+      (SELECT COUNT(*) FROM eventos WHERE fecha_creacion::date = CURRENT_DATE) AS eventos_hoy,
+      (SELECT COUNT(*) FROM retos WHERE created_at::date = CURRENT_DATE) AS retos_hoy`),
+  ]);
+  res.json({ top_xp: topXp.rows, top_equipos: topEquipos.rows, actividad_hoy: actividadHoy.rows[0] });
+});
+
+module.exports = {
+  dashboard, listarUsuarios, cambiarEstadoUsuario,
+  listarReportes, resolverReporte,
+  listarTorneosAdmin, aprobarTorneo, rechazarTorneo,
+  listarAnuncios, crearAnuncio, anunciosActivos,
+  listarEquiposAdmin, listarEventosAdmin, eliminarFotoUsuario, statsAmpliadas,
+};

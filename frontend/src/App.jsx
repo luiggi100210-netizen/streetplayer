@@ -23,6 +23,7 @@ import Equipos        from './pages/teams/Equipos';
 import EquipoDetalle  from './pages/teams/EquipoDetalle';
 import Retos          from './pages/teams/Retos';
 import Mensajes       from './pages/messages/Mensajes';
+import Admin          from './pages/admin/Admin';
 
 function Splash() {
   return (
@@ -96,6 +97,9 @@ function AppRoutes() {
         <Route path="retos"          element={<Retos />} />
         <Route path="mensajes"       element={<Mensajes />} />
       </Route>
+
+      {/* Panel admin — ruta standalone sin Layout */}
+      <Route path="/admin" element={<Admin />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
