@@ -139,29 +139,36 @@ function ModalConfirmarAsistencia({ equipo, onConfirmar, onCancelar, cargando })
 }
 
 function SlotJugador({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
-  const esMio   = jugador?.id === usuarioId;
-  const colorA  = esMio && equipo === 'A';
-  const colorB  = esMio && equipo === 'B';
+  const esMio  = jugador?.id === usuarioId;
+  const colorA = esMio && equipo === 'A';
+  const colorB = esMio && equipo === 'B';
+  const esB    = equipo === 'B';
+
+  const avatar = jugador ? (
+    jugador.foto_url ? (
+      <img src={jugador.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-white/10" alt={jugador.username} />
+    ) : (
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2 ${
+        colorA ? 'bg-sp-green/30 text-sp-green ring-sp-green/30' :
+        colorB ? 'bg-blue-400/20 text-blue-400 ring-blue-400/30' :
+        'bg-white/15 text-white ring-white/10'
+      }`}>
+        {jugador.username?.[0]?.toUpperCase()}
+      </div>
+    )
+  ) : null;
 
   if (jugador) {
     return (
-      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all border ${
+      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border ${
+        esB ? 'flex-row-reverse' : ''
+      } ${
         colorA ? 'border-sp-green/60 bg-sp-green/15' :
         colorB ? 'border-blue-400/60 bg-blue-400/10' :
         'border-white/5 bg-white/5'
       }`}>
-        {jugador.foto_url ? (
-          <img src={jugador.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-white/10" alt={jugador.username} />
-        ) : (
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2 ${
-            colorA ? 'bg-sp-green/30 text-sp-green ring-sp-green/30' :
-            colorB ? 'bg-blue-400/20 text-blue-400 ring-blue-400/30' :
-            'bg-white/15 text-white ring-white/10'
-          }`}>
-            {jugador.username?.[0]?.toUpperCase()}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
+        {avatar}
+        <div className={`flex-1 min-w-0 ${esB ? 'text-right' : ''}`}>
           <p className={`text-xs font-semibold truncate ${colorA ? 'text-sp-green' : colorB ? 'text-blue-400' : 'text-white'}`}>
             {jugador.nombre || jugador.username}
           </p>
@@ -172,29 +179,34 @@ function SlotJugador({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
   }
 
   if (clickable) {
+    const circulo = (
+      <div className={`w-8 h-8 rounded-full border border-dashed flex items-center justify-center shrink-0 transition-colors ${
+        esB
+          ? 'border-blue-400/30 group-hover:border-blue-400/70 group-hover:bg-blue-400/10'
+          : 'border-sp-green/30 group-hover:border-sp-green/70 group-hover:bg-sp-green/10'
+      }`}>
+        <span className={`text-lg leading-none font-light transition-colors ${esB ? 'text-blue-400/40 group-hover:text-blue-400' : 'text-sp-green/40 group-hover:text-sp-green'}`}>+</span>
+      </div>
+    );
     return (
       <button
         onClick={onClickSlot}
         className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl border border-dashed transition-all group ${
-          equipo === 'A'
-            ? 'border-sp-green/25 hover:border-sp-green/60 hover:bg-sp-green/8'
-            : 'border-blue-400/25 hover:border-blue-400/60 hover:bg-blue-400/8'
+          esB ? 'flex-row-reverse' : ''
+        } ${
+          esB
+            ? 'border-blue-400/25 hover:border-blue-400/60 hover:bg-blue-400/8'
+            : 'border-sp-green/25 hover:border-sp-green/60 hover:bg-sp-green/8'
         }`}
       >
-        <div className={`w-8 h-8 rounded-full border border-dashed flex items-center justify-center shrink-0 transition-colors ${
-          equipo === 'A'
-            ? 'border-sp-green/30 group-hover:border-sp-green/70 group-hover:bg-sp-green/10'
-            : 'border-blue-400/30 group-hover:border-blue-400/70 group-hover:bg-blue-400/10'
-        }`}>
-          <span className={`text-lg leading-none font-light transition-colors ${equipo === 'A' ? 'text-sp-green/40 group-hover:text-sp-green' : 'text-blue-400/40 group-hover:text-blue-400'}`}>+</span>
-        </div>
+        {circulo}
         <span className="text-xs text-white/30 group-hover:text-white/60 transition-colors">Unirme aquí</span>
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5">
+    <div className={`flex items-center gap-2 px-2 py-1.5 ${esB ? 'flex-row-reverse' : ''}`}>
       <div className="w-8 h-8 rounded-full border border-dashed border-white/8 shrink-0" />
       <span className="text-xs text-white/15">Libre</span>
     </div>
@@ -317,7 +329,7 @@ function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
 
           {/* ── Equipo B ── */}
           <div className="flex-1 p-3 space-y-2 z-10">
-            <div className="flex items-center gap-1.5 justify-center mb-3">
+            <div className="flex items-center gap-1.5 justify-center flex-row-reverse mb-3">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
               <span className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Equipo B</span>
             </div>
