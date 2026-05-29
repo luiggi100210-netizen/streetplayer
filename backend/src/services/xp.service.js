@@ -12,6 +12,7 @@ const XP_TABLA = {
   inscribir_torneo:     25,
   ganar_torneo:        100,
   invitar_amigo:        30,
+  mvp_partido:          30,
   // Negativos
   no_asistir:          -15,
   no_calificar:        -10,

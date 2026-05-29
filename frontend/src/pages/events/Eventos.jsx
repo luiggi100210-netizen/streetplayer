@@ -61,7 +61,16 @@ function TarjetaEvento({ evento }) {
 
         <div style={{ padding: '14px 16px 16px' }}>
           {/* Badges */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {evento.estado === 'en_curso' && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 800,
+                textTransform: 'uppercase', letterSpacing: '0.14em', padding: '3px 8px', borderRadius: 4,
+                color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24',
+                  animation: 'pulse 1s ease-in-out infinite', display: 'inline-block' }} />
+                EN VIVO
+              </span>
+            )}
             {evento.tipo && (
               <span style={{
                 fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em',
@@ -69,11 +78,13 @@ function TarjetaEvento({ evento }) {
                 color: tipoColor, background: tipoColor + '18', border: `1px solid ${tipoColor}44`,
               }}>{TIPO_LABEL[evento.tipo] || evento.tipo}</span>
             )}
-            <span style={{
-              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em',
-              padding: '3px 8px', borderRadius: 4,
-              color: estadoCfg.color, background: estadoCfg.bg, border: `1px solid ${estadoCfg.color}44`,
-            }}>{estadoCfg.label}</span>
+            {evento.estado !== 'en_curso' && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em',
+                padding: '3px 8px', borderRadius: 4,
+                color: estadoCfg.color, background: estadoCfg.bg, border: `1px solid ${estadoCfg.color}44`,
+              }}>{estadoCfg.label}</span>
+            )}
             {evento.nivel && evento.nivel !== 'todos' && (
               <span style={{
                 fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',

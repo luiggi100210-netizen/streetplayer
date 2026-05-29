@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MapaPicker from '../../components/MapaPicker';
+import { QRCodeSVG } from 'qrcode.react';
 
 const TIPO_COLOR = { pichanga: '#1D9E75', reto: '#f87171', campeonato: '#fbbf24' };
 const TIPO_LABEL = { pichanga: 'Pichanga', reto: 'Reto', campeonato: 'Campeonato' };
@@ -172,7 +173,12 @@ function SlotJugador({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
           <p className={`text-xs font-semibold truncate ${colorA ? 'text-sp-green' : colorB ? 'text-blue-400' : 'text-white'}`}>
             {jugador.nombre || jugador.username}
           </p>
-          {esMio && <p className="text-[9px] text-white/40 uppercase tracking-wider">Tú</p>}
+          <div className={`flex items-center gap-1 mt-0.5 ${esB ? 'justify-end' : ''}`}>
+            {jugador.posicion && (
+              <span className="text-[9px] text-white/30 uppercase tracking-wider font-bold">{jugador.posicion}</span>
+            )}
+            {esMio && <span className="text-[9px] text-sp-green font-bold uppercase">· Tú</span>}
+          </div>
         </div>
       </div>
     );
@@ -535,6 +541,174 @@ function CanchaSlots({ evento, usuario, onUnirse, onSalir, onConfirmar, accionan
         </div>
       </div>
     </>
+  );
+}
+
+function QRAsistencia({ eventoId, titulo }) {
+  const [mostrar, setMostrar] = useState(false);
+  const url = `${window.location.origin}/eventos/${eventoId}`;
+  return (
+    <div className="card space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-sp-muted uppercase tracking-wider font-semibold">QR de asistencia</p>
+          <p className="text-white text-sm font-medium mt-0.5">Los jugadores escanean al llegar</p>
+        </div>
+        <button
+          onClick={() => setMostrar(v => !v)}
+          className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${mostrar ? 'border-sp-green bg-sp-green/10 text-sp-green' : 'border-sp-border text-sp-muted hover:text-white'}`}
+        >
+          {mostrar ? 'Ocultar QR' : 'Mostrar QR'}
+        </button>
+      </div>
+      {mostrar && (
+        <div className="flex flex-col items-center gap-3 py-4">
+          <div className="p-4 bg-white rounded-2xl shadow-lg">
+            <QRCodeSVG value={url} size={180} level="M" />
+          </div>
+          <p className="text-xs text-sp-muted text-center max-w-xs">
+            Muestra este QR en la cancha para que los jugadores confirmen su presencia
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MvpVoting({ eventoId, participantes, usuarioId }) {
+  const [votos,     setVotos]     = useState([]);
+  const [miVoto,    setMiVoto]    = useState(null);
+  const [enviando,  setEnviando]  = useState(false);
+
+  useEffect(() => {
+    api.get(`/eventos/${eventoId}/mvp`)
+      .then(r => { setVotos(r.data.conteo); setMiVoto(r.data.mi_voto); })
+      .catch(() => {});
+  }, [eventoId]);
+
+  const votar = async (votadoId) => {
+    if (enviando) return;
+    setEnviando(true);
+    try {
+      const { data } = await api.post(`/eventos/${eventoId}/mvp`, { votado_id: votadoId });
+      setVotos(data.conteo);
+      setMiVoto(votadoId);
+    } catch {}
+    setEnviando(false);
+  };
+
+  const mvpId = votos[0]?.votado_id;
+  const candidatos = participantes.filter(p => p.id !== usuarioId);
+
+  return (
+    <div className="card space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">🏆</span>
+        <div>
+          <p className="text-white font-bold text-sm">¿Quién fue el MVP?</p>
+          <p className="text-sp-muted text-xs">Vota por el mejor jugador del partido</p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {candidatos.map(p => {
+          const conteoP = votos.find(v => v.votado_id === p.id);
+          const numVotos = parseInt(conteoP?.votos || 0);
+          const esMvp = p.id === mvpId && numVotos > 0;
+          const yaVote = miVoto === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => !miVoto && votar(p.id)}
+              disabled={!!miVoto || enviando}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
+                esMvp ? 'border-yellow-500/50 bg-yellow-500/10' :
+                yaVote ? 'border-sp-green/50 bg-sp-green/10' :
+                miVoto ? 'border-sp-border opacity-50' :
+                'border-sp-border hover:border-white/30 hover:bg-white/5 cursor-pointer'
+              }`}
+            >
+              {p.foto_url
+                ? <img src={p.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt={p.username} />
+                : <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white shrink-0">{p.username?.[0]?.toUpperCase()}</div>
+              }
+              <span className="flex-1 text-sm font-medium text-white">{p.nombre || p.username}</span>
+              {esMvp && <span className="text-sm">🏆</span>}
+              {numVotos > 0 && <span className="text-xs text-sp-muted">{numVotos} {numVotos === 1 ? 'voto' : 'votos'}</span>}
+              {yaVote && <span className="text-[10px] text-sp-green font-bold uppercase">Tu voto</span>}
+            </button>
+          );
+        })}
+      </div>
+      {miVoto && <p className="text-xs text-sp-muted text-center">Voto registrado. El MVP con más votos recibe +30 XP 🎖️</p>}
+    </div>
+  );
+}
+
+function InvitarSeguidores({ eventoId }) {
+  const [seguidores,  setSeguidores]  = useState([]);
+  const [abierto,     setAbierto]     = useState(false);
+  const [enviados,    setEnviados]    = useState(new Set());
+  const [buscando,    setBuscando]    = useState(false);
+
+  const cargar = async () => {
+    if (seguidores.length > 0) return;
+    setBuscando(true);
+    try {
+      const { data } = await api.get('/usuarios/buscar?q=');
+      setSeguidores(data.slice(0, 20));
+    } catch {}
+    setBuscando(false);
+  };
+
+  const invitar = async (uid) => {
+    try {
+      await api.post(`/eventos/${eventoId}/invitar`, { usuario_id: uid });
+      setEnviados(prev => new Set([...prev, uid]));
+    } catch {}
+  };
+
+  return (
+    <div className="card space-y-3">
+      <button
+        onClick={() => { setAbierto(v => !v); if (!abierto) cargar(); }}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📩</span>
+          <div>
+            <p className="text-white text-sm font-medium">Invitar jugadores</p>
+            <p className="text-sp-muted text-xs">Envía invitaciones a otros jugadores</p>
+          </div>
+        </div>
+        <span className="text-sp-muted text-sm">{abierto ? '▲' : '▼'}</span>
+      </button>
+
+      {abierto && (
+        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+          {buscando && <p className="text-sp-muted text-xs text-center py-3">Cargando...</p>}
+          {seguidores.map(u => (
+            <div key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5">
+              {u.foto_url
+                ? <img src={u.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt={u.username} />
+                : <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white shrink-0">{u.username?.[0]?.toUpperCase()}</div>
+              }
+              <span className="flex-1 text-xs text-white truncate">{u.nombre || u.username}</span>
+              <button
+                onClick={() => invitar(u.id)}
+                disabled={enviados.has(u.id)}
+                className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all shrink-0 ${
+                  enviados.has(u.id)
+                    ? 'border-sp-green/30 text-sp-green cursor-default'
+                    : 'border-sp-border text-sp-muted hover:border-sp-green hover:text-sp-green'
+                }`}
+              >
+                {enviados.has(u.id) ? '✓ Enviado' : 'Invitar'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -988,6 +1162,24 @@ export default function EventoDetalle() {
           </div>
         )}
 
+
+        {/* QR de asistencia — visible cuando el evento está confirmado o en_curso */}
+        {['confirmado','en_curso'].includes(evento.estado) && esCreador && (
+          <QRAsistencia eventoId={id} titulo={evento.titulo} />
+        )}
+
+        {/* MVP voting — solo cuando está finalizado y participaste */}
+        {evento.estado === 'finalizado' && evento.participantes?.some(p => p.id === usuario?.id) && (
+          <MvpVoting eventoId={id} participantes={evento.participantes} usuarioId={usuario?.id} />
+        )}
+
+        {/* Invitar seguidores */}
+        {['abierto','lleno'].includes(evento.estado) && !esCreador && evento.participantes?.some(p => p.id === usuario?.id) && (
+          <InvitarSeguidores eventoId={id} />
+        )}
+        {['abierto','lleno','confirmado'].includes(evento.estado) && esCreador && (
+          <InvitarSeguidores eventoId={id} />
+        )}
 
         {/* Timer y tiempos reales */}
         {(evento.inicio_real || evento.estado === 'en_curso') && (

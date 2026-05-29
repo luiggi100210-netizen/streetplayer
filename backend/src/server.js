@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const { verify } = require('jsonwebtoken');
 const app    = require('./app');
 const initDB = require('./db/init');
-const { iniciarCronSanciones } = require('./services/sanciones.cron');
+const { iniciarCronSanciones, iniciarCronRecordatorios } = require('./services/sanciones.cron');
 
 const PORT   = process.env.PORT || 4000;
 const server = http.createServer(app);
@@ -36,5 +36,6 @@ initDB().then(() => {
   server.listen(PORT, () => {
     console.log(`StreetPlayer Backend corriendo en puerto ${PORT}`);
     iniciarCronSanciones();
+    iniciarCronRecordatorios();
   });
 });

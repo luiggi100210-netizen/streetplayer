@@ -97,7 +97,6 @@ export default function Ranking() {
             value={filtros.ciudad}
             onChange={e => setFiltros(p => ({ ...p, ciudad: e.target.value }))}
             placeholder="Ciudad..."
-            className="input text-sm"
             className="input text-sm flex-1 min-w-0"
           style={{ maxWidth: 130 }}
           />

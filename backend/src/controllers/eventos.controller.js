@@ -68,7 +68,7 @@ const obtenerEvento = asyncHandler(async (req, res) => {
   if (rows.length === 0) return res.status(404).json({ error: 'Evento no encontrado' });
 
   const { rows: participantes } = await pool.query(
-    `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel_xp, ep.equipo, ep.estado
+    `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel_xp, u.posicion, ep.equipo, ep.estado
      FROM evento_participantes ep JOIN usuarios u ON ep.usuario_id = u.id
      WHERE ep.evento_id = $1 AND ep.estado IN ('confirmado','asistio')
      ORDER BY ep.fecha ASC`,
@@ -422,4 +422,89 @@ const cancelarEvento = asyncHandler(async (req, res) => {
   res.json({ mensaje: 'Evento cancelado' });
 });
 
-module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento, cancelarEvento, iniciarEvento };
+// POST /api/eventos/:id/mvp — votar por el MVP del partido
+const votarMvp = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { votado_id } = req.body;
+  if (!votado_id) return res.status(400).json({ error: 'votado_id requerido' });
+  if (votado_id === req.usuario.id) return res.status(400).json({ error: 'No puedes votarte a ti mismo' });
+
+  const { rows: [ev] } = await pool.query('SELECT estado FROM eventos WHERE id = $1', [id]);
+  if (!ev || ev.estado !== 'finalizado') return res.status(400).json({ error: 'Solo puedes votar MVP en eventos finalizados' });
+
+  // El votante debe haber participado
+  const { rows: [part] } = await pool.query(
+    "SELECT 1 FROM evento_participantes WHERE evento_id=$1 AND usuario_id=$2 AND estado IN ('asistio','confirmado')",
+    [id, req.usuario.id]
+  );
+  if (!part) return res.status(403).json({ error: 'Solo participantes pueden votar' });
+
+  // El votado también debe haber participado
+  const { rows: [partV] } = await pool.query(
+    "SELECT 1 FROM evento_participantes WHERE evento_id=$1 AND usuario_id=$2 AND estado IN ('asistio','confirmado')",
+    [id, votado_id]
+  );
+  if (!partV) return res.status(400).json({ error: 'El votado no participó en el evento' });
+
+  await pool.query(
+    `INSERT INTO mvp_votos (evento_id, votante_id, votado_id)
+     VALUES ($1,$2,$3)
+     ON CONFLICT (evento_id, votante_id) DO UPDATE SET votado_id = $3`,
+    [id, req.usuario.id, votado_id]
+  );
+
+  // Contar votos del evento
+  const { rows: conteo } = await pool.query(
+    `SELECT votado_id, COUNT(*) AS votos FROM mvp_votos WHERE evento_id = $1 GROUP BY votado_id ORDER BY votos DESC`,
+    [id]
+  );
+
+  // Si el más votado tiene mayoría clara, darle XP (solo una vez, registrado en xp_log)
+  if (conteo.length > 0) {
+    const mvpId = conteo[0].votado_id;
+    const yaRecompensado = await pool.query(
+      "SELECT 1 FROM xp_log WHERE usuario_id=$1 AND motivo='mvp_partido' AND referencia_id=$2",
+      [mvpId, id]
+    );
+    if (yaRecompensado.rows.length === 0 && parseInt(conteo[0].votos) >= 2) {
+      await darXP(mvpId, 'mvp_partido', id).catch(() => {});
+      await notificar(mvpId, 'logro', `🏆 ¡Fuiste elegido MVP del partido! +30 XP`, id);
+    }
+  }
+
+  res.json({ mensaje: 'Voto registrado', conteo });
+});
+
+// GET /api/eventos/:id/mvp — resultados de votación MVP
+const obtenerMvp = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await pool.query(
+    `SELECT v.votado_id, COUNT(*) AS votos, u.username, u.nombre, u.foto_url
+     FROM mvp_votos v JOIN usuarios u ON u.id = v.votado_id
+     WHERE v.evento_id = $1
+     GROUP BY v.votado_id, u.username, u.nombre, u.foto_url
+     ORDER BY votos DESC`,
+    [id]
+  );
+  const miVoto = await pool.query(
+    'SELECT votado_id FROM mvp_votos WHERE evento_id=$1 AND votante_id=$2',
+    [id, req.usuario.id]
+  );
+  res.json({ conteo: rows, mi_voto: miVoto.rows[0]?.votado_id || null });
+});
+
+// POST /api/eventos/:id/invitar — invitar a un seguidor al evento
+const invitarAlEvento = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { usuario_id } = req.body;
+  if (!usuario_id) return res.status(400).json({ error: 'usuario_id requerido' });
+
+  const { rows: [ev] } = await pool.query('SELECT titulo FROM eventos WHERE id=$1', [id]);
+  if (!ev) return res.status(404).json({ error: 'Evento no encontrado' });
+
+  await notificar(usuario_id, 'evento',
+    `📩 ${req.usuario.username} te invita al evento "${ev.titulo}"`, id);
+  res.json({ mensaje: 'Invitación enviada' });
+});
+
+module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento, cancelarEvento, iniciarEvento, votarMvp, obtenerMvp, invitarAlEvento };

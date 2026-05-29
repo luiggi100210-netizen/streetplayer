@@ -83,4 +83,41 @@ function iniciarCronSanciones() {
   console.log('[cron-sanciones] Iniciado — revisión cada hora');
 }
 
-module.exports = { iniciarCronSanciones };
+// Cada 15 minutos: enviar recordatorio 2h antes del partido
+function iniciarCronRecordatorios() {
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      // Eventos que empiezan entre 1h55 y 2h05 desde ahora (ventana de 10 min para no duplicar)
+      const { rows: proximos } = await pool.query(
+        `SELECT e.id, e.titulo, ep.usuario_id
+         FROM eventos e
+         JOIN evento_participantes ep ON ep.evento_id = e.id
+         WHERE e.estado IN ('abierto','lleno','confirmado')
+           AND e.fecha_evento BETWEEN NOW() + INTERVAL '115 minutes'
+                                    AND NOW() + INTERVAL '125 minutes'
+           AND NOT EXISTS (
+             SELECT 1 FROM notificaciones n
+             WHERE n.usuario_id = ep.usuario_id
+               AND n.referencia_id = e.id
+               AND n.mensaje LIKE '%⏰%'
+               AND n.creado_en > NOW() - INTERVAL '3 hours'
+           )`
+      );
+      for (const { id, titulo, usuario_id } of proximos) {
+        await pool.query(
+          `INSERT INTO notificaciones (usuario_id, tipo, mensaje, referencia_id)
+           VALUES ($1, 'evento', $2, $3)`,
+          [usuario_id, `⏰ Tu partido "${titulo}" empieza en 2 horas. ¡Prepárate!`, id]
+        );
+      }
+      if (proximos.length > 0) {
+        console.log(`[cron-recordatorios] Enviados ${proximos.length} recordatorios`);
+      }
+    } catch (err) {
+      console.error('[cron-recordatorios] Error:', err.message);
+    }
+  });
+  console.log('[cron-recordatorios] Iniciado — revisión cada 15 min');
+}
+
+module.exports = { iniciarCronSanciones, iniciarCronRecordatorios };

@@ -58,5 +58,8 @@ router.post('/:id/finalizar', verificarToken, validarFinalizar, validate, c.fina
 router.put('/:id/iniciar',    verificarToken, validarId,        validate, c.iniciarEvento);
 router.put('/:id/confirmar',  verificarToken, validarId,        validate, c.confirmarEvento);
 router.put('/:id/cancelar',   verificarToken, validarId,        validate, c.cancelarEvento);
+router.post('/:id/mvp',       verificarToken, validarId,        validate, c.votarMvp);
+router.get('/:id/mvp',        verificarToken, validarId,        validate, c.obtenerMvp);
+router.post('/:id/invitar',   verificarToken, validarId,        validate, c.invitarAlEvento);
 
 module.exports = router;
