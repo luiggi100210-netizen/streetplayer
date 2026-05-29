@@ -11,6 +11,7 @@ const SQL_FILES = [
   'medallas_migration.sql',
   'chat_migration.sql',
   'firebase_migration.sql',
+  'refresh_tokens_migration.sql',
   'tiempos_migration.sql',
   'mvp_migration.sql',
   'torneo_full_migration.sql',
