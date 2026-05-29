@@ -19,8 +19,20 @@ import Equipos        from './pages/teams/Equipos';
 import EquipoDetalle  from './pages/teams/EquipoDetalle';
 import Mensajes       from './pages/messages/Mensajes';
 
+function Splash() {
+  return (
+    <div className="min-h-screen bg-sp-bg flex flex-col items-center justify-center gap-6">
+      <p className="font-impact text-4xl text-sp-green tracking-widest">STREETPLAYER</p>
+      <div className="w-48 h-1 bg-sp-border rounded-full overflow-hidden">
+        <div className="h-full bg-sp-green rounded-full animate-pulse w-2/3" />
+      </div>
+    </div>
+  );
+}
+
 function PrivateRoute({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, cargando } = useAuth();
+  if (cargando) return <Splash />;
   return usuario ? children : <Navigate to="/login" replace />;
 }
 
@@ -49,7 +61,8 @@ function MiPerfil() {
 }
 
 function PublicRoute({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, cargando } = useAuth();
+  if (cargando) return null;
   return !usuario ? children : <Navigate to="/home" replace />;
 }
 
