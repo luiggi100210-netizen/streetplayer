@@ -28,39 +28,15 @@ export default function Equipos() {
     setCargando(false);
   }, [filtros]);
 
-  const cargarMiEquipo = useCallback(async () => {
-    try {
-      const { data: retosData } = await api.get('/retos');
-      setRetos(retosData);
-      // El endpoint de retos requiere ser capitán — si devuelve datos, tenemos equipo
-      if (retosData.length > 0) {
-        const equipoId = retosData[0].retador_id === retosData[0].retador_id
-          ? retosData[0].retador_id || retosData[0].retado_id
-          : null;
-        if (equipoId) {
-          const { data } = await api.get(`/equipos/${retosData[0].retador_id}`);
-          setMiEquipo(data);
-        }
-      }
-    } catch {}
-    // También intentar obtener equipo del usuario directamente
-    try {
-      const params = new URLSearchParams({ capitan: usuario?.id || '' });
-      // Buscamos equipos donde el usuario es capitán usando buscarEquipos con lógica propia
-    } catch {}
-  }, [usuario]);
-
   useEffect(() => { cargarEquipos(); }, [cargarEquipos]);
 
-  // Cargar mi equipo y retos
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: retosData } = await api.get('/retos');
+        const { data: { retos: retosData, mi_equipo_id } } = await api.get('/retos');
         setRetos(retosData);
-        if (retosData.length > 0) {
-          const id = retosData[0].retador_id;
-          const { data } = await api.get(`/equipos/${id}`);
+        if (mi_equipo_id) {
+          const { data } = await api.get(`/equipos/${mi_equipo_id}`);
           setMiEquipo(data);
         }
       } catch {}

@@ -5,11 +5,7 @@ import api from '../../services/api';
 import { getSocket } from '../../services/socket';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-const COLORES_NIVEL = {
-  rookie: '#888', amateur: '#9FE1CB', intermedio: '#60a5fa',
-  avanzado: '#a78bfa', pro: '#fbbf24', elite: '#f87171', leyenda: '#fde68a',
-};
+import { COLORES_NIVEL } from '../../constants';
 
 const TIPO_NOTIF_ICON = {
   seguidor: '👤', evento: '⚽', calificacion: '⭐', xp: '🔥',

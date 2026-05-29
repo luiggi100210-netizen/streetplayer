@@ -78,7 +78,7 @@ const seguir = asyncHandler(async (req, res) => {
 // GET /api/usuarios/buscar?q=
 const buscarUsuarios = asyncHandler(async (req, res) => {
   const { q, deporte, ciudad } = req.query;
-  let query = `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel, u.deportes, u.ciudad,
+  let query = `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel_xp, u.deportes, u.ciudad,
                       r.puntos, r.posicion AS ranking_posicion
                FROM usuarios u LEFT JOIN ranking r ON r.usuario_id = u.id
                WHERE u.estado = 'activo'`;

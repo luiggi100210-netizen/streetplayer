@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 // ── Design tokens ────────────────────────────────────────────
 const T = {
@@ -76,6 +77,7 @@ const STATS = [
 
 // ── Component ────────────────────────────────────────────────
 export default function Landing() {
+  const { usuario } = useAuth();
   return (
     <div style={{ background: T.black, color: T.white, fontFamily: 'Inter, system-ui, sans-serif', overflowX: 'hidden' }}>
 
@@ -102,21 +104,31 @@ export default function Landing() {
               >{l}</a>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link to="/login" style={{
-              color: T.muted, fontSize: 11, fontWeight: 700,
-              padding: '7px 16px', border: `1px solid ${T.border}`, borderRadius: 6,
-              textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.1em',
-              transition: 'all .2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = T.emerald; e.currentTarget.style.color = T.white; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}
-            >Entrar</Link>
-            <Link to="/registro" style={{
-              background: T.emerald, color: T.white, fontSize: 11, fontWeight: 700,
-              padding: '7px 18px', borderRadius: 6, textDecoration: 'none',
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-            }}>Únete</Link>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {usuario ? (
+              <Link to="/home" style={{
+                background: T.emerald, color: T.white, fontSize: 11, fontWeight: 700,
+                padding: '7px 18px', borderRadius: 6, textDecoration: 'none',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}>Ir al campo →</Link>
+            ) : (
+              <>
+                <Link to="/login" style={{
+                  color: T.muted, fontSize: 11, fontWeight: 700,
+                  padding: '7px 16px', border: `1px solid ${T.border}`, borderRadius: 6,
+                  textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.1em',
+                  transition: 'all .2s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.emerald; e.currentTarget.style.color = T.white; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}
+                >Entrar</Link>
+                <Link to="/registro" style={{
+                  background: T.emerald, color: T.white, fontSize: 11, fontWeight: 700,
+                  padding: '7px 18px', borderRadius: 6, textDecoration: 'none',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                }}>Únete</Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
