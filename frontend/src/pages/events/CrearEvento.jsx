@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import UploadFoto from '../../components/UploadFoto';
+import UploadFoto  from '../../components/UploadFoto';
+import MapaPicker  from '../../components/MapaPicker';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo', 'otro'];
 const TIPOS    = [
@@ -19,6 +20,7 @@ export default function CrearEvento() {
     fecha_evento: '', formato: 5, cupos_total: 10, precio: 0,
     es_privado: false, foto_url: '',
   });
+  const [ubicacion, setUbicacion] = useState(null); // { lat, lng }
   const [cargando, setCargando] = useState(false);
   const [error, setError]       = useState('');
 
@@ -33,7 +35,11 @@ export default function CrearEvento() {
     setCargando(true);
     setError('');
     try {
-      const { data } = await api.post('/eventos', form);
+      const payload = {
+        ...form,
+        ...(ubicacion && { latitud: ubicacion.lat, longitud: ubicacion.lng }),
+      };
+      const { data } = await api.post('/eventos', payload);
       navigate(`/eventos/${data.id}`);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear el evento');
@@ -116,6 +122,24 @@ export default function CrearEvento() {
           <div>
             <label className="label">Dirección</label>
             <input value={form.direccion} onChange={e => set('direccion', e.target.value)} className="input" placeholder="Av. Principal 1234" />
+          </div>
+
+          <div>
+            <label className="label">Ubicación en el mapa</label>
+            <p className="text-xs text-sp-muted mb-2">Toca el mapa para marcar la cancha</p>
+            <MapaPicker value={ubicacion} onChange={setUbicacion} />
+            {ubicacion && (
+              <p className="text-xs text-[#00e676] mt-2">
+                Pin colocado — {ubicacion.lat.toFixed(5)}, {ubicacion.lng.toFixed(5)}
+                <button
+                  type="button"
+                  onClick={() => setUbicacion(null)}
+                  className="ml-3 text-[#64748b] hover:text-red-400 transition-colors"
+                >
+                  Quitar
+                </button>
+              </p>
+            )}
           </div>
         </div>
 
