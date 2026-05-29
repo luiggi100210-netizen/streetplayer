@@ -34,18 +34,34 @@ const obtenerEquipo = asyncHandler(async (req, res) => {
   );
   if (!rows.length) return res.status(404).json({ error: 'Equipo no encontrado' });
 
-  const { rows: miembros } = await pool.query(
-    `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel_xp, em.rol, em.fecha
-     FROM equipo_miembros em JOIN usuarios u ON u.id = em.usuario_id
-     WHERE em.equipo_id = $1 ORDER BY em.rol DESC, em.fecha ASC`, [id]
-  );
+  const [miembrosRes, transfersRes] = await Promise.all([
+    pool.query(
+      `SELECT u.id, u.username, u.nombre, u.foto_url, u.nivel_xp, u.posicion,
+              u.partidos_jugados, u.goles_totales, em.rol, em.fecha
+       FROM equipo_miembros em JOIN usuarios u ON u.id = em.usuario_id
+       WHERE em.equipo_id = $1 ORDER BY em.rol DESC, em.fecha ASC`, [id]
+    ),
+    pool.query(
+      `SELECT et.*, u.username, u.foto_url, u.nombre,
+              eo.nombre AS equipo_origen_nombre
+       FROM equipo_transfers et
+       JOIN usuarios u ON u.id = et.usuario_id
+       LEFT JOIN equipos eo ON eo.id = et.equipo_origen_id
+       WHERE et.equipo_id = $1 ORDER BY et.fecha_inicio DESC LIMIT 30`, [id]
+    ),
+  ]);
 
-  res.json({ ...rows[0], miembros });
+  res.json({ ...rows[0], miembros: miembrosRes.rows, transfers: transfersRes.rows });
 });
 
 // POST /api/equipos
 const crearEquipo = asyncHandler(async (req, res) => {
   const { nombre, deporte = 'futbol', ciudad, escudo_url } = req.body;
+
+  // Verificar unlock: necesita 5+ partidos jugados
+  const { rows: [u] } = await pool.query('SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]);
+  if ((u?.partidos_jugados || 0) < 5)
+    return res.status(403).json({ error: 'Necesitas al menos 5 partidos jugados para crear un equipo', partidos_jugados: u?.partidos_jugados || 0 });
 
   const { rows: yaCapitan } = await pool.query(
     `SELECT id FROM equipos WHERE capitan_id = $1 AND estado = 'activo'`, [req.usuario.id]
@@ -127,12 +143,25 @@ const invitarMiembro = asyncHandler(async (req, res) => {
   );
   if (yaEsMiembro) return res.status(400).json({ error: 'El jugador ya es miembro del equipo' });
 
+  // Obtener equipo actual del jugador (para registrar origen del transfer)
+  const { rows: [equipoActual] } = await pool.query(
+    `SELECT em.equipo_id FROM equipo_miembros em WHERE em.usuario_id = $1 LIMIT 1`, [usuario_id]
+  );
+
   await pool.query(
     `INSERT INTO equipo_miembros (equipo_id, usuario_id, rol) VALUES ($1,$2,'jugador')`, [id, usuario_id]
   );
-  await notificar(usuario_id, 'equipo', `${req.usuario.username} te añadió al equipo "${equipo.nombre}"`, id);
 
-  res.status(201).json({ mensaje: 'Jugador añadido al equipo' });
+  // Registrar fichaje
+  await pool.query(
+    `INSERT INTO equipo_transfers (equipo_id, usuario_id, tipo, equipo_origen_id)
+     VALUES ($1,$2,'fichaje',$3)`,
+    [id, usuario_id, equipoActual?.equipo_id || null]
+  );
+
+  await notificar(usuario_id, 'equipo', `${req.usuario.username} te fichó para el equipo "${equipo.nombre}"`, id);
+
+  res.status(201).json({ mensaje: 'Jugador fichado al equipo' });
 });
 
 // DELETE /api/equipos/:id/miembros/:usuarioId — expulsar
@@ -148,6 +177,15 @@ const expulsarMiembro = asyncHandler(async (req, res) => {
     'DELETE FROM equipo_miembros WHERE equipo_id = $1 AND usuario_id = $2 RETURNING *', [id, usuarioId]
   );
   if (!rows.length) return res.status(404).json({ error: 'El jugador no es miembro del equipo' });
+
+  await pool.query(
+    `UPDATE equipo_transfers SET activo=false, fecha_fin=NOW()
+     WHERE equipo_id=$1 AND usuario_id=$2 AND activo=true`, [id, usuarioId]
+  );
+  await pool.query(
+    `INSERT INTO equipo_transfers (equipo_id, usuario_id, tipo) VALUES ($1,$2,'salida')`,
+    [id, usuarioId]
+  );
 
   res.json({ mensaje: 'Jugador expulsado del equipo' });
 });
@@ -171,4 +209,17 @@ const salirEquipo = asyncHandler(async (req, res) => {
   res.json({ mensaje: 'Saliste del equipo' });
 });
 
-module.exports = { buscarEquipos, obtenerEquipo, crearEquipo, actualizarEquipo, eliminarEquipo, invitarMiembro, expulsarMiembro, salirEquipo };
+// GET /api/equipos/puede-crear — verifica si el usuario puede crear equipo
+const puedeCrearEquipo = asyncHandler(async (req, res) => {
+  const { rows: [u] } = await pool.query(
+    'SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]
+  );
+  const pj = u?.partidos_jugados || 0;
+  const puede = pj >= 5;
+  res.json({ puede, partidos_jugados: pj, requerido: 5, faltantes: Math.max(0, 5 - pj) });
+});
+
+module.exports = {
+  buscarEquipos, obtenerEquipo, crearEquipo, actualizarEquipo,
+  eliminarEquipo, invitarMiembro, expulsarMiembro, salirEquipo, puedeCrearEquipo,
+};

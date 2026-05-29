@@ -4,8 +4,10 @@ const validate = require('../middleware/validate');
 const { verificarToken } = require('../middleware/auth');
 const {
   buscarEquipos, obtenerEquipo, crearEquipo, actualizarEquipo,
-  eliminarEquipo, invitarMiembro, expulsarMiembro, salirEquipo,
+  eliminarEquipo, invitarMiembro, expulsarMiembro, salirEquipo, puedeCrearEquipo,
 } = require('../controllers/equipos.controller');
+
+router.get('/puede-crear', verificarToken, puedeCrearEquipo);
 
 router.get('/',
   [query('q').optional().isString().trim(), query('deporte').optional().isString().trim(), query('ciudad').optional().isString().trim()],

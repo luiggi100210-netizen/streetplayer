@@ -14,6 +14,7 @@ const SQL_FILES = [
   'tiempos_migration.sql',
   'mvp_migration.sql',
   'torneo_full_migration.sql',
+  'retos_full_migration.sql',
 ];
 
 async function init() {

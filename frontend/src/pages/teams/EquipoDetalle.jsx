@@ -4,6 +4,45 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import UploadFoto from '../../components/UploadFoto';
 
+function ModalRetoRapido({ equipoRetadoId, equipoNombre, onClose }) {
+  const [form, setForm] = useState({ cancha: '', hora_propuesta: '', formato_reto: 'tiempo', valor_formato: 15, monto_apuesta: 0 });
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const enviar = async () => {
+    setEnviando(true); setError('');
+    try {
+      await api.post('/retos', { equipo_retado_id: equipoRetadoId, ...form, valor_formato: parseInt(form.valor_formato), monto_apuesta: parseFloat(form.monto_apuesta) || 0 });
+      onClose(true);
+    } catch (err) { setError(err.response?.data?.error || 'Error'); }
+    setEnviando(false);
+  };
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div className="card" style={{ width: '100%', maxWidth: 420 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 className="font-impact text-lg">RETAR A {equipoNombre?.toUpperCase()}</h2>
+          <button onClick={() => onClose(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 20, cursor: 'pointer' }}>✕</button>
+        </div>
+        <div className="space-y-3">
+          <div><label className="label">Cancha / Lugar</label><input value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))} className="input w-full" placeholder="Ej: Cancha del parque norte" /></div>
+          <div><label className="label">Fecha y hora propuesta</label><input type="datetime-local" value={form.hora_propuesta} onChange={e => setForm(p => ({ ...p, hora_propuesta: e.target.value }))} className="input w-full" /></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[{ v: 'tiempo', l: 'Por tiempo' }, { v: 'goles', l: 'Por goles' }].map(({ v, l }) => (
+              <button key={v} onClick={() => setForm(p => ({ ...p, formato_reto: v }))} className={form.formato_reto === v ? 'btn-primary text-xs flex-1' : 'btn-ghost text-xs flex-1'}>{l}</button>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label className="label">{form.formato_reto === 'goles' ? 'Goles' : 'Minutos'}</label><input type="number" min="1" value={form.valor_formato} onChange={e => setForm(p => ({ ...p, valor_formato: e.target.value }))} className="input w-full" /></div>
+            <div><label className="label">Apuesta (S/)</label><input type="number" min="0" step="0.5" value={form.monto_apuesta} onChange={e => setForm(p => ({ ...p, monto_apuesta: e.target.value }))} className="input w-full" /></div>
+          </div>
+        </div>
+        {error && <p style={{ marginTop: 10, fontSize: 12, color: '#f87171' }}>{error}</p>}
+        <button onClick={enviar} disabled={enviando} className="btn-primary w-full mt-4">{enviando ? '...' : '⚔️ ENVIAR RETO'}</button>
+      </div>
+    </div>
+  );
+}
+
 export default function EquipoDetalle() {
   const { id }           = useParams();
   const { usuario }      = useAuth();
@@ -25,8 +64,10 @@ export default function EquipoDetalle() {
   // Retar
   const [retando, setRetando]   = useState(false);
   const [miEquipoId, setMiEquipoId] = useState(null);
+  const [modalReto, setModalReto] = useState(false);
 
   const soyCapitan = equipo?.capitan_id === usuario?.id;
+  const [modalRetoOpen, setModalRetoOpen] = useState(false);
 
   const cargar = async () => {
     setCargando(true);
@@ -50,7 +91,7 @@ export default function EquipoDetalle() {
     const detectarEquipo = async () => {
       try {
         const { data } = await api.get('/retos');
-        if (data.length > 0) setMiEquipoId(data[0].retador_id || data[0].retado_id);
+        if (data.mi_equipo_id) setMiEquipoId(data.mi_equipo_id);
       } catch {}
     };
     detectarEquipo();
@@ -119,17 +160,7 @@ export default function EquipoDetalle() {
     }
   };
 
-  const retar = async () => {
-    if (!miEquipoId) { alert('Debes ser capitán de un equipo para retar'); return; }
-    setRetando(true);
-    try {
-      await api.post('/retos', { equipo_retado_id: id });
-      alert('¡Reto enviado! El capitán rival recibirá una notificación.');
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al enviar reto');
-    }
-    setRetando(false);
-  };
+  const retar = () => setModalRetoOpen(true);
 
   if (cargando) return (
     <div className="max-w-3xl mx-auto px-4 py-6 animate-pulse space-y-4">
@@ -262,14 +293,19 @@ export default function EquipoDetalle() {
       )}
 
       {/* TABS */}
-      <div className="flex gap-1 border-b border-sp-border">
-        {['miembros', ...(soyCapitan ? ['invitar'] : [])].map(t => (
+      <div className="flex gap-1 border-b border-sp-border overflow-x-auto">
+        {[
+          { key: 'miembros',    label: `Plantilla (${equipo.miembros?.length || 0})` },
+          { key: 'stats',       label: 'Estadísticas' },
+          { key: 'jales',       label: `Jales (${equipo.transfers?.length || 0})` },
+          ...(soyCapitan ? [{ key: 'invitar', label: 'Fichar jugador' }] : []),
+        ].map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px ${tab === t ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px whitespace-nowrap ${tab === key ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}
           >
-            {t === 'miembros' ? `Miembros (${equipo.miembros?.length || 0})` : 'Invitar jugador'}
+            {label}
           </button>
         ))}
       </div>
@@ -311,6 +347,99 @@ export default function EquipoDetalle() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TAB STATS */}
+      {tab === 'stats' && (
+        <div className="card space-y-4">
+          <h2 className="font-impact text-sm uppercase tracking-widest text-sp-muted">Estadísticas del equipo</h2>
+          {/* Tabla resumen */}
+          <div className="grid grid-cols-5 gap-2 text-center">
+            {[
+              { val: wins + losses + draws, label: 'PJ', color: '#fff' },
+              { val: wins,   label: 'G',  color: '#1D9E75' },
+              { val: draws,  label: 'E',  color: '#fbbf24' },
+              { val: losses, label: 'P',  color: '#f87171' },
+              { val: pct !== null ? `${pct}%` : '-', label: 'W%', color: pct >= 50 ? '#1D9E75' : '#888' },
+            ].map(({ val, label, color }) => (
+              <div key={label} className="bg-sp-bg rounded-lg py-3 border border-sp-border">
+                <p className="font-impact text-xl" style={{ color }}>{val}</p>
+                <p className="text-sp-muted text-[9px] uppercase tracking-widest mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+          {/* Barra de rendimiento */}
+          {(wins + losses + draws) > 0 && (
+            <div>
+              <p className="text-xs text-sp-muted mb-1.5">Rendimiento global</p>
+              <div className="h-2 bg-sp-border rounded-full overflow-hidden flex">
+                <div style={{ width: `${(wins/(wins+losses+draws))*100}%`, background: '#1D9E75' }} />
+                <div style={{ width: `${(draws/(wins+losses+draws))*100}%`, background: '#fbbf24' }} />
+                <div style={{ width: `${(losses/(wins+losses+draws))*100}%`, background: '#f87171' }} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[9px] text-sp-green">Victorias</span>
+                <span className="text-[9px] text-yellow-400">Empates</span>
+                <span className="text-[9px] text-red-400">Derrotas</span>
+              </div>
+            </div>
+          )}
+          {/* Top goleadores del equipo */}
+          {equipo.miembros?.length > 0 && (
+            <div>
+              <p className="text-xs text-sp-muted mb-2">Top jugadores</p>
+              <div className="space-y-1.5">
+                {[...equipo.miembros].sort((a, b) => (b.goles_totales || 0) - (a.goles_totales || 0)).slice(0, 5).map((m, i) => (
+                  <div key={m.id} className="flex items-center gap-3 py-1.5 border-b border-sp-border/50 last:border-0">
+                    <span className="text-sp-muted text-xs w-4">{i + 1}</span>
+                    {m.foto_url ? <img src={m.foto_url} className="w-7 h-7 rounded-full object-cover border border-sp-border shrink-0" alt="" /> : <div className="w-7 h-7 rounded-full bg-sp-green/20 flex items-center justify-center text-xs font-bold text-white shrink-0">{m.username?.[0]?.toUpperCase()}</div>}
+                    <span className="text-white text-xs flex-1 truncate">{m.nombre || m.username}</span>
+                    <span className="text-xs text-sp-muted capitalize">{m.posicion || '-'}</span>
+                    <span className="text-xs font-bold text-sp-green">{m.goles_totales || 0} goles</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB JALES (transfers) */}
+      {tab === 'jales' && (
+        <div className="space-y-2">
+          {(!equipo.transfers || equipo.transfers.length === 0) ? (
+            <div className="card text-center py-8">
+              <p className="text-sp-muted text-sm">Sin movimientos de plantilla registrados</p>
+            </div>
+          ) : equipo.transfers.map(t => {
+            const tipoConfig = {
+              fichaje:  { color: '#1D9E75', icon: '↗', label: 'Fichaje'  },
+              prestamo: { color: '#fbbf24', icon: '↔', label: 'Préstamo' },
+              salida:   { color: '#f87171', icon: '↙', label: 'Salida'   },
+            };
+            const cfg = tipoConfig[t.tipo] || { color: '#888', icon: '·', label: t.tipo };
+            return (
+              <div key={t.id} className="card flex items-center gap-3">
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: cfg.color + '20', border: `1px solid ${cfg.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: cfg.color, flexShrink: 0 }}>
+                  {cfg.icon}
+                </div>
+                {t.foto_url ? (
+                  <img src={t.foto_url} className="w-9 h-9 rounded-full object-cover border border-sp-border shrink-0" alt="" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-sp-green/20 flex items-center justify-center text-sm font-bold text-white shrink-0">{t.username?.[0]?.toUpperCase()}</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-semibold truncate">{t.nombre || t.username}</p>
+                  <p className="text-sp-muted text-xs">
+                    <span style={{ color: cfg.color, fontWeight: 700 }}>{cfg.label}</span>
+                    {t.equipo_origen_nombre && ` · de ${t.equipo_origen_nombre}`}
+                  </p>
+                </div>
+                <span className="text-xs text-sp-muted shrink-0">{t.fecha_inicio ? new Date(t.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -365,6 +494,18 @@ export default function EquipoDetalle() {
             <p className="text-sp-muted text-sm text-center py-4">No se encontraron usuarios</p>
           )}
         </div>
+      )}
+
+      {/* Modal retar */}
+      {modalRetoOpen && (
+        <ModalRetoRapido
+          equipoRetadoId={id}
+          equipoNombre={equipo.nombre}
+          onClose={(enviado) => {
+            setModalRetoOpen(false);
+            if (enviado) alert('¡Reto enviado! El capitán rival recibirá una notificación.');
+          }}
+        />
       )}
     </div>
   );
