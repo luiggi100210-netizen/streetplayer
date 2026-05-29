@@ -223,26 +223,37 @@ export default function Landing() {
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', animation: 'fadeUp .7s .28s ease both' }}>
-              <Link to="/registro" style={{
-                background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
-                padding: '14px 32px', borderRadius: 8, textDecoration: 'none',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-                boxShadow: `0 4px 28px ${T.emerald}44`,
-                transition: 'transform .15s, box-shadow .15s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 36px ${T.emerald}55`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 28px ${T.emerald}44`; }}
-              >Crear cuenta gratis</Link>
-              <Link to="/login" style={{
-                border: `1.5px solid rgba(255,255,255,0.18)`, color: T.white, fontWeight: 600,
-                fontSize: 13, padding: '14px 24px', borderRadius: 8, textDecoration: 'none',
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                background: 'rgba(10,10,10,0.28)', backdropFilter: 'blur(8px)',
-                transition: 'border-color .2s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = T.emerald}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'}
-              >Iniciar sesión</Link>
+              {usuario ? (
+                <Link to="/home" style={{
+                  background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
+                  padding: '14px 32px', borderRadius: 8, textDecoration: 'none',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                  boxShadow: `0 4px 28px ${T.emerald}44`,
+                }}>Ir al campo →</Link>
+              ) : (
+                <>
+                  <Link to="/registro" style={{
+                    background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
+                    padding: '14px 32px', borderRadius: 8, textDecoration: 'none',
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    boxShadow: `0 4px 28px ${T.emerald}44`,
+                    transition: 'transform .15s, box-shadow .15s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 36px ${T.emerald}55`; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 28px ${T.emerald}44`; }}
+                  >Crear cuenta gratis</Link>
+                  <Link to="/login" style={{
+                    border: `1.5px solid rgba(255,255,255,0.18)`, color: T.white, fontWeight: 600,
+                    fontSize: 13, padding: '14px 24px', borderRadius: 8, textDecoration: 'none',
+                    textTransform: 'uppercase', letterSpacing: '0.08em',
+                    background: 'rgba(10,10,10,0.28)', backdropFilter: 'blur(8px)',
+                    transition: 'border-color .2s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = T.emerald}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'}
+                  >Iniciar sesión</Link>
+                </>
+              )}
             </div>
 
             {/* Stats inline */}
@@ -482,25 +493,36 @@ export default function Landing() {
           </p>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/registro" style={{
-              background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
-              padding: '15px 40px', borderRadius: 8, textDecoration: 'none',
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              boxShadow: `0 4px 32px ${T.emerald}55`,
-              transition: 'transform .15s, box-shadow .15s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 10px 40px ${T.emerald}66`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 32px ${T.emerald}55`; }}
-            >Empieza ahora — es gratis</Link>
-            <Link to="/login" style={{
-              border: `1.5px solid ${T.border}`, color: T.dim, fontWeight: 600,
-              fontSize: 13, padding: '15px 28px', borderRadius: 8, textDecoration: 'none',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-              transition: 'border-color .2s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = T.emerald}
-              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}
-            >Ya tengo cuenta</Link>
+            {usuario ? (
+              <Link to="/home" style={{
+                background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
+                padding: '15px 40px', borderRadius: 8, textDecoration: 'none',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                boxShadow: `0 4px 32px ${T.emerald}55`,
+              }}>Ir al campo →</Link>
+            ) : (
+              <>
+                <Link to="/registro" style={{
+                  background: T.emerald, color: T.white, fontWeight: 700, fontSize: 13,
+                  padding: '15px 40px', borderRadius: 8, textDecoration: 'none',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                  boxShadow: `0 4px 32px ${T.emerald}55`,
+                  transition: 'transform .15s, box-shadow .15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 10px 40px ${T.emerald}66`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 32px ${T.emerald}55`; }}
+                >Empieza ahora — es gratis</Link>
+                <Link to="/login" style={{
+                  border: `1.5px solid ${T.border}`, color: T.dim, fontWeight: 600,
+                  fontSize: 13, padding: '15px 28px', borderRadius: 8, textDecoration: 'none',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  transition: 'border-color .2s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.emerald}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.border}
+                >Ya tengo cuenta</Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -518,12 +540,18 @@ export default function Landing() {
         </span>
 
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          {[['Ingresar', '/login'], ['Registrarse', '/registro']].map(([l, to]) => (
-            <Link key={l} to={to} style={{ color: T.muted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', textDecoration: 'none', transition: 'color .2s' }}
-              onMouseEnter={e => e.target.style.color = T.white}
-              onMouseLeave={e => e.target.style.color = T.muted}
-            >{l}</Link>
-          ))}
+          {usuario ? (
+            <Link to="/home" style={{ color: T.emerald, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', textDecoration: 'none' }}>
+              Ir al campo →
+            </Link>
+          ) : (
+            [['Ingresar', '/login'], ['Registrarse', '/registro']].map(([l, to]) => (
+              <Link key={l} to={to} style={{ color: T.muted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', textDecoration: 'none', transition: 'color .2s' }}
+                onMouseEnter={e => e.target.style.color = T.white}
+                onMouseLeave={e => e.target.style.color = T.muted}
+              >{l}</Link>
+            ))
+          )}
           {[['Eventos', '#eventos'], ['Ranking', '#ranking']].map(([l, h]) => (
             <a key={l} href={h} style={{ color: T.muted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', textDecoration: 'none', transition: 'color .2s' }}
               onMouseEnter={e => e.target.style.color = T.white}
