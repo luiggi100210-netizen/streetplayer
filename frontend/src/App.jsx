@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import api from './services/api';
 import { getToken, getRefresh } from './services/authStorage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import NotFound     from './pages/NotFound';
 import Layout        from './components/navbar/Layout';
 import Landing       from './pages/Landing';
 import Login         from './pages/auth/Login';
@@ -95,7 +97,7 @@ function AppRoutes() {
         <Route path="mensajes"       element={<Mensajes />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
@@ -103,9 +105,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
