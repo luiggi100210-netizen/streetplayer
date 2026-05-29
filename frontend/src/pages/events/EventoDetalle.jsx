@@ -139,71 +139,113 @@ function ModalConfirmarAsistencia({ equipo, onConfirmar, onCancelar, cargando })
 }
 
 function SlotJugador({ jugador, equipo, clickable, onClickSlot, usuarioId }) {
-  const esMio = jugador?.id === usuarioId;
-  const colorEquipo = equipo === 'A' ? 'text-sp-green' : 'text-blue-400';
-  const borderEquipo = equipo === 'A' ? 'border-sp-green/50 bg-sp-green/10' : 'border-blue-400/50 bg-blue-400/10';
+  const esMio   = jugador?.id === usuarioId;
+  const colorA  = esMio && equipo === 'A';
+  const colorB  = esMio && equipo === 'B';
+
+  if (jugador) {
+    return (
+      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all border ${
+        colorA ? 'border-sp-green/60 bg-sp-green/15' :
+        colorB ? 'border-blue-400/60 bg-blue-400/10' :
+        'border-white/5 bg-white/5'
+      }`}>
+        {jugador.foto_url ? (
+          <img src={jugador.foto_url} className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-white/10" alt={jugador.username} />
+        ) : (
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2 ${
+            colorA ? 'bg-sp-green/30 text-sp-green ring-sp-green/30' :
+            colorB ? 'bg-blue-400/20 text-blue-400 ring-blue-400/30' :
+            'bg-white/15 text-white ring-white/10'
+          }`}>
+            {jugador.username?.[0]?.toUpperCase()}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-semibold truncate ${colorA ? 'text-sp-green' : colorB ? 'text-blue-400' : 'text-white'}`}>
+            {jugador.nombre || jugador.username}
+          </p>
+          {esMio && <p className="text-[9px] text-white/40 uppercase tracking-wider">Tú</p>}
+        </div>
+      </div>
+    );
+  }
+
+  if (clickable) {
+    return (
+      <button
+        onClick={onClickSlot}
+        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-xl border border-dashed transition-all group ${
+          equipo === 'A'
+            ? 'border-sp-green/25 hover:border-sp-green/60 hover:bg-sp-green/8'
+            : 'border-blue-400/25 hover:border-blue-400/60 hover:bg-blue-400/8'
+        }`}
+      >
+        <div className={`w-8 h-8 rounded-full border border-dashed flex items-center justify-center shrink-0 transition-colors ${
+          equipo === 'A'
+            ? 'border-sp-green/30 group-hover:border-sp-green/70 group-hover:bg-sp-green/10'
+            : 'border-blue-400/30 group-hover:border-blue-400/70 group-hover:bg-blue-400/10'
+        }`}>
+          <span className={`text-lg leading-none font-light transition-colors ${equipo === 'A' ? 'text-sp-green/40 group-hover:text-sp-green' : 'text-blue-400/40 group-hover:text-blue-400'}`}>+</span>
+        </div>
+        <span className="text-xs text-white/30 group-hover:text-white/60 transition-colors">Unirme aquí</span>
+      </button>
+    );
+  }
 
   return (
-    <button
-      onClick={clickable ? onClickSlot : undefined}
-      disabled={!clickable && !jugador}
-      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all text-left ${
-        esMio
-          ? `border ${borderEquipo}`
-          : clickable
-            ? 'border border-dashed border-sp-border hover:border-white/40 hover:bg-white/5 cursor-pointer'
-            : 'border border-transparent cursor-default'
-      }`}
-    >
-      {jugador ? (
-        <>
-          {jugador.foto_url ? (
-            <img src={jugador.foto_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt={jugador.username} />
-          ) : (
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${esMio ? `bg-sp-green/30 ${colorEquipo}` : 'bg-white/10 text-white'}`}>
-              {jugador.username?.[0]?.toUpperCase()}
-            </div>
-          )}
-          <span className={`text-xs font-medium truncate ${esMio ? colorEquipo : 'text-white/90'}`}>
-            {jugador.nombre || jugador.username}
-          </span>
-          {esMio && <span className={`text-[10px] ml-auto shrink-0 font-bold ${colorEquipo}`}>Tú</span>}
-        </>
-      ) : (
-        <>
-          <div className="w-7 h-7 rounded-full border border-dashed border-white/20 flex items-center justify-center shrink-0">
-            {clickable && <span className="text-white/30 text-base leading-none">+</span>}
-          </div>
-          <span className={`text-xs ${clickable ? 'text-white/40' : 'text-white/15'}`}>
-            {clickable ? 'Unirme aquí' : 'Libre'}
-          </span>
-        </>
-      )}
-    </button>
+    <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="w-8 h-8 rounded-full border border-dashed border-white/8 shrink-0" />
+      <span className="text-xs text-white/15">Libre</span>
+    </div>
+  );
+}
+
+function MiniCanchaSVG() {
+  return (
+    <svg viewBox="0 0 28 160" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Outer border */}
+      <rect x="2" y="4" width="24" height="152" rx="2" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+      {/* Center line */}
+      <line x1="2" y1="80" x2="26" y2="80" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+      {/* Center circle */}
+      <circle cx="14" cy="80" r="11" stroke="rgba(255,255,255,0.10)" strokeWidth="1"/>
+      {/* Center dot */}
+      <circle cx="14" cy="80" r="1.5" fill="rgba(255,255,255,0.2)"/>
+      {/* Penalty area top */}
+      <rect x="6" y="4" width="16" height="22" rx="1" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
+      {/* Goal top */}
+      <rect x="10" y="4" width="8" height="6" rx="0.5" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+      {/* Penalty area bottom */}
+      <rect x="6" y="134" width="16" height="22" rx="1" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
+      {/* Goal bottom */}
+      <rect x="10" y="150" width="8" height="6" rx="0.5" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+      {/* Penalty dots */}
+      <circle cx="14" cy="30" r="1" fill="rgba(255,255,255,0.15)"/>
+      <circle cx="14" cy="130" r="1" fill="rgba(255,255,255,0.15)"/>
+    </svg>
   );
 }
 
 function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
   const [modalEquipo, setModalEquipo] = useState(null);
-  const formato = evento.formato || 5;
+  const formato     = evento.formato || 5;
   const participantes = evento.participantes || [];
-  const teamA = participantes.filter(p => p.equipo === 'A');
-  const teamB = participantes.filter(p => p.equipo === 'B');
-  const slotsA = Array.from({ length: formato }, (_, i) => teamA[i] || null);
-  const slotsB = Array.from({ length: formato }, (_, i) => teamB[i] || null);
+  const teamA       = participantes.filter(p => p.equipo === 'A');
+  const teamB       = participantes.filter(p => p.equipo === 'B');
+  const slotsA      = Array.from({ length: formato }, (_, i) => teamA[i] || null);
+  const slotsB      = Array.from({ length: formato }, (_, i) => teamB[i] || null);
 
-  const inscripto  = participantes.some(p => p.id === usuario?.id);
-  const esCreador  = evento.creador_id === usuario?.id;
+  const inscripto   = participantes.some(p => p.id === usuario?.id);
+  const esCreador   = evento.creador_id === usuario?.id;
   const puedeUnirse = evento.estado === 'abierto' && !inscripto && !esCreador;
   const puedeSalir  = evento.estado === 'abierto' && inscripto && !esCreador;
 
-  const confirmar = async () => {
-    await onUnirse(modalEquipo);
-    setModalEquipo(null);
-  };
+  const inscritos   = parseInt(evento.cupos_ocupados) || 0;
+  const total       = evento.cupos_total || 10;
+  const pct         = Math.min((inscritos / total) * 100, 100);
 
-  const inscritos = parseInt(evento.cupos_ocupados) || 0;
-  const total     = evento.cupos_total || 10;
+  const confirmar = async () => { await onUnirse(modalEquipo); setModalEquipo(null); };
 
   return (
     <>
@@ -216,82 +258,90 @@ function CanchaSlots({ evento, usuario, onUnirse, onSalir, accionando }) {
         />
       )}
 
-      <div className="card overflow-hidden p-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-sp-border">
-          <p className="text-sp-muted text-xs uppercase tracking-wider font-semibold">
-            Cancha — {formato}v{formato}
-          </p>
-          <p className={`text-xs font-bold ${inscritos >= total ? 'text-red-400' : 'text-sp-green'}`}>
-            {inscritos}/{total} jugadores
-          </p>
+      <div className="overflow-hidden rounded-2xl border border-sp-border">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-4 py-3 bg-sp-card">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚽</span>
+            <span className="text-white text-sm font-bold uppercase tracking-wide">
+              {formato}v{formato}
+            </span>
+            <span className="text-sp-muted text-xs">· Cancha</span>
+          </div>
+          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+            inscritos >= total ? 'bg-red-500/20 text-red-400' : 'bg-sp-green/20 text-sp-green'
+          }`}>
+            {inscritos}/{total}
+          </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-1 bg-sp-border">
+        {/* ── Progress ── */}
+        <div className="h-0.5 bg-white/5">
           <div
-            className="h-1 transition-all"
-            style={{
-              width: `${Math.min((inscritos / total) * 100, 100)}%`,
-              background: inscritos >= total ? '#f87171' : inscritos / total >= 0.7 ? '#fbbf24' : '#1D9E75',
-            }}
+            className="h-0.5 transition-all duration-500"
+            style={{ width: `${pct}%`, background: inscritos >= total ? '#f87171' : pct >= 70 ? '#fbbf24' : '#1D9E75' }}
           />
         </div>
 
-        {/* Pitch */}
-        <div className="flex divide-x divide-dashed divide-sp-border/50">
-          {/* Equipo A */}
-          <div className="flex-1 p-3 space-y-1.5">
-            <p className="text-[10px] text-sp-green uppercase font-bold tracking-wider text-center mb-2">
-              Equipo A
-            </p>
+        {/* ── Pitch area ── */}
+        <div
+          className="flex relative"
+          style={{
+            background: 'linear-gradient(180deg, #071807 0%, #0c2310 40%, #0c2310 60%, #071807 100%)',
+          }}
+        >
+          {/* Grass stripes */}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'repeating-linear-gradient(90deg,transparent,transparent 24px,#fff 24px,#fff 25px)' }}
+          />
+
+          {/* ── Equipo A ── */}
+          <div className="flex-1 p-3 space-y-2 z-10">
+            <div className="flex items-center gap-1.5 justify-center mb-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-sp-green shadow-[0_0_6px_#1D9E75]" />
+              <span className="text-[10px] text-sp-green uppercase font-bold tracking-widest">Equipo A</span>
+            </div>
             {slotsA.map((j, i) => (
-              <SlotJugador
-                key={i}
-                jugador={j}
-                equipo="A"
-                clickable={puedeUnirse && !j}
-                onClickSlot={() => setModalEquipo('A')}
-                usuarioId={usuario?.id}
-              />
+              <SlotJugador key={i} jugador={j} equipo="A" clickable={puedeUnirse && !j}
+                onClickSlot={() => setModalEquipo('A')} usuarioId={usuario?.id} />
             ))}
           </div>
 
-          {/* Equipo B */}
-          <div className="flex-1 p-3 space-y-1.5">
-            <p className="text-[10px] text-blue-400 uppercase font-bold tracking-wider text-center mb-2">
-              Equipo B
-            </p>
+          {/* ── Mini Cancha (center) ── */}
+          <div className="w-9 shrink-0 flex items-center justify-center py-4 z-10 relative">
+            <div className="absolute inset-y-0 left-1/2 w-px bg-white/8 -translate-x-px" />
+            <MiniCanchaSVG />
+          </div>
+
+          {/* ── Equipo B ── */}
+          <div className="flex-1 p-3 space-y-2 z-10">
+            <div className="flex items-center gap-1.5 justify-center mb-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
+              <span className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Equipo B</span>
+            </div>
             {slotsB.map((j, i) => (
-              <SlotJugador
-                key={i}
-                jugador={j}
-                equipo="B"
-                clickable={puedeUnirse && !j}
-                onClickSlot={() => setModalEquipo('B')}
-                usuarioId={usuario?.id}
-              />
+              <SlotJugador key={i} jugador={j} equipo="B" clickable={puedeUnirse && !j}
+                onClickSlot={() => setModalEquipo('B')} usuarioId={usuario?.id} />
             ))}
           </div>
         </div>
 
-        {/* Salir */}
-        {puedeSalir && (
-          <div className="px-4 py-3 border-t border-sp-border">
-            <button
-              onClick={onSalir}
-              disabled={accionando}
-              className="w-full py-2 rounded-xl border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
-            >
-              {accionando ? '...' : 'Salir del evento'}
-            </button>
-          </div>
-        )}
-
-        {/* Lleno */}
-        {inscritos >= total && !inscripto && !esCreador && (
-          <div className="px-4 py-3 border-t border-sp-border text-center">
-            <p className="text-sp-muted text-xs font-semibold uppercase tracking-wide">Evento lleno</p>
+        {/* ── Footer actions ── */}
+        {(puedeSalir || (inscritos >= total && !inscripto && !esCreador)) && (
+          <div className="px-4 py-3 bg-sp-card border-t border-sp-border">
+            {puedeSalir ? (
+              <button
+                onClick={onSalir}
+                disabled={accionando}
+                className="w-full py-2 rounded-xl border border-sp-border text-sp-muted hover:border-red-500/50 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
+              >
+                {accionando ? '...' : 'Salir del evento'}
+              </button>
+            ) : (
+              <p className="text-center text-xs text-sp-muted font-semibold uppercase tracking-wide">Evento lleno</p>
+            )}
           </div>
         )}
       </div>
