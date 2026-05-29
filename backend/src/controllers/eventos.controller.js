@@ -75,7 +75,12 @@ const obtenerEvento = asyncHandler(async (req, res) => {
     [id]
   );
 
-  res.json({ ...rows[0], participantes });
+  const { rows: tiempos } = await pool.query(
+    'SELECT inicio_real, fin_real FROM evento_tiempos WHERE evento_id = $1',
+    [id]
+  );
+
+  res.json({ ...rows[0], participantes, ...(tiempos[0] || {}) });
 });
 
 // POST /api/eventos
@@ -203,6 +208,39 @@ const salirEvento = asyncHandler(async (req, res) => {
   res.json({ mensaje: 'Saliste del evento' });
 });
 
+// PUT /api/eventos/:id/iniciar — el creador marca el inicio real del partido
+const iniciarEvento = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows: [ev] } = await pool.query('SELECT * FROM eventos WHERE id = $1', [id]);
+  if (!ev) return res.status(404).json({ error: 'Evento no encontrado' });
+  if (ev.creador_id !== req.usuario.id) return res.status(403).json({ error: 'Solo el creador puede iniciar el evento' });
+  if (!['confirmado', 'lleno', 'abierto'].includes(ev.estado)) {
+    return res.status(400).json({ error: 'El evento no puede iniciarse en este estado' });
+  }
+
+  const ahora = new Date();
+  await pool.query("UPDATE eventos SET estado = 'en_curso' WHERE id = $1", [id]);
+  await pool.query(
+    `INSERT INTO evento_tiempos (evento_id, inicio_real)
+     VALUES ($1, $2)
+     ON CONFLICT (evento_id) DO UPDATE SET inicio_real = $2`,
+    [id, ahora]
+  );
+
+  const { rows: participantes } = await pool.query(
+    'SELECT usuario_id FROM evento_participantes WHERE evento_id = $1',
+    [id]
+  );
+  await Promise.all(
+    participantes.map(p =>
+      notificar(p.usuario_id, 'evento',
+        `⚽ El partido "${ev.titulo}" acaba de comenzar. ¡Buena suerte!`, id)
+    )
+  );
+
+  res.json({ mensaje: 'Partido iniciado', inicio_real: ahora });
+});
+
 // PUT /api/eventos/:id/confirmar — el creador confirma el partido (bloquea salidas)
 const confirmarEvento = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -313,6 +351,13 @@ const finalizarEvento = asyncHandler(async (req, res) => {
     }
 
     await client.query("UPDATE eventos SET estado = 'finalizado' WHERE id = $1", [id]);
+    const fin = new Date();
+    await client.query(
+      `INSERT INTO evento_tiempos (evento_id, fin_real)
+       VALUES ($1, $2)
+       ON CONFLICT (evento_id) DO UPDATE SET fin_real = $2`,
+      [id, fin]
+    );
     await client.query('COMMIT');
     res.json({ mensaje: 'Evento finalizado. Los jugadores tienen 24h para calificar.' });
   } catch (err) {
@@ -377,4 +422,4 @@ const cancelarEvento = asyncHandler(async (req, res) => {
   res.json({ mensaje: 'Evento cancelado' });
 });
 
-module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento, cancelarEvento };
+module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento, cancelarEvento, iniciarEvento };

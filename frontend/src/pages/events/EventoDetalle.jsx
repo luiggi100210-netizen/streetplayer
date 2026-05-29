@@ -538,6 +538,119 @@ function CanchaSlots({ evento, usuario, onUnirse, onSalir, onConfirmar, accionan
   );
 }
 
+function useTicker(activo) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!activo) return;
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [activo]);
+}
+
+function formatDuracion(ms) {
+  const totalSeg = Math.floor(ms / 1000);
+  const h   = Math.floor(totalSeg / 3600);
+  const m   = Math.floor((totalSeg % 3600) / 60);
+  const s   = totalSeg % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function PartidoTimer({ inicioReal, finReal, fechaProgramada, estado }) {
+  useTicker(estado === 'en_curso' && !finReal);
+
+  const ahora    = new Date();
+  const inicio   = inicioReal ? new Date(inicioReal) : null;
+  const fin      = finReal    ? new Date(finReal)    : null;
+  const programado = fechaProgramada ? new Date(fechaProgramada) : null;
+
+  // Retraso respecto a la hora programada
+  const retrasoMs   = inicio && programado ? inicio - programado : null;
+  const retrasoMin  = retrasoMs !== null ? Math.round(retrasoMs / 60000) : null;
+
+  // Duración en curso o total
+  const durMs = fin
+    ? fin - inicio
+    : inicio
+      ? ahora - inicio
+      : null;
+
+  const enCurso = estado === 'en_curso' && !fin;
+
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${enCurso ? 'border-yellow-500/40' : 'border-sp-border'}`}>
+      {/* Header */}
+      <div className={`px-4 py-2.5 flex items-center gap-2 ${enCurso ? 'bg-yellow-500/10' : 'bg-sp-card'}`}>
+        {enCurso && (
+          <span className="relative flex w-2.5 h-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400" />
+          </span>
+        )}
+        <span className={`text-xs font-bold uppercase tracking-widest ${enCurso ? 'text-yellow-400' : 'text-sp-muted'}`}>
+          {enCurso ? 'Partido en curso' : fin ? 'Partido finalizado' : 'Tiempos del partido'}
+        </span>
+      </div>
+
+      <div className="px-4 py-3 grid grid-cols-3 divide-x divide-sp-border/50 bg-sp-card/50">
+        {/* Hora de inicio real */}
+        <div className="text-center px-2">
+          <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">Inició</p>
+          {inicio ? (
+            <>
+              <p className="text-white font-bold text-base font-mono">
+                {inicio.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+              {retrasoMin !== null && retrasoMin !== 0 && (
+                <p className={`text-[10px] mt-0.5 ${retrasoMin > 0 ? 'text-yellow-400' : 'text-sp-green'}`}>
+                  {retrasoMin > 0 ? `+${retrasoMin} min tarde` : `${Math.abs(retrasoMin)} min antes`}
+                </p>
+              )}
+              {retrasoMin === 0 && <p className="text-[10px] text-sp-green mt-0.5">¡A tiempo!</p>}
+            </>
+          ) : (
+            <p className="text-sp-muted text-sm">—</p>
+          )}
+        </div>
+
+        {/* Duración / Timer */}
+        <div className="text-center px-2">
+          <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">
+            {fin ? 'Duración real' : 'Tiempo'}
+          </p>
+          {durMs !== null ? (
+            <p className={`font-bold text-base font-mono tabular-nums ${enCurso ? 'text-yellow-400' : 'text-white'}`}>
+              {formatDuracion(durMs)}
+            </p>
+          ) : (
+            <p className="text-sp-muted text-sm">—</p>
+          )}
+          {programado && (
+            <p className="text-[10px] text-sp-muted mt-0.5">
+              Plan: {evento => evento}
+              {/* duración planificada irrelevante aquí */}
+            </p>
+          )}
+        </div>
+
+        {/* Hora de fin */}
+        <div className="text-center px-2">
+          <p className="text-[10px] text-sp-muted uppercase tracking-wider mb-1">Finalizó</p>
+          {fin ? (
+            <p className="text-white font-bold text-base font-mono">
+              {fin.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          ) : enCurso ? (
+            <p className="text-yellow-400/50 text-sm">En juego...</p>
+          ) : (
+            <p className="text-sp-muted text-sm">—</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EventoDetalle() {
   const { id } = useParams();
   const { usuario } = useAuth();
@@ -587,6 +700,15 @@ export default function EventoDetalle() {
       setError(err.response?.data?.error || 'Error al salir');
     }
     setAccionando(false);
+  };
+
+  const handleIniciar = async () => {
+    try {
+      await api.put(`/eventos/${id}/iniciar`);
+      await cargar();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al iniciar');
+    }
   };
 
   const handleConfirmar = async () => {
@@ -867,16 +989,43 @@ export default function EventoDetalle() {
         )}
 
 
+        {/* Timer y tiempos reales */}
+        {(evento.inicio_real || evento.estado === 'en_curso') && (
+          <PartidoTimer
+            inicioReal={evento.inicio_real}
+            finReal={evento.fin_real}
+            fechaProgramada={evento.fecha_evento}
+            estado={evento.estado}
+          />
+        )}
+
         {/* Panel organizador */}
         {esCreador && (
           <div className="card border-sp-green/20 space-y-3">
             <p className="text-xs text-sp-muted uppercase tracking-wider font-bold">Panel del organizador</p>
-            {evento.estado !== 'finalizado' && !finalizado && (
+
+            {/* Iniciar partido */}
+            {['confirmado', 'lleno', 'abierto'].includes(evento.estado) && (
+              <button onClick={handleIniciar} className="btn-primary w-full">
+                ▶ INICIAR PARTIDO AHORA
+              </button>
+            )}
+
+            {/* Finalizar */}
+            {evento.estado === 'en_curso' && !finalizado && (
               <button onClick={() => setModalFinal(true)} className="btn-primary w-full">
                 REGISTRAR RESULTADO Y FINALIZAR
               </button>
             )}
-            {!['finalizado', 'cancelado', 'confirmado'].includes(evento.estado) && (
+
+            {/* Finalizado sin iniciar (legacy) */}
+            {evento.estado !== 'en_curso' && evento.estado !== 'finalizado' && !finalizado && evento.estado !== 'confirmado' && evento.estado !== 'lleno' && evento.estado !== 'abierto' && (
+              <button onClick={() => setModalFinal(true)} className="btn-primary w-full">
+                REGISTRAR RESULTADO Y FINALIZAR
+              </button>
+            )}
+
+            {!['finalizado', 'cancelado', 'confirmado', 'en_curso'].includes(evento.estado) && (
               <button
                 onClick={() => setModalCancelar(true)}
                 className="w-full py-2 rounded-xl border border-red-500/30 text-red-400/70 hover:border-red-500/60 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
