@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
 import { COLORES_NIVEL } from '../../constants';
 
-// ── Constantes ───────────────────────────────────────────────
 const XP_NIVELES = {
   rookie: 0, amateur: 100, intermedio: 300,
   avanzado: 600, pro: 1000, elite: 2000, leyenda: 5000,
@@ -15,22 +13,22 @@ const XP_NIVELES = {
 const ORDEN_NIVELES = ['rookie','amateur','intermedio','avanzado','pro','elite','leyenda'];
 
 const MEDALLAS = [
-  { id: 'campeon',    emoji: '🏆', label: 'Campeón'      },
-  { id: 'goleador',   emoji: '🎯', label: 'Goleador'      },
-  { id: 'relampago',  emoji: '⚡', label: 'Relámpago'     },
-  { id: 'capitan',    emoji: '👑', label: 'Capitán'       },
-  { id: 'muralla',    emoji: '🧤', label: 'Muralla'       },
-  { id: 'teamplayer', emoji: '🤝', label: 'Team Player'   },
-  { id: 'infalible',  emoji: '💀', label: 'Infalible'     },
-  { id: 'leyenda',    emoji: '🌟', label: 'Leyenda'       },
+  { id: 'campeon',    emoji: '🏆', label: 'Campeón'    },
+  { id: 'goleador',   emoji: '🎯', label: 'Goleador'    },
+  { id: 'relampago',  emoji: '⚡', label: 'Relámpago'  },
+  { id: 'capitan',    emoji: '👑', label: 'Capitán'     },
+  { id: 'muralla',    emoji: '🧤', label: 'Muralla'     },
+  { id: 'teamplayer', emoji: '🤝', label: 'Team Player' },
+  { id: 'infalible',  emoji: '💀', label: 'Infalible'   },
+  { id: 'leyenda',    emoji: '🌟', label: 'Leyenda'     },
 ];
 
 const DEPORTES_LIST = ['futbol','basquet','tenis','padel','voley','running','ciclismo','otro'];
 
 const TAG_LABELS = {
-  buen_companero: 'Buen compañero', tecnico: 'Técnico', puntual: 'Puntual',
-  goleador: 'Goleador', rapido: 'Rápido', lider: 'Líder',
-  agresivo: 'Agresivo', no_se_presento: 'No se presentó', tramposo: 'Tramposo',
+  buen_companero:'Buen compañero', tecnico:'Técnico', puntual:'Puntual',
+  goleador:'Goleador', rapido:'Rápido', lider:'Líder',
+  agresivo:'Agresivo', no_se_presento:'No se presentó', tramposo:'Tramposo',
 };
 
 function calcularProgreso(xp, nivel) {
@@ -40,42 +38,43 @@ function calcularProgreso(xp, nivel) {
   return Math.min(100, Math.round(((xp - XP_NIVELES[nivel]) / (XP_NIVELES[sig] - XP_NIVELES[nivel])) * 100));
 }
 
-// ── Sub-componentes ──────────────────────────────────────────
-function BigStat({ valor, label, color }) {
+function StatBox({ valor, label, color, sub }) {
   return (
-    <div className="text-center py-4 px-3">
-      <p className="font-impact text-3xl leading-none mb-1" style={{ color: color || '#fff' }}>{valor ?? 0}</p>
-      <p className="text-[10px] text-sp-muted uppercase tracking-widest font-semibold">{label}</p>
+    <div className="text-center px-2 py-3">
+      <p className="font-impact leading-none mb-0.5" style={{ fontSize: 'clamp(18px,3vw,26px)', color: color || '#fff' }}>
+        {valor ?? 0}
+      </p>
+      {sub && <p className="text-sp-green text-[9px] font-bold leading-none mb-0.5">{sub}</p>}
+      <p className="text-[9px] text-sp-muted uppercase tracking-widest font-semibold leading-tight">{label}</p>
     </div>
   );
 }
 
-function DataRow({ label, value }) {
-  if (!value) return null;
+function DataFila({ label, value, children }) {
+  if (!value && !children) return null;
   return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-sp-border last:border-0">
-      <span className="text-sp-muted text-xs uppercase tracking-wider font-semibold w-28 shrink-0 pt-0.5">{label}</span>
-      <span className="text-white text-sm capitalize flex-1">{value}</span>
+    <div className="flex items-start gap-2 py-2 border-b border-sp-border/60 last:border-0">
+      <span className="text-sp-muted text-[10px] uppercase tracking-wider font-bold w-24 shrink-0 pt-0.5">{label}</span>
+      <span className="text-white text-sm capitalize flex-1">{children || value}</span>
     </div>
   );
 }
 
-// ── Componente principal ─────────────────────────────────────
 export default function Perfil() {
   const { id } = useParams();
   const { usuario: yo } = useAuth();
-  const [perfil,     setPerfil]     = useState(null);
-  const [publicaciones, setPubs]    = useState([]);
-  const [historial,  setHistorial]  = useState([]);
-  const [reputacion, setReputacion] = useState(null);
-  const [medallas,   setMedallas]   = useState([]);
-  const [cargando,   setCargando]   = useState(true);
-  const [siguiendo,  setSiguiendo]  = useState(false);
-  const [accion,     setAccion]     = useState(false);
-  const [editando,   setEditando]   = useState(false);
-  const [form,       setForm]       = useState({});
-  const [guardando,  setGuardando]  = useState(false);
-  const [tab,        setTab]        = useState('historial');
+  const [perfil,       setPerfil]    = useState(null);
+  const [publicaciones, setPubs]     = useState([]);
+  const [historial,    setHistorial] = useState([]);
+  const [reputacion,   setRep]       = useState(null);
+  const [medallas,     setMedallas]  = useState([]);
+  const [cargando,     setCargando]  = useState(true);
+  const [siguiendo,    setSiguiendo] = useState(false);
+  const [accion,       setAccion]    = useState(false);
+  const [editando,     setEditando]  = useState(false);
+  const [form,         setForm]      = useState({});
+  const [guardando,    setGuardando] = useState(false);
+  const [tab,          setTab]       = useState('historial');
 
   const esMio = yo?.id === id;
 
@@ -94,7 +93,7 @@ export default function Perfil() {
         setSiguiendo(pRes.data.siguiendo_yo || false);
         setPubs(pubRes.data);
         setHistorial(histRes.data);
-        setReputacion(repRes.data);
+        setRep(repRes.data);
         setMedallas(medRes.data || []);
         setForm({
           nombre: pRes.data.nombre || '', apodo: pRes.data.apodo || '',
@@ -114,7 +113,7 @@ export default function Perfil() {
     try {
       await api.post(`/usuarios/${id}/seguir`);
       setSiguiendo(p => !p);
-      setPerfil(p => ({ ...p, seguidores: siguiendo ? (p.seguidores - 1) : (p.seguidores + 1) }));
+      setPerfil(p => ({ ...p, seguidores: siguiendo ? p.seguidores - 1 : p.seguidores + 1 }));
     } catch {}
     setAccion(false);
   };
@@ -136,10 +135,10 @@ export default function Perfil() {
 
   if (cargando) return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-4 animate-pulse">
-      <div className="h-52 bg-sp-card rounded-xl" />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="h-52 bg-sp-card rounded-2xl" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="h-64 bg-sp-card rounded-xl" />
-        <div className="col-span-2 h-64 bg-sp-card rounded-xl" />
+        <div className="md:col-span-2 h-64 bg-sp-card rounded-xl" />
       </div>
     </div>
   );
@@ -153,192 +152,253 @@ export default function Perfil() {
   const nivelSig   = idxNivel < ORDEN_NIVELES.length - 1 ? ORDEN_NIVELES[idxNivel + 1] : null;
   const colorNivel = COLORES_NIVEL[nivel];
 
+  const partidos  = perfil.partidos_jugados || 0;
+  const victorias = perfil.partidos_ganados || 0;
+  const winRate   = partidos > 0 ? Math.round((victorias / partidos) * 100) : 0;
+  const gpj       = partidos > 0 ? ((perfil.goles_totales || 0) / partidos).toFixed(1) : '0.0';
+  const rating    = reputacion?.promedio_estrellas ? Number(reputacion.promedio_estrellas).toFixed(1) : null;
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
 
-      {/* ── BANNER HEADER (estilo Transfermarkt) ── */}
-      <div className="rounded-xl overflow-hidden border border-sp-border">
+      {/* ══ CARD PRINCIPAL (estilo Transfermarkt) ══════════════ */}
+      <div className="rounded-2xl overflow-hidden border border-sp-border" style={{
+        background: 'linear-gradient(145deg, #111 0%, #161616 60%, #0f0f0f 100%)',
+      }}>
 
-        {/* Franja superior de color del nivel */}
-        <div style={{ height: 6, background: colorNivel }} />
+        {/* Franja de nivel */}
+        <div style={{ height: 5, background: `linear-gradient(to right, ${colorNivel}, ${colorNivel}88)` }} />
 
-        {/* Fondo banner */}
-        <div className="relative bg-sp-card" style={{
-          background: `linear-gradient(135deg, #111 0%, #1a1a1a 50%, #0f0f0f 100%)`,
-        }}>
-          {/* Patrón sutil */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }} />
+        {/* Header: foto + datos + XP value */}
+        <div className="p-4 sm:p-6">
+          <div className="flex gap-4 sm:gap-6">
 
-          <div className="relative flex gap-6 p-6 md:p-8">
-            {/* Avatar grande */}
-            <div className="shrink-0">
+            {/* FOTO */}
+            <div className="shrink-0 flex flex-col items-center gap-2">
               <div style={{
-                width: 120, height: 120, borderRadius: 12, overflow: 'hidden',
+                width: 100, height: 100, borderRadius: 14, overflow: 'hidden',
                 border: `3px solid ${colorNivel}`,
-                boxShadow: `0 0 0 1px rgba(0,0,0,0.5), 0 0 24px ${colorNivel}33`,
+                boxShadow: `0 0 0 1px #000, 0 8px 32px ${colorNivel}40`,
               }}>
                 {perfil.foto_url ? (
                   <img src={perfil.foto_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', background: colorNivel + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 52, color: colorNivel, lineHeight: 1 }}>
+                  <div style={{ width: '100%', height: '100%', background: colorNivel + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 44, color: colorNivel }}>
                       {perfil.username?.[0]?.toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
-              {/* Nivel badge bajo avatar */}
+              {/* Nivel badge */}
               <div style={{
-                marginTop: 8, textAlign: 'center', padding: '4px 8px',
-                border: `1px solid ${colorNivel}55`, borderRadius: 6,
-                background: colorNivel + '15',
+                padding: '3px 10px', borderRadius: 6, textAlign: 'center',
+                border: `1px solid ${colorNivel}55`, background: colorNivel + '18',
               }}>
-                <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 13, color: colorNivel, letterSpacing: '0.08em' }}>
+                <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 11, color: colorNivel, letterSpacing: '0.1em' }}>
                   {nivel.toUpperCase()}
                 </span>
               </div>
             </div>
 
-            {/* Info jugador */}
+            {/* DATOS CENTRALES */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h1 style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 'clamp(22px, 4vw, 36px)', lineHeight: 1.1, color: '#fff', letterSpacing: '0.02em' }}>
-                    {perfil.nombre || perfil.username}
-                    {perfil.apodo && <span className="text-sp-muted text-base font-sans ml-2 font-normal">"{perfil.apodo}"</span>}
-                  </h1>
-                  <p className="text-sp-muted text-sm mt-1">@{perfil.username}</p>
-                </div>
+              {/* Nombre + apodo */}
+              <h1 style={{
+                fontFamily: 'Anton, Impact, sans-serif',
+                fontSize: 'clamp(20px, 4vw, 32px)', lineHeight: 1.05,
+                color: '#fff', letterSpacing: '0.02em', marginBottom: 2,
+              }}>
+                {perfil.nombre || perfil.username}
+              </h1>
+              {perfil.apodo && (
+                <p className="text-sp-muted text-sm italic mb-1">"{perfil.apodo}"</p>
+              )}
+              <p className="text-sp-muted text-xs mb-2">@{perfil.username}</p>
 
-                {/* Botones acción */}
-                <div className="flex gap-2 shrink-0">
-                  {esMio ? (
-                    <button onClick={() => setEditando(p => !p)} className="btn-ghost text-xs">
-                      {editando ? 'Cancelar' : '✏️ Editar perfil'}
-                    </button>
-                  ) : (
-                    <button onClick={handleSeguir} disabled={accion}
-                      className={`text-xs ${siguiendo ? 'btn-ghost' : 'btn-primary'}`}>
-                      {accion ? '...' : siguiendo ? '✓ Siguiendo' : '+ Seguir'}
-                    </button>
-                  )}
-                </div>
+              {/* Posición + deporte principal */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                {perfil.posicion && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                    background: colorNivel + '20', border: `1px solid ${colorNivel}44`,
+                    color: colorNivel, textTransform: 'capitalize', letterSpacing: '0.06em',
+                  }}>
+                    {perfil.posicion}
+                  </span>
+                )}
+                {perfil.deportes?.slice(0, 3).map(d => (
+                  <span key={d} className="badge-green capitalize" style={{ fontSize: 10 }}>{d}</span>
+                ))}
               </div>
 
-              {/* Ciudad + Bio */}
-              {(perfil.ciudad || perfil.bio) && (
-                <div className="mt-3 space-y-1.5">
-                  {perfil.ciudad && (
-                    <p className="text-sp-muted text-sm flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {perfil.departamento ? `${perfil.ciudad}, ${perfil.departamento}` : perfil.ciudad}
-                    </p>
-                  )}
-                  {perfil.bio && <p className="text-white/70 text-sm leading-relaxed max-w-lg">{perfil.bio}</p>}
-                </div>
+              {/* Ciudad */}
+              {perfil.ciudad && (
+                <p className="text-sp-muted text-xs flex items-center gap-1 mb-2">
+                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {[perfil.ciudad, perfil.departamento].filter(Boolean).join(', ')}
+                  <span className="ml-1">🇵🇪</span>
+                </p>
               )}
 
-              {/* Deportes */}
-              {perfil.deportes?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {perfil.deportes.map(d => (
-                    <span key={d} className="badge-green capitalize text-[11px]">⚽ {d}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* Seguidores / Siguiendo */}
-              <div className="flex gap-5 mt-4">
+              {/* Seguidores */}
+              <div className="flex gap-4">
                 <div>
-                  <span className="font-impact text-xl" style={{ color: colorNivel }}>{perfil.seguidores || 0}</span>
-                  <span className="text-sp-muted text-xs ml-1.5 uppercase tracking-wider">Seguidores</span>
+                  <span className="font-impact text-lg" style={{ color: colorNivel }}>{perfil.seguidores || 0}</span>
+                  <span className="text-sp-muted text-[10px] ml-1 uppercase tracking-wider">Seguidores</span>
                 </div>
                 <div>
-                  <span className="font-impact text-xl text-white">{perfil.siguiendo || 0}</span>
-                  <span className="text-sp-muted text-xs ml-1.5 uppercase tracking-wider">Siguiendo</span>
-                </div>
-                <div>
-                  <span className="font-impact text-xl text-white">{perfil.partidos_jugados || 0}</span>
-                  <span className="text-sp-muted text-xs ml-1.5 uppercase tracking-wider">Partidos</span>
+                  <span className="font-impact text-lg text-white">{perfil.siguiendo || 0}</span>
+                  <span className="text-sp-muted text-[10px] ml-1 uppercase tracking-wider">Siguiendo</span>
                 </div>
               </div>
             </div>
+
+            {/* XP "VALOR DE MERCADO" */}
+            <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+              <div style={{
+                background: '#0a0a0a', border: `1px solid ${colorNivel}33`,
+                borderRadius: 12, padding: '12px 18px', textAlign: 'center',
+                minWidth: 110,
+              }}>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-sp-muted mb-1">Nivel XP</p>
+                <p className="font-impact leading-none mb-1" style={{ fontSize: 32, color: colorNivel }}>
+                  {xp.toLocaleString()}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colorNivel }}>XP</p>
+                {rating && (
+                  <div className="mt-2 pt-2 border-t border-sp-border">
+                    <p className="text-[9px] text-sp-muted uppercase tracking-wider mb-0.5">Rating</p>
+                    <p className="font-impact text-xl" style={{ color: '#fbbf24' }}>★ {rating}</p>
+                  </div>
+                )}
+              </div>
+              {/* Botón acción */}
+              {esMio ? (
+                <button onClick={() => setEditando(p => !p)} className="btn-ghost text-xs w-full">
+                  {editando ? 'Cancelar' : '✏️ Editar'}
+                </button>
+              ) : (
+                <button onClick={handleSeguir} disabled={accion}
+                  className={`text-xs w-full ${siguiendo ? 'btn-ghost' : 'btn-primary'}`}>
+                  {accion ? '...' : siguiendo ? '✓ Siguiendo' : '+ Seguir'}
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Botones móvil */}
+          <div className="flex gap-2 mt-3 sm:hidden">
+            {esMio ? (
+              <button onClick={() => setEditando(p => !p)} className="btn-ghost text-xs flex-1">
+                {editando ? 'Cancelar' : '✏️ Editar perfil'}
+              </button>
+            ) : (
+              <button onClick={handleSeguir} disabled={accion}
+                className={`text-xs flex-1 ${siguiendo ? 'btn-ghost' : 'btn-primary'}`}>
+                {accion ? '...' : siguiendo ? '✓ Siguiendo' : '+ Seguir'}
+              </button>
+            )}
+          </div>
+
+          {/* Bio */}
+          {perfil.bio && (
+            <p className="text-white/65 text-sm leading-relaxed mt-3 max-w-2xl">{perfil.bio}</p>
+          )}
         </div>
 
-        {/* ── BARRA DE STATS (como Transfermarkt) ── */}
-        <div className="border-t border-sp-border grid grid-cols-7 divide-x divide-sp-border bg-sp-bg">
-          <BigStat valor={perfil.partidos_jugados}    label="Partidos"    color={colorNivel} />
-          <BigStat valor={perfil.partidos_ganados}    label="Victorias"   color="#1D9E75" />
-          <BigStat valor={perfil.partidos_empatados}  label="Empates"     color="#888" />
-          <BigStat valor={perfil.partidos_perdidos}   label="Derrotas"    color="#f87171" />
-          <BigStat valor={perfil.goles_totales}       label="Goles"       color="#fbbf24" />
-          <BigStat valor={perfil.asistencias_totales} label="Asistencias" />
-          <BigStat valor={`${xp}`}                   label="XP"          color={colorNivel} />
+        {/* ── BARRA STATS (como TM) ── */}
+        <div className="border-t border-sp-border grid grid-cols-5 sm:grid-cols-7 divide-x divide-sp-border bg-[#0a0a0a]">
+          <StatBox valor={partidos}                  label="Partidos"  color={colorNivel} />
+          <StatBox valor={victorias}                 label="Victorias" color="#1D9E75" />
+          <StatBox valor={perfil.partidos_empatados} label="Empates"   color="#888" />
+          <StatBox valor={perfil.partidos_perdidos}  label="Derrotas"  color="#f87171" />
+          <StatBox valor={perfil.goles_totales}      label="Goles"     color="#fbbf24" sub={`${gpj}/PJ`} />
+          <StatBox valor={perfil.asistencias_totales} label="Asist."  color="#a78bfa" className="hidden sm:block" />
+          <StatBox valor={`${winRate}%`}             label="Win Rate"  color={winRate >= 50 ? '#1D9E75' : '#f87171'} className="hidden sm:block" />
         </div>
 
         {/* XP Progress */}
-        <div className="px-6 py-3 border-t border-sp-border bg-sp-bg flex items-center gap-3">
-          <span className="text-xs font-bold uppercase tracking-wider shrink-0" style={{ color: colorNivel, width: 90 }}>{nivel}</span>
+        <div className="px-4 sm:px-6 py-2.5 border-t border-sp-border bg-[#080808] flex items-center gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider shrink-0 w-20" style={{ color: colorNivel }}>{nivel}</span>
           <div className="flex-1 h-1.5 bg-sp-border rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all" style={{ width: `${progreso}%`, background: colorNivel }} />
+            <div className="h-full rounded-full" style={{ width: `${progreso}%`, background: colorNivel, transition: 'width 1s ease' }} />
           </div>
           {nivelSig
-            ? <span className="text-xs text-sp-muted shrink-0">{xp} / {XP_NIVELES[nivelSig]} XP → <span className="uppercase">{nivelSig}</span></span>
-            : <span className="text-xs text-sp-muted shrink-0">NIVEL MÁXIMO · {xp} XP</span>
+            ? <span className="text-[10px] text-sp-muted shrink-0">{xp}/{XP_NIVELES[nivelSig]} → {nivelSig.toUpperCase()}</span>
+            : <span className="text-[10px] text-sp-muted shrink-0">NIVEL MÁXIMO</span>
           }
         </div>
       </div>
 
-      {/* ── GRID PRINCIPAL (sidebar + contenido) ── */}
+      {/* ══ GRID PRINCIPAL ══════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
 
-        {/* ── COLUMNA IZQUIERDA: Datos + Medallas ── */}
+        {/* ── SIDEBAR IZQUIERDA ── */}
         <div className="space-y-4">
 
-          {/* Datos del jugador — tabla estilo Transfermarkt */}
+          {/* Datos del jugador */}
           <div className="card">
-            <h2 className="font-impact text-sm uppercase tracking-wider text-sp-muted mb-1 pb-2 border-b border-sp-border">
+            <h2 className="font-impact text-xs uppercase tracking-widest text-sp-muted mb-2 pb-2 border-b border-sp-border">
               Datos del jugador
             </h2>
-            <div className="mt-1">
-              <DataRow label="Ciudad"   value={perfil.ciudad} />
-              <DataRow label="Región"   value={perfil.departamento} />
-              <DataRow label="Posición" value={perfil.posicion} />
-              <DataRow label="Pie"      value={perfil.pie_dominante ? `Pie ${perfil.pie_dominante}` : null} />
-              <DataRow label="Formato"  value={perfil.formato_preferido ? `${perfil.formato_preferido}v${perfil.formato_preferido}` : null} />
-              <DataRow label="Nivel"    value={nivel} />
-              <DataRow label="Tarjetas" value={
-                (perfil.tarjetas_amarillas || perfil.tarjetas_rojas)
-                  ? `🟨 ${perfil.tarjetas_amarillas || 0}   🟥 ${perfil.tarjetas_rojas || 0}`
-                  : null
-              } />
-              <DataRow label="En SP desde" value={
-                perfil.fecha_registro
-                  ? format(new Date(perfil.fecha_registro), 'MMM yyyy', { locale: es })
-                  : null
-              } />
+            <DataFila label="Ciudad"    value={[perfil.ciudad, perfil.departamento].filter(Boolean).join(', ')} />
+            <DataFila label="Posición"  value={perfil.posicion} />
+            <DataFila label="Pie"       value={perfil.pie_dominante ? `Pie ${perfil.pie_dominante}` : null} />
+            <DataFila label="Formato"   value={perfil.formato_preferido ? `${perfil.formato_preferido}v${perfil.formato_preferido}` : null} />
+            <DataFila label="Nivel"     value={nivel.toUpperCase()} />
+            <DataFila label="Tarjetas"  value={
+              (perfil.tarjetas_amarillas || perfil.tarjetas_rojas)
+                ? `🟨 ${perfil.tarjetas_amarillas || 0}  🟥 ${perfil.tarjetas_rojas || 0}`
+                : null
+            } />
+            <DataFila label="En SP desde" value={
+              perfil.fecha_registro
+                ? format(new Date(perfil.fecha_registro), 'MMM yyyy', { locale: es })
+                : null
+            } />
+          </div>
+
+          {/* Rendimiento */}
+          <div className="card">
+            <h2 className="font-impact text-xs uppercase tracking-widest text-sp-muted mb-3 pb-2 border-b border-sp-border">
+              Rendimiento
+            </h2>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Win Rate', val: winRate, max: 100, color: '#1D9E75', suffix: '%' },
+                { label: 'Goles/PJ', val: Math.min(parseFloat(gpj) * 20, 100), max: 100, color: '#fbbf24', display: gpj },
+                { label: 'Partidos', val: Math.min(partidos * 2, 100), max: 100, color: colorNivel, display: partidos },
+              ].map(({ label, val, color, suffix, display }) => (
+                <div key={label}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[10px] text-sp-muted uppercase tracking-wider">{label}</span>
+                    <span className="text-[10px] font-bold" style={{ color }}>{display ?? val}{suffix}</span>
+                  </div>
+                  <div className="h-1 bg-sp-border rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(val, 100)}%`, background: color }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Medallas */}
           <div className="card">
-            <h2 className="font-impact text-sm uppercase tracking-wider text-sp-muted mb-3 pb-2 border-b border-sp-border">
-              Medallas e insignias
+            <h2 className="font-impact text-xs uppercase tracking-widest text-sp-muted mb-3 pb-2 border-b border-sp-border">
+              Medallas
             </h2>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {MEDALLAS.map(m => {
                 const ok = medallas.includes(m.id);
                 return (
-                  <div key={m.id} title={m.label} className={`flex flex-col items-center gap-1 py-2.5 rounded-lg border transition-all ${ok ? 'border-sp-green/50 bg-sp-green/10' : 'border-sp-border/30 opacity-25'}`}>
-                    <span className="text-xl">{m.emoji}</span>
-                    <span className="text-[9px] text-center text-sp-muted leading-tight uppercase tracking-wide">{m.label}</span>
+                  <div key={m.id} title={m.label}
+                    className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition-all cursor-default ${ok ? 'border-sp-green/50 bg-sp-green/10' : 'border-sp-border/30 opacity-20'}`}>
+                    <span className="text-lg">{m.emoji}</span>
+                    <span className="text-[8px] text-center text-sp-muted leading-tight">{m.label}</span>
                   </div>
                 );
               })}
@@ -346,10 +406,10 @@ export default function Perfil() {
           </div>
         </div>
 
-        {/* ── COLUMNA DERECHA: Tabs ── */}
+        {/* ── CONTENIDO PRINCIPAL ── */}
         <div className="md:col-span-2 space-y-3">
 
-          {/* Editor */}
+          {/* Editor de perfil */}
           {editando && (
             <div className="card border-sp-green/30 space-y-4">
               <h2 className="font-impact text-lg">EDITAR PERFIL</h2>
@@ -367,11 +427,11 @@ export default function Perfil() {
                   <label className="label">Posición</label>
                   <select value={form.posicion} onChange={e => setForm(p => ({ ...p, posicion: e.target.value }))} className="input">
                     <option value="">-</option>
-                    {['portero','defensa','mediocampista','delantero'].map(p => <option key={p} value={p} className="capitalize">{p}</option>)}
+                    {['portero','defensa','mediocampista','delantero'].map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Pie dominante</label>
+                  <label className="label">Pie</label>
                   <select value={form.pie_dominante} onChange={e => setForm(p => ({ ...p, pie_dominante: e.target.value }))} className="input">
                     <option value="">-</option>
                     {['derecho','izquierdo','ambos'].map(p => <option key={p} value={p}>{p}</option>)}
@@ -404,89 +464,106 @@ export default function Perfil() {
           )}
 
           {/* Tabs */}
-          <div className="flex border-b border-sp-border gap-1">
+          <div className="flex border-b border-sp-border gap-0.5 overflow-x-auto">
             {[
-              { key: 'historial',     label: 'Historial' },
-              { key: 'reputacion',    label: 'Reputación' },
-              { key: 'publicaciones', label: 'Posts' },
+              { key: 'historial',     label: '📋 Historial' },
+              { key: 'reputacion',    label: '⭐ Reputación' },
+              { key: 'publicaciones', label: '📝 Posts' },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px ${tab === key ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}>
+                className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${tab === key ? 'border-sp-green text-sp-green' : 'border-transparent text-sp-muted hover:text-white'}`}>
                 {label}
               </button>
             ))}
           </div>
 
-          {/* ── TAB: HISTORIAL (tabla estilo Transfermarkt) ── */}
+          {/* ── HISTORIAL ── */}
           {tab === 'historial' && (
             <div className="card p-0 overflow-hidden">
               {historial.length === 0 ? (
-                <p className="text-center py-10 text-sp-muted text-sm">Sin partidos registrados</p>
+                <p className="text-center py-10 text-sp-muted text-sm">Sin partidos registrados aún</p>
               ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full min-w-[380px]">
-                  <thead>
-                    <tr className="border-b border-sp-border bg-sp-bg">
-                      <th className="th w-10 text-center">Res.</th>
-                      <th className="th">Evento</th>
-                      <th className="th text-center hidden md:table-cell">Tipo</th>
-                      <th className="th text-center">⚽</th>
-                      <th className="th text-center hidden sm:table-cell">Asist.</th>
-                      <th className="th text-center hidden sm:table-cell">★</th>
-                      <th className="th text-right">Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historial.map((p, i) => {
-                      const resColor = p.resultado === 'victoria' ? '#1D9E75' : p.resultado === 'derrota' ? '#f87171' : '#888';
-                      const resLabel = p.resultado === 'victoria' ? 'V' : p.resultado === 'derrota' ? 'D' : 'E';
-                      return (
-                        <tr key={i} className="border-b border-sp-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
-                          <td className="td text-center">
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              width: 26, height: 26, borderRadius: '50%',
-                              border: `1.5px solid ${resColor}`, color: resColor,
-                              fontSize: 10, fontWeight: 700,
-                            }}>{resLabel}</span>
-                          </td>
-                          <td className="td">
-                            <p className="text-white text-sm font-medium truncate max-w-[180px]">{p.titulo}</p>
-                          </td>
-                          <td className="td text-center hidden md:table-cell">
-                            <span className="badge-white capitalize">{p.tipo}</span>
-                          </td>
-                          <td className="td text-center">
-                            <span className={`text-sm font-bold ${p.goles > 0 ? 'text-yellow-400' : 'text-sp-muted'}`}>{p.goles || 0}</span>
-                          </td>
-                          <td className="td text-center hidden sm:table-cell">
-                            <span className="text-sm text-sp-muted">{p.asistencias || 0}</span>
-                          </td>
-                          <td className="td text-center hidden sm:table-cell">
-                            {p.calificacion > 0
-                              ? <span className="text-sm font-bold" style={{ color: colorNivel }}>★ {Number(p.calificacion).toFixed(1)}</span>
-                              : <span className="text-sp-muted text-sm">—</span>
-                            }
-                          </td>
-                          <td className="td text-right text-xs text-sp-muted whitespace-nowrap">
-                            {format(new Date(p.fecha), 'dd MMM yy', { locale: es })}
-                          </td>
+                <>
+                  {/* Resumen rápido */}
+                  <div className="grid grid-cols-3 border-b border-sp-border divide-x divide-sp-border bg-[#0a0a0a]">
+                    {[
+                      { val: historial.filter(p => p.resultado === 'victoria').length, label: 'Victorias', color: '#1D9E75' },
+                      { val: historial.reduce((s, p) => s + (p.goles || 0), 0), label: 'Goles', color: '#fbbf24' },
+                      { val: historial.filter(p => p.calificacion > 0).length > 0
+                          ? (historial.reduce((s, p) => s + (p.calificacion || 0), 0) / historial.filter(p => p.calificacion > 0).length).toFixed(1)
+                          : '—',
+                        label: 'Rating prom.', color: '#a78bfa' },
+                    ].map(({ val, label, color }) => (
+                      <div key={label} className="py-3 text-center">
+                        <p className="font-impact text-2xl leading-none mb-0.5" style={{ color }}>{val}</p>
+                        <p className="text-[9px] text-sp-muted uppercase tracking-wider">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[380px]">
+                      <thead>
+                        <tr className="border-b border-sp-border bg-[#0a0a0a] text-left">
+                          <th className="th w-10 text-center">Res.</th>
+                          <th className="th">Evento</th>
+                          <th className="th text-center hidden md:table-cell">Tipo</th>
+                          <th className="th text-center">⚽</th>
+                          <th className="th text-center hidden sm:table-cell">Asist.</th>
+                          <th className="th text-center hidden sm:table-cell">★</th>
+                          <th className="th text-right">Fecha</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {historial.map((p, i) => {
+                          const resColor = p.resultado === 'victoria' ? '#1D9E75' : p.resultado === 'derrota' ? '#f87171' : '#888';
+                          const resLabel = p.resultado === 'victoria' ? 'V' : p.resultado === 'derrota' ? 'D' : 'E';
+                          return (
+                            <tr key={i} className="border-b border-sp-border/40 last:border-0 hover:bg-white/[0.02] transition-colors">
+                              <td className="td text-center">
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 24, height: 24, borderRadius: '50%',
+                                  border: `1.5px solid ${resColor}`, color: resColor,
+                                  fontSize: 9, fontWeight: 700,
+                                }}>{resLabel}</span>
+                              </td>
+                              <td className="td">
+                                <p className="text-white text-sm font-medium truncate max-w-[160px]">{p.titulo}</p>
+                              </td>
+                              <td className="td text-center hidden md:table-cell">
+                                <span className="badge-white capitalize text-[10px]">{p.tipo}</span>
+                              </td>
+                              <td className="td text-center">
+                                <span className={`text-sm font-bold ${p.goles > 0 ? 'text-yellow-400' : 'text-sp-muted'}`}>{p.goles || 0}</span>
+                              </td>
+                              <td className="td text-center hidden sm:table-cell">
+                                <span className="text-sm text-sp-muted">{p.asistencias || 0}</span>
+                              </td>
+                              <td className="td text-center hidden sm:table-cell">
+                                {p.calificacion > 0
+                                  ? <span className="text-sm font-bold" style={{ color: colorNivel }}>★ {Number(p.calificacion).toFixed(1)}</span>
+                                  : <span className="text-sp-muted text-sm">—</span>
+                                }
+                              </td>
+                              <td className="td text-right text-xs text-sp-muted whitespace-nowrap">
+                                {format(new Date(p.fecha), 'dd MMM yy', { locale: es })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}
 
-          {/* ── TAB: REPUTACIÓN ── */}
+          {/* ── REPUTACIÓN ── */}
           {tab === 'reputacion' && (
             <div className="card space-y-5">
               {reputacion?.total_calificaciones > 0 ? (
                 <>
-                  {/* Puntuación grande */}
                   <div className="flex items-center gap-5 pb-4 border-b border-sp-border">
                     <div className="text-center">
                       <p className="font-impact text-6xl leading-none" style={{ color: colorNivel }}>
@@ -505,7 +582,6 @@ export default function Perfil() {
                       <p className="text-sp-muted text-sm">recibidas de compañeros</p>
                     </div>
                   </div>
-
                   {reputacion.positivos?.length > 0 && (
                     <div>
                       <p className="text-xs text-sp-muted uppercase tracking-widest mb-3 font-semibold">✅ Puntos fuertes</p>
@@ -519,7 +595,6 @@ export default function Perfil() {
                       </div>
                     </div>
                   )}
-
                   {reputacion.negativos?.length > 0 && (
                     <div>
                       <p className="text-xs text-sp-muted uppercase tracking-widest mb-3 font-semibold">⚠️ Áreas de mejora</p>
@@ -540,7 +615,7 @@ export default function Perfil() {
             </div>
           )}
 
-          {/* ── TAB: PUBLICACIONES ── */}
+          {/* ── PUBLICACIONES ── */}
           {tab === 'publicaciones' && (
             <div className="space-y-3">
               {publicaciones.length === 0 ? (
@@ -551,8 +626,8 @@ export default function Perfil() {
                     {pub.contenido && <p className="text-white/90 text-sm leading-relaxed mb-3">{pub.contenido}</p>}
                     {pub.imagen_url && <img src={pub.imagen_url} alt="" className="w-full rounded-lg mb-3 max-h-64 object-cover" />}
                     <div className="flex items-center gap-4 text-xs text-sp-muted border-t border-sp-border pt-2">
-                      <span>❤️ {pub.likes_count || 0}</span>
-                      <span>💬 {pub.comentarios_count || 0}</span>
+                      <span>❤️ {pub.total_likes || 0}</span>
+                      <span>💬 {pub.total_comentarios || 0}</span>
                       <span className="ml-auto">{formatDistanceToNow(new Date(pub.fecha), { addSuffix: true, locale: es })}</span>
                     </div>
                   </div>
