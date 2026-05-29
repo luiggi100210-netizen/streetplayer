@@ -13,6 +13,7 @@ const SQL_FILES = [
   'firebase_migration.sql',
   'tiempos_migration.sql',
   'mvp_migration.sql',
+  'torneo_full_migration.sql',
 ];
 
 async function init() {

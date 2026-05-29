@@ -2,7 +2,13 @@ const router          = require('express').Router();
 const { body, param } = require('express-validator');
 const { verificarToken } = require('../middleware/auth');
 const validate        = require('../middleware/validate');
-const { listarTorneos, obtenerTorneo, crearTorneo, inscribirEquipo, desinscribirEquipo } = require('../controllers/torneos.controller');
+const {
+  listarTorneos, obtenerTorneo, crearTorneo,
+  postularEquipo, desinscribirEquipo,
+  aceptarEquipo, rechazarEquipo,
+  configurarPremios, iniciarTorneo,
+  registrarResultado, medallasTorneos,
+} = require('../controllers/torneos.controller');
 
 const validarId = param('id').isUUID().withMessage('ID de torneo inválido');
 
@@ -19,12 +25,27 @@ const validarCrear = [
   body('longitud').optional().isFloat({ min: -180, max: 180 }).withMessage('longitud inválida'),
 ];
 
-router.get('/',             verificarToken, listarTorneos);
-router.post('/',            verificarToken, validarCrear, validate, crearTorneo);
-router.get('/:id',          verificarToken, validarId,   validate, obtenerTorneo);
-router.post('/:id/inscribir',   verificarToken, validarId, validate,
-  [body('equipo_id').isUUID().withMessage('equipo_id inválido')], validate, inscribirEquipo);
-router.delete('/:id/inscribir', verificarToken, validarId, validate,
-  [body('equipo_id').isUUID().withMessage('equipo_id inválido')], validate, desinscribirEquipo);
+const validarEquipoId = [body('equipo_id').isUUID().withMessage('equipo_id inválido')];
+const validarPartidoId = param('partidoId').isUUID().withMessage('ID de partido inválido');
+
+router.get('/',    verificarToken, listarTorneos);
+router.post('/',   verificarToken, validarCrear, validate, crearTorneo);
+router.get('/:id', verificarToken, validarId, validate, obtenerTorneo);
+
+// Postulación de equipos
+router.post('/:id/postular',   verificarToken, validarId, validate, validarEquipoId, validate, postularEquipo);
+router.delete('/:id/inscribir',verificarToken, validarId, validate, validarEquipoId, validate, desinscribirEquipo);
+
+// Panel organizador
+router.put('/:id/equipos/:equipoId/aceptar',  verificarToken, validarId, validate, aceptarEquipo);
+router.put('/:id/equipos/:equipoId/rechazar', verificarToken, validarId, validate, rechazarEquipo);
+router.put('/:id/premios',  verificarToken, validarId, validate, configurarPremios);
+router.put('/:id/iniciar',  verificarToken, validarId, validate, iniciarTorneo);
+
+// Resultados de partidos
+router.put('/:id/partidos/:partidoId/resultado', verificarToken, validarId, validarPartidoId, validate, registrarResultado);
+
+// Medallas de torneos del usuario
+router.get('/usuario/:id/medallas', verificarToken, medallasTorneos);
 
 module.exports = router;

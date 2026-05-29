@@ -78,19 +78,21 @@ export default function Perfil() {
   const [guardando,    setGuardando] = useState(false);
   const [tab,          setTab]       = useState('historial');
   const [xpLog,        setXpLog]     = useState([]);
+  const [medallasTorneos, setMedallasTorneos] = useState([]);
 
   const esMio = yo?.id === id;
 
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
-      const [pRes, pubRes, histRes, repRes, medRes, xpRes] = await Promise.allSettled([
+      const [pRes, pubRes, histRes, repRes, medRes, xpRes, torMedRes] = await Promise.allSettled([
         api.get(`/usuarios/${id}`),
         api.get(`/usuarios/${id}/publicaciones`),
         api.get(`/usuarios/${id}/historial`),
         api.get(`/usuarios/${id}/reputacion`),
         api.get(`/usuarios/${id}/medallas`),
         api.get(`/usuarios/${id}/xp-log`),
+        api.get(`/torneos/usuario/${id}/medallas`),
       ]);
 
       if (pRes.status === 'fulfilled') {
@@ -110,7 +112,8 @@ export default function Perfil() {
       if (histRes.status === 'fulfilled') setHistorial(histRes.value.data);
       if (repRes.status  === 'fulfilled') setRep(repRes.value.data);
       if (medRes.status  === 'fulfilled') setMedallas(medRes.value.data || []);
-      if (xpRes.status   === 'fulfilled') setXpLog(xpRes.value.data || []);
+      if (xpRes.status    === 'fulfilled') setXpLog(xpRes.value.data || []);
+      if (torMedRes.status === 'fulfilled') setMedallasTorneos(torMedRes.value.data || []);
 
       setCargando(false);
     };
@@ -424,6 +427,30 @@ export default function Perfil() {
                 );
               })}
             </div>
+
+            {/* Medallas de torneos */}
+            {medallasTorneos.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-sp-border">
+                <p className="text-[10px] uppercase tracking-wider text-sp-muted mb-2 font-bold">Torneos</p>
+                <div className="space-y-1.5">
+                  {medallasTorneos.map(tm => {
+                    const emojiMap = { campeon: '🥇', subcampeon: '🥈', tercero: '🥉', participante: '🏅' };
+                    const labelMap = { campeon: 'Campeón', subcampeon: 'Subcampeón', tercero: '3.° Lugar', participante: 'Participante' };
+                    return (
+                      <div key={`${tm.torneo_id}-${tm.tipo}`}
+                        title={`${labelMap[tm.tipo] ?? tm.tipo} — ${tm.torneo_nombre}`}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-sp-surface border border-sp-border/50 hover:border-sp-green/40 transition-colors cursor-default">
+                        <span className="text-base">{emojiMap[tm.tipo] ?? '🏅'}</span>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-white truncate">{tm.torneo_nombre}</p>
+                          <p className="text-[9px] text-sp-muted">{labelMap[tm.tipo] ?? tm.tipo}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -459,22 +459,25 @@ export default function Home() {
   const [tab,       setTab]       = useState('feed');
   const [cargando,  setCargando]  = useState(true);
   const [miEquipoId, setMiEquipoId] = useState(null);
+  const [torneos,   setTorneos]   = useState([]);
 
   const cargar = async () => {
     setCargando(true);
     try {
-      const [feedRes, retosRes, eventosRes, rankingRes, anunciosRes] = await Promise.all([
+      const [feedRes, retosRes, eventosRes, rankingRes, anunciosRes, torneosRes] = await Promise.all([
         api.get('/feed'),
         api.get('/retos/comunidad'),
         api.get('/eventos?estado=abierto'),
         api.get('/ranking'),
         api.get('/anuncios').catch(() => ({ data: [] })),
+        api.get('/torneos').catch(() => ({ data: [] })),
       ]);
       setFeed(feedRes.data);
       setRetos(retosRes.data);
       setEventos(eventosRes.data.slice(0, 6));
       setRanking(rankingRes.data);
       setAnuncios(anunciosRes.data);
+      setTorneos(torneosRes.data || []);
 
       try {
         const { data: { mi_equipo_id } } = await api.get('/retos');
@@ -490,6 +493,7 @@ export default function Home() {
     { key: 'feed',    label: '📰 Feed' },
     { key: 'retos',   label: '⚔️ Retos' },
     { key: 'eventos', label: '⚽ Eventos' },
+    { key: 'torneos', label: '🏆 Torneos' },
   ];
 
   return (
@@ -662,6 +666,101 @@ export default function Home() {
                     }}>Ver todos los eventos →</Link>
                   </div>
                 </>
+              )}
+            </>
+          )}
+          {/* ── TAB TORNEOS ── */}
+          {tab === 'torneos' && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <h2 style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 20, color: '#fff', letterSpacing: '0.04em' }}>HISTORIAL DE TORNEOS</h2>
+                <Link to="/torneos" style={{ fontSize: 11, fontWeight: 700, color: '#1D9E75', textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ver todos →</Link>
+              </div>
+              {cargando ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} style={{ height: 120, borderRadius: 12, background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  ))}
+                </div>
+              ) : torneos.filter(t => t.estado === 'finalizado').length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px', background: '#111', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <p style={{ fontSize: 40, marginBottom: 10 }}>🏆</p>
+                  <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 18, color: '#fff', marginBottom: 6 }}>SIN TORNEOS FINALIZADOS</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Los torneos completados aparecerán aquí.</p>
+                  <Link to="/torneos" className="btn-primary text-sm">Ver torneos activos</Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {torneos.filter(t => t.estado === 'finalizado').map(torneo => (
+                      <Link key={torneo.id} to={`/torneos/${torneo.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                        <div style={{
+                          background: '#111', border: '1px solid rgba(251,191,36,0.2)',
+                          borderRadius: 12, overflow: 'hidden', transition: 'border-color .2s',
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(251,191,36,0.5)'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(251,191,36,0.2)'}
+                        >
+                          <div style={{ height: 3, background: 'linear-gradient(to right, #fbbf24, #1D9E75)' }} />
+                          <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                            {torneo.foto_url ? (
+                              <img src={torneo.foto_url} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 52, height: 52, borderRadius: 8, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>🏆</div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 15, color: '#fff', letterSpacing: '0.02em', marginBottom: 2 }}>{torneo.nombre}</p>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'capitalize', marginBottom: 4 }}>{torneo.deporte} · {torneo.formato || 'eliminacion'}</p>
+                              {torneo.campeon_nombre && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontSize: 14 }}>🥇</span>
+                                  {torneo.campeon_escudo && <img src={torneo.campeon_escudo} alt="" style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'contain' }} />}
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24' }}>{torneo.campeon_nombre}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#1D9E75', marginBottom: 4 }}>Finalizado</p>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                {torneo.fecha_inicio ? new Date(torneo.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Torneos activos */}
+              {torneos.filter(t => t.estado === 'activo').length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 16, color: '#fff', letterSpacing: '0.04em', marginBottom: 10 }}>EN CURSO</h3>
+                  <div className="space-y-3">
+                    {torneos.filter(t => t.estado === 'activo').map(torneo => (
+                      <Link key={torneo.id} to={`/torneos/${torneo.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                        <div style={{
+                          background: '#111', border: '1px solid rgba(29,158,117,0.25)',
+                          borderRadius: 12, overflow: 'hidden', transition: 'border-color .2s',
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(29,158,117,0.5)'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(29,158,117,0.25)'}
+                        >
+                          <div style={{ height: 3, background: '#1D9E75' }} />
+                          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                              {torneo.foto_url ? <img src={torneo.foto_url} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} /> : '⚽'}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 14, color: '#fff', letterSpacing: '0.02em', marginBottom: 1 }}>{torneo.nombre}</p>
+                              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'capitalize' }}>{torneo.deporte} · {torneo.equipos_inscritos || 0} equipos</p>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '3px 8px', borderRadius: 4, color: '#1D9E75', background: 'rgba(29,158,117,0.12)', border: '1px solid rgba(29,158,117,0.3)', flexShrink: 0 }}>En curso</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               )}
             </>
           )}
