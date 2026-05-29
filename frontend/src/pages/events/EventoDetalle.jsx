@@ -548,6 +548,8 @@ export default function EventoDetalle() {
   const [error, setError]               = useState('');
   const [modalFinal, setModalFinal]     = useState(false);
   const [finalizado, setFinalizado]     = useState(false);
+  const [modalCancelar, setModalCancelar] = useState(false);
+  const [cancelando, setCancelando]       = useState(false);
 
   const cargar = async () => {
     try {
@@ -596,6 +598,18 @@ export default function EventoDetalle() {
     }
   };
 
+  const handleCancelar = async () => {
+    setCancelando(true);
+    try {
+      await api.put(`/eventos/${id}/cancelar`);
+      navigate('/eventos');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al cancelar');
+      setCancelando(false);
+      setModalCancelar(false);
+    }
+  };
+
   const onFinalizado = () => {
     setModalFinal(false);
     setFinalizado(true);
@@ -621,7 +635,42 @@ export default function EventoDetalle() {
         <ModalFinalizar evento={evento} onClose={() => setModalFinal(false)} onFinalizado={onFinalizado} />
       )}
 
+      {modalCancelar && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-sp-card border border-red-500/30 rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="text-4xl">❌</div>
+              <h2 className="font-impact text-xl text-red-400">CANCELAR EVENTO</h2>
+              <p className="text-white/70 text-sm leading-relaxed">
+                ¿Seguro que quieres cancelar <span className="text-white font-medium">"{evento.titulo}"</span>?
+                Todos los participantes serán notificados.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setModalCancelar(false)} disabled={cancelando} className="btn-ghost flex-1">
+                Volver
+              </button>
+              <button onClick={handleCancelar} disabled={cancelando}
+                className="flex-1 py-2.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors font-bold text-sm uppercase tracking-wide">
+                {cancelando ? '...' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sp-muted hover:text-white transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver
+        </button>
 
         {/* Banner */}
         {evento.foto_url ? (
@@ -822,13 +871,17 @@ export default function EventoDetalle() {
         {esCreador && (
           <div className="card border-sp-green/20 space-y-3">
             <p className="text-xs text-sp-muted uppercase tracking-wider font-bold">Panel del organizador</p>
-            <p className="text-xs text-sp-green">Eres el creador de este evento</p>
             {evento.estado !== 'finalizado' && !finalizado && (
-              <button
-                onClick={() => setModalFinal(true)}
-                className="btn-primary w-full"
-              >
+              <button onClick={() => setModalFinal(true)} className="btn-primary w-full">
                 REGISTRAR RESULTADO Y FINALIZAR
+              </button>
+            )}
+            {!['finalizado', 'cancelado', 'confirmado'].includes(evento.estado) && (
+              <button
+                onClick={() => setModalCancelar(true)}
+                className="w-full py-2 rounded-xl border border-red-500/30 text-red-400/70 hover:border-red-500/60 hover:text-red-400 transition-colors text-xs font-semibold uppercase tracking-wide"
+              >
+                Cancelar evento
               </button>
             )}
           </div>

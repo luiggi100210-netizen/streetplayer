@@ -56,5 +56,6 @@ router.post('/:id/unirse',    verificarToken, validarUnirse,    validate, c.unir
 router.delete('/:id/salir',   verificarToken, validarId,        validate, c.salirEvento);
 router.post('/:id/finalizar', verificarToken, validarFinalizar, validate, c.finalizarEvento);
 router.put('/:id/confirmar',  verificarToken, validarId,        validate, c.confirmarEvento);
+router.put('/:id/cancelar',   verificarToken, validarId,        validate, c.cancelarEvento);
 
 module.exports = router;

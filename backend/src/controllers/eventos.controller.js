@@ -335,4 +335,30 @@ const editarEvento = asyncHandler(async (req, res) => {
   res.json(rows[0]);
 });
 
-module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento };
+// PUT /api/eventos/:id/cancelar — el creador cancela el evento (solo si no está confirmado)
+const cancelarEvento = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows: [ev] } = await pool.query('SELECT * FROM eventos WHERE id = $1', [id]);
+  if (!ev) return res.status(404).json({ error: 'Evento no encontrado' });
+  if (ev.creador_id !== req.usuario.id) return res.status(403).json({ error: 'Solo el creador puede cancelar el evento' });
+  if (['confirmado', 'finalizado', 'cancelado'].includes(ev.estado)) {
+    return res.status(400).json({ error: 'No se puede cancelar un evento en este estado' });
+  }
+
+  await pool.query("UPDATE eventos SET estado = 'cancelado' WHERE id = $1", [id]);
+
+  const { rows: participantes } = await pool.query(
+    'SELECT usuario_id FROM evento_participantes WHERE evento_id = $1',
+    [id]
+  );
+  await Promise.all(
+    participantes.map(p =>
+      notificar(p.usuario_id, 'evento',
+        `❌ El evento "${ev.titulo}" fue cancelado por el organizador.`, id)
+    )
+  );
+
+  res.json({ mensaje: 'Evento cancelado' });
+});
+
+module.exports = { listarEventos, obtenerEvento, crearEvento, unirseEvento, salirEvento, finalizarEvento, editarEvento, confirmarEvento, cancelarEvento };
