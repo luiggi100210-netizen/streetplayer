@@ -2,7 +2,7 @@ const router   = require('express').Router();
 const { body } = require('express-validator');
 const { verificarToken } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { registro, login, loginAdmin, me, loginFirebase } = require('../controllers/auth.controller');
+const { registro, login, loginAdmin, me, loginFirebase, refresh, logout } = require('../controllers/auth.controller');
 
 const validarRegistro = [
   body('username').trim().notEmpty().withMessage('username requerido')
@@ -14,7 +14,7 @@ const validarRegistro = [
     .isLength({ min: 2, max: 50 }).withMessage('nombre: entre 2 y 50 caracteres'),
   body('ciudad').optional().trim().isLength({ max: 100 }).withMessage('ciudad: máximo 100 caracteres'),
   body('deportes').optional().isArray().withMessage('deportes debe ser un array'),
-  body('lat').optional().isFloat({ min: -90, max: 90 }).withMessage('lat inválido'),
+  body('lat').optional().isFloat({ min: -90,  max: 90  }).withMessage('lat inválido'),
   body('lng').optional().isFloat({ min: -180, max: 180 }).withMessage('lng inválido'),
 ];
 
@@ -26,7 +26,9 @@ const validarLogin = [
 router.post('/registro',    validarRegistro, validate, registro);
 router.post('/login',       validarLogin,    validate, login);
 router.post('/firebase',    loginFirebase);
-router.post('/admin/login', validarLogin,    validate, loginAdmin);
+router.post('/refresh',     refresh);
+router.post('/logout',      logout);
+router.post('/admin/login', validarLogin, validate, loginAdmin);
 router.get('/me',           verificarToken, me);
 
 module.exports = router;
