@@ -12,24 +12,50 @@ const TIPOS    = [
 ];
 const FORMATOS = [5, 6, 7, 8, 9, 10, 11];
 
+/** Fecha mínima para el input datetime-local: ahora, en hora local. */
+function fechaMinimaLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
 export default function CrearEvento() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     titulo: '', tipo: 'pichanga', descripcion: '', deporte: 'futbol',
     nivel: 'todos', nombre_cancha: '', direccion: '',
     fecha_evento: '', formato: 5, cupos_total: 10, precio: 0,
-    es_privado: false, foto_url: '',
+    duracion_min: 90, es_privado: false, foto_url: '',
   });
   const [ubicacion, setUbicacion] = useState(null); // { lat, lng }
+  const [cuposTocado, setCuposTocado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError]       = useState('');
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
+  // Al cambiar el formato, sugerir cupos = jugadores por lado × 2
+  // (solo si el usuario no editó los cupos manualmente)
+  const elegirFormato = (n) => {
+    setForm(prev => ({
+      ...prev,
+      formato: n,
+      ...(cuposTocado ? {} : { cupos_total: Math.min(n * 2, 50) }),
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.titulo || !form.deporte || !form.fecha_evento) {
       setError('Título, deporte y fecha son requeridos');
+      return;
+    }
+    if (form.titulo.trim().length < 5) {
+      setError('El título debe tener al menos 5 caracteres');
+      return;
+    }
+    if (new Date(form.fecha_evento) <= new Date()) {
+      setError('La fecha del evento debe ser futura');
       return;
     }
     setCargando(true);
@@ -83,7 +109,8 @@ export default function CrearEvento() {
 
           <div>
             <label className="label">Título del evento *</label>
-            <input value={form.titulo} onChange={e => set('titulo', e.target.value)} className="input" placeholder='Ej: "Pichanga dominguera — 5vs5"' />
+            <input value={form.titulo} onChange={e => set('titulo', e.target.value)} className="input"
+              minLength={5} maxLength={100} placeholder='Ej: "Pichanga dominguera — 5vs5"' />
           </div>
 
           <div>
@@ -114,7 +141,8 @@ export default function CrearEvento() {
 
           <div>
             <label className="label">Fecha y hora *</label>
-            <input type="datetime-local" value={form.fecha_evento} onChange={e => set('fecha_evento', e.target.value)} className="input" />
+            <input type="datetime-local" value={form.fecha_evento} min={fechaMinimaLocal()}
+              onChange={e => set('fecha_evento', e.target.value)} className="input" />
           </div>
 
           <div>
@@ -131,16 +159,20 @@ export default function CrearEvento() {
             <label className="label">Ubicación en el mapa</label>
             <p className="text-xs text-sp-muted mb-2">Toca el mapa para marcar la cancha</p>
             <MapaPicker value={ubicacion} onChange={setUbicacion} />
-            {ubicacion && (
-              <p className="text-xs text-[#00e676] mt-2">
+            {ubicacion ? (
+              <p className="text-xs text-sp-green mt-2">
                 Pin colocado — {ubicacion.lat.toFixed(5)}, {ubicacion.lng.toFixed(5)}
                 <button
                   type="button"
                   onClick={() => setUbicacion(null)}
-                  className="ml-3 text-[#64748b] hover:text-red-400 transition-colors"
+                  className="ml-3 text-sp-muted hover:text-red-400 transition-colors"
                 >
                   Quitar
                 </button>
+              </p>
+            ) : (
+              <p className="text-xs text-yellow-500/80 mt-2">
+                ⚠ Sin pin, tu evento no aparecerá en el mapa ni en las búsquedas "cerca de mí"
               </p>
             )}
           </div>
@@ -158,7 +190,7 @@ export default function CrearEvento() {
                   <button
                     key={n}
                     type="button"
-                    onClick={() => set('formato', n)}
+                    onClick={() => elegirFormato(n)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${form.formato === n ? 'bg-sp-green border-sp-green text-white' : 'border-sp-border text-sp-muted hover:text-white'}`}
                   >
                     {n}v{n}
@@ -169,12 +201,30 @@ export default function CrearEvento() {
 
             <div>
               <label className="label">Cupos máx.</label>
-              <input type="number" min={2} max={200} value={form.cupos_total} onChange={e => set('cupos_total', parseInt(e.target.value) || 2)} className="input" />
+              <input type="number" min={2} max={50} value={form.cupos_total}
+                onChange={e => { setCuposTocado(true); set('cupos_total', Math.min(parseInt(e.target.value) || 2, 50)); }}
+                className="input" />
             </div>
 
             <div>
               <label className="label">Precio (S/)</label>
-              <input type="number" min={0} value={form.precio} onChange={e => set('precio', parseFloat(e.target.value) || 0)} className="input" />
+              <input type="number" min={0} max={9999} step="0.5" value={form.precio} onChange={e => set('precio', parseFloat(e.target.value) || 0)} className="input" />
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Duración</label>
+            <div className="flex flex-wrap gap-1.5">
+              {[60, 90, 120, 150, 180].map(min => (
+                <button
+                  key={min}
+                  type="button"
+                  onClick={() => set('duracion_min', min)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${form.duracion_min === min ? 'bg-sp-green border-sp-green text-white' : 'border-sp-border text-sp-muted hover:text-white'}`}
+                >
+                  {min >= 120 ? `${Math.floor(min / 60)}h${min % 60 || ''}` : `${min} min`}
+                </button>
+              ))}
             </div>
           </div>
 
