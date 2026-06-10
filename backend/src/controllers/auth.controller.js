@@ -4,6 +4,7 @@ const bcrypt            = require('bcryptjs');
 const jwt               = require('jsonwebtoken');
 const asyncHandler      = require('../middleware/asyncHandler');
 const withTransaction   = require('../db/withTransaction');
+const { enviarEmail }   = require('../services/mailer');
 const { reverseGeocode } = require('../utils/geocoding');
 const admin             = require('../services/firebase');
 
@@ -274,6 +275,77 @@ const refresh = asyncHandler(async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────
+// POST /api/auth/forgot — envía código de recuperación al email
+// ──────────────────────────────────────────────────────────
+const RESET_EXPIRA_MIN = 15;
+
+const olvidePassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  // Respuesta uniforme: no revelar si el email existe o no
+  const respuesta = { mensaje: 'Si el email está registrado, te enviamos un código de recuperación.' };
+
+  const { rows } = await pool.query(
+    'SELECT id, nombre FROM usuarios WHERE email = $1',
+    [email.toLowerCase()]
+  );
+  if (rows.length === 0) return res.json(respuesta);
+  const usuario = rows[0];
+
+  const codigo    = crypto.randomInt(100000, 1000000).toString();
+  const expiresAt = new Date(Date.now() + RESET_EXPIRA_MIN * 60 * 1000);
+  await pool.query(
+    'INSERT INTO password_resets (usuario_id, codigo_hash, expires_at) VALUES ($1, $2, $3)',
+    [usuario.id, hashToken(codigo), expiresAt]
+  );
+
+  await enviarEmail({
+    para:   email.toLowerCase(),
+    asunto: `${codigo} es tu código de recuperación — StreetPlayer`,
+    texto:  `Hola ${usuario.nombre},\n\nTu código para recuperar tu contraseña es: ${codigo}\n\nVence en ${RESET_EXPIRA_MIN} minutos. Si no lo pediste, ignora este correo.\n\nStreetPlayer — Juega. Rankea. Domina.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:16px">
+        <p style="font-size:22px;font-weight:900;letter-spacing:1px;margin:0 0 24px">
+          Street<span style="color:#1D9E75;font-style:italic">Player</span>
+        </p>
+        <p style="color:#bbb">Hola ${usuario.nombre},</p>
+        <p style="color:#bbb">Tu código para recuperar tu contraseña es:</p>
+        <p style="font-size:36px;font-weight:900;letter-spacing:8px;color:#1D9E75;text-align:center;margin:24px 0">${codigo}</p>
+        <p style="color:#888;font-size:13px">Vence en ${RESET_EXPIRA_MIN} minutos. Si no lo pediste, ignora este correo.</p>
+      </div>`,
+  });
+
+  res.json(respuesta);
+});
+
+// ──────────────────────────────────────────────────────────
+// POST /api/auth/reset — valida el código y cambia la contraseña
+// ──────────────────────────────────────────────────────────
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, codigo, password } = req.body;
+
+  const { rows } = await pool.query(
+    `SELECT pr.id, pr.usuario_id
+     FROM password_resets pr
+     JOIN usuarios u ON u.id = pr.usuario_id
+     WHERE u.email = $1 AND pr.codigo_hash = $2
+       AND pr.usado = false AND pr.expires_at > NOW()
+     ORDER BY pr.creado_en DESC LIMIT 1`,
+    [email.toLowerCase(), hashToken(codigo)]
+  );
+  if (rows.length === 0) return res.status(400).json({ error: 'Código inválido o expirado' });
+
+  const hash = await bcrypt.hash(password, 10);
+  await withTransaction(async (client) => {
+    await client.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [hash, rows[0].usuario_id]);
+    await client.query('UPDATE password_resets SET usado = true WHERE usuario_id = $1', [rows[0].usuario_id]);
+    // Cerrar todas las sesiones abiertas: si alguien robó la cuenta, queda fuera
+    await client.query('UPDATE refresh_tokens SET revocado = true WHERE usuario_id = $1', [rows[0].usuario_id]);
+  });
+
+  res.json({ mensaje: 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.' });
+});
+
+// ──────────────────────────────────────────────────────────
 // POST /api/auth/logout
 // ──────────────────────────────────────────────────────────
 const logout = asyncHandler(async (req, res) => {
@@ -288,4 +360,4 @@ const logout = asyncHandler(async (req, res) => {
   res.json({ mensaje: 'Sesión cerrada' });
 });
 
-module.exports = { registro, login, loginAdmin, me, loginFirebase, refresh, logout };
+module.exports = { registro, login, loginAdmin, me, loginFirebase, refresh, logout, olvidePassword, resetPassword };

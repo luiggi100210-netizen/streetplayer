@@ -3,7 +3,7 @@ const { body }  = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const { verificarToken } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { registro, login, loginAdmin, me, loginFirebase, refresh, logout } = require('../controllers/auth.controller');
+const { registro, login, loginAdmin, me, loginFirebase, refresh, logout, olvidePassword, resetPassword } = require('../controllers/auth.controller');
 
 // Anti fuerza bruta: solo para endpoints que validan credenciales.
 // /me, /refresh y /logout son operaciones de sesión frecuentes y
@@ -43,6 +43,13 @@ router.post('/firebase',    credencialesLimiter, loginFirebase);
 router.post('/refresh',     refresh);
 router.post('/logout',      logout);
 router.post('/admin/login', credencialesLimiter, validarLogin, validate, loginAdmin);
+router.post('/forgot',      credencialesLimiter,
+  [body('email').isEmail().withMessage('Email inválido')], validate, olvidePassword);
+router.post('/reset',       credencialesLimiter, [
+  body('email').isEmail().withMessage('Email inválido'),
+  body('codigo').matches(/^\d{6}$/).withMessage('El código debe tener 6 dígitos'),
+  body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+], validate, resetPassword);
 router.get('/me',           verificarToken, me);
 
 module.exports = router;

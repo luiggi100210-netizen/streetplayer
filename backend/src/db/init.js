@@ -19,6 +19,7 @@ const SQL_FILES = [
   'publicidad_migration.sql',
   'admin_full_migration.sql',
   'formato_migration.sql',
+  'password_reset_migration.sql',
 ];
 
 async function init() {

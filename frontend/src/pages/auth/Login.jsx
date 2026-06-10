@@ -138,7 +138,10 @@ export default function Login() {
           // Email: solo pedir contraseña
           <form onSubmit={handleSubmitRecordado} className="space-y-4">
             <div>
-              <label className="label">Contraseña</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="label !mb-0">Contraseña</label>
+                <Link to="/recuperar" className="text-xs text-sp-green hover:underline">¿La olvidaste?</Link>
+              </div>
               <input
                 type="password"
                 className="input"
@@ -208,7 +211,10 @@ export default function Login() {
             value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
         </div>
         <div>
-          <label className="label">Contraseña</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="label !mb-0">Contraseña</label>
+            <Link to="/recuperar" className="text-xs text-sp-green hover:underline">¿La olvidaste?</Link>
+          </div>
           <input type="password" className="input" placeholder="••••••••"
             value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
         </div>

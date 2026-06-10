@@ -9,6 +9,7 @@ import Layout        from './components/navbar/Layout';
 import Landing       from './pages/Landing';
 import Login         from './pages/auth/Login';
 import Registro      from './pages/auth/Registro';
+import RecuperarPassword from './pages/auth/RecuperarPassword';
 import Home          from './pages/home/Home';
 import Eventos       from './pages/events/Eventos';
 import EventoDetalle from './pages/events/EventoDetalle';
@@ -78,6 +79,7 @@ function AppRoutes() {
       <Route path="/"          element={<Landing />} />
       <Route path="/login"     element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/registro"  element={<PublicRoute><Registro /></PublicRoute>} />
+      <Route path="/recuperar" element={<PublicRoute><RecuperarPassword /></PublicRoute>} />
 
       {/* App autenticada */}
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
