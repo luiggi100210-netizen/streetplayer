@@ -4,30 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { getLastUser, clearAll } from '../../services/authStorage';
 import { signInWithGoogle, signInWithFacebook } from '../../services/firebase';
-
-// ── Iconos OAuth (inline para no depender de una librería de iconos) ──────────
-function GoogleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 48 48">
-      <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
-      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-      <path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.2-5.5l-6.6-5.5C29.6 35 26.9 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.1C9.4 35.6 16.3 44 24 44z"/>
-      <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.6 5.5C42.1 36 44 30.4 44 24c0-1.3-.1-2.6-.4-3.9z"/>
-    </svg>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2">
-      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
-    </svg>
-  );
-}
-
-function Spinner() {
-  return <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />;
-}
+import AuthShell, { Eyebrow } from '../../components/auth/AuthShell';
+import { GoogleIcon, FacebookIcon, Spinner, OAuthButton, FormDivider, FormError } from '../../components/auth/ui';
+import { T } from '../../styles/brand';
 
 // ── Avatar del usuario recordado ──────────────────────────
 function AvatarRecordado({ user }) {
@@ -36,12 +15,12 @@ function AvatarRecordado({ user }) {
       <img
         src={user.foto_url}
         alt={user.nombre}
-        className="w-20 h-20 rounded-full object-cover border-2 border-[#00e676]/40"
+        className="w-20 h-20 rounded-full object-cover border-2 border-sp-green/40"
       />
     );
   }
   return (
-    <div className="w-20 h-20 rounded-full bg-[#00e676]/20 border-2 border-[#00e676]/40 flex items-center justify-center text-3xl font-black text-[#00e676]">
+    <div className="w-20 h-20 rounded-full bg-sp-green/15 border-2 border-sp-green/40 flex items-center justify-center font-impact text-3xl text-sp-green">
       {user.nombre?.[0]?.toUpperCase() ?? '?'}
     </div>
   );
@@ -120,156 +99,131 @@ export default function Login() {
     const isOAuth = lastUser.provider === 'google' || lastUser.provider === 'facebook';
 
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8">
+      <AuthShell>
+        <Eyebrow>● Bienvenido de nuevo</Eyebrow>
+        <h1 className="font-impact uppercase text-4xl leading-[0.95] font-normal mb-8">
+          Vuelve al <em className="italic" style={{ color: T.emerald }}>campo.</em>
+        </h1>
 
+        {/* Tarjeta del usuario recordado */}
+        <div className="flex flex-col items-center gap-3 pb-7 mb-7 border-b border-white/10">
+          <AvatarRecordado user={lastUser} />
           <div className="text-center">
-            <h1 className="text-4xl font-black text-[#00e676]">Street<span className="text-white">Player</span></h1>
-            <p className="text-[#64748b] mt-2">Bienvenido de nuevo</p>
+            <p className="text-white font-bold text-lg">{lastUser.nombre}</p>
+            <p className="text-white/40 text-sm">@{lastUser.username}</p>
+            {lastUser.email && (
+              <p className="text-white/40 text-xs mt-0.5">{lastUser.email}</p>
+            )}
           </div>
-
-          <div className="bg-[#12121a] border border-[#1e1e2e] rounded-3xl p-8 space-y-6">
-
-            {/* Tarjeta del usuario recordado */}
-            <div className="flex flex-col items-center gap-3 pb-6 border-b border-[#1e1e2e]">
-              <AvatarRecordado user={lastUser} />
-              <div className="text-center">
-                <p className="text-white font-bold text-lg">{lastUser.nombre}</p>
-                <p className="text-[#64748b] text-sm">@{lastUser.username}</p>
-                {lastUser.email && (
-                  <p className="text-[#64748b] text-xs mt-0.5">{lastUser.email}</p>
-                )}
-              </div>
-              {/* Badge del proveedor */}
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-[#2e2e3e]">
-                {lastUser.provider === 'google'   && <GoogleIcon />}
-                {lastUser.provider === 'facebook' && <FacebookIcon />}
-                <span className="text-[#64748b] text-xs capitalize">{lastUser.provider}</span>
-              </div>
-            </div>
-
-            {/* Acción principal */}
-            {isOAuth ? (
-              // Google / Facebook: un solo toque
-              <button
-                onClick={() => handleOAuth(lastUser.provider)}
-                disabled={ocupado}
-                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-[#2e2e3e] bg-white/5 hover:bg-white/10 text-white font-semibold transition-all disabled:opacity-50"
-              >
-                {oauthCargando ? <Spinner /> : (
-                  lastUser.provider === 'google' ? <GoogleIcon /> : <FacebookIcon />
-                )}
-                Continuar como {lastUser.nombre.split(' ')[0]}
-              </button>
-            ) : (
-              // Email: solo pedir contraseña
-              <form onSubmit={handleSubmitRecordado} className="space-y-4">
-                <div>
-                  <label className="label">Contraseña</label>
-                  <input
-                    type="password"
-                    className="input"
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    autoFocus
-                    required
-                  />
-                </div>
-                {error && (
-                  <p className="text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-xl px-4 py-3">{error}</p>
-                )}
-                <button type="submit" disabled={ocupado} className="btn-green w-full py-3 text-base disabled:opacity-50">
-                  {cargando ? 'Ingresando...' : `Entrar como ${lastUser.nombre.split(' ')[0]}`}
-                </button>
-              </form>
-            )}
-
-            {error && isOAuth && (
-              <p className="text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-xl px-4 py-3">{error}</p>
-            )}
-
-            {/* Usar otra cuenta */}
-            <p className="text-center text-sm text-[#64748b]">
-              No eres {lastUser.nombre.split(' ')[0]}.{' '}
-              <button onClick={usarOtraCuenta} className="text-[#00e676] hover:underline font-medium">
-                Usar otra cuenta
-              </button>
-            </p>
+          {/* Badge del proveedor */}
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+            {lastUser.provider === 'google'   && <GoogleIcon />}
+            {lastUser.provider === 'facebook' && <FacebookIcon />}
+            <span className="text-white/40 text-xs capitalize">{lastUser.provider}</span>
           </div>
         </div>
-      </div>
+
+        {/* Acción principal */}
+        {isOAuth ? (
+          // Google / Facebook: un solo toque
+          <OAuthButton
+            provider={lastUser.provider}
+            loading={!!oauthCargando}
+            disabled={ocupado}
+            onClick={() => handleOAuth(lastUser.provider)}
+          >
+            Continuar como {lastUser.nombre.split(' ')[0]}
+          </OAuthButton>
+        ) : (
+          // Email: solo pedir contraseña
+          <form onSubmit={handleSubmitRecordado} className="space-y-4">
+            <div>
+              <label className="label">Contraseña</label>
+              <input
+                type="password"
+                className="input"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                autoFocus
+                required
+              />
+            </div>
+            <FormError>{error}</FormError>
+            <button type="submit" disabled={ocupado} className="btn-hero">
+              {cargando ? 'Ingresando...' : `Entrar como ${lastUser.nombre.split(' ')[0]}`}
+            </button>
+          </form>
+        )}
+
+        {isOAuth && <div className="mt-4"><FormError>{error}</FormError></div>}
+
+        {/* Usar otra cuenta */}
+        <p className="text-center text-sm text-white/40 mt-7">
+          No eres {lastUser.nombre.split(' ')[0]}.{' '}
+          <button onClick={usarOtraCuenta} className="text-sp-green hover:underline font-medium">
+            Usar otra cuenta
+          </button>
+        </p>
+      </AuthShell>
     );
   }
 
   // ── Render: modo NORMAL ────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+    <AuthShell>
+      <Eyebrow>● Acceso</Eyebrow>
+      <h1 className="font-impact uppercase text-4xl leading-[0.95] font-normal mb-2">
+        Vuelve al <em className="italic" style={{ color: T.emerald }}>campo.</em>
+      </h1>
+      <p className="text-white/40 text-sm mb-8">Tu ranking te está esperando.</p>
 
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-[#00e676]">Street<span className="text-white">Player</span></h1>
-          <p className="text-[#64748b] mt-2">La red social del deporte callejero</p>
-        </div>
-
-        <div className="bg-[#12121a] border border-[#1e1e2e] rounded-3xl p-8 space-y-5">
-          <h2 className="text-xl font-bold text-white text-center">Iniciar sesión</h2>
-
-          {/* OAuth */}
-          <div className="space-y-3">
-            <button
-              onClick={() => handleOAuth('google')}
-              disabled={ocupado}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-[#2e2e3e] bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition-all disabled:opacity-50"
-            >
-              {oauthCargando === 'google' ? <Spinner /> : <GoogleIcon />}
-              Continuar con Google
-            </button>
-
-            <button
-              onClick={() => handleOAuth('facebook')}
-              disabled={ocupado}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-[#2e2e3e] bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-white text-sm font-semibold transition-all disabled:opacity-50"
-            >
-              {oauthCargando === 'facebook' ? <Spinner /> : <FacebookIcon />}
-              Continuar con Facebook
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#1e1e2e]" />
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">o con email</span>
-            <div className="flex-1 h-px bg-[#1e1e2e]" />
-          </div>
-
-          {/* Email + contraseña */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Email</label>
-              <input type="email" className="input" placeholder="tu@email.com"
-                value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-            </div>
-            <div>
-              <label className="label">Contraseña</label>
-              <input type="password" className="input" placeholder="••••••••"
-                value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-xl px-4 py-3">{error}</p>
-            )}
-
-            <button type="submit" disabled={ocupado} className="btn-green w-full py-3 text-base disabled:opacity-50">
-              {cargando ? 'Ingresando...' : 'Entrar al campo'}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-[#64748b]">
-            No tienes cuenta?{' '}
-            <Link to="/registro" className="text-[#00e676] hover:underline font-medium">Únete ahora</Link>
-          </p>
-        </div>
+      {/* OAuth */}
+      <div className="space-y-3 mb-5">
+        <OAuthButton
+          provider="google"
+          loading={oauthCargando === 'google'}
+          disabled={ocupado}
+          onClick={() => handleOAuth('google')}
+        >
+          Continuar con Google
+        </OAuthButton>
+        <OAuthButton
+          provider="facebook"
+          loading={oauthCargando === 'facebook'}
+          disabled={ocupado}
+          onClick={() => handleOAuth('facebook')}
+        >
+          Continuar con Facebook
+        </OAuthButton>
       </div>
-    </div>
+
+      <FormDivider>o con email</FormDivider>
+
+      {/* Email + contraseña */}
+      <form onSubmit={handleSubmit} className="space-y-4 mt-5">
+        <div>
+          <label className="label">Email</label>
+          <input type="email" className="input" placeholder="tu@email.com"
+            value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+        </div>
+        <div>
+          <label className="label">Contraseña</label>
+          <input type="password" className="input" placeholder="••••••••"
+            value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+        </div>
+
+        <FormError>{error}</FormError>
+
+        <button type="submit" disabled={ocupado} className="btn-hero">
+          {cargando ? <span className="inline-flex items-center gap-2"><Spinner /> Ingresando...</span> : 'Entrar al campo →'}
+        </button>
+      </form>
+
+      <p className="text-center text-sm text-white/40 mt-7">
+        ¿No tienes cuenta?{' '}
+        <Link to="/registro" className="text-sp-green hover:underline font-medium">Únete ahora</Link>
+      </p>
+    </AuthShell>
   );
 }

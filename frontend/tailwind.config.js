@@ -7,7 +7,7 @@ export default {
         sp: {
           bg:           '#0a0a0a',
           card:         '#1a1a1a',
-          border:       '#333333',
+          border:       'rgba(255,255,255,0.09)',
           green:        '#1D9E75',
           'green-dark': '#0F6E56',
           'green-light':'#9FE1CB',

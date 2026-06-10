@@ -1,29 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-// ── Design tokens ────────────────────────────────────────────
-const T = {
-  black:       '#0a0a0a',
-  gray1:       '#111111',
-  border:      'rgba(255,255,255,0.07)',
-  muted:       'rgba(255,255,255,0.38)',
-  dim:         'rgba(255,255,255,0.62)',
-  white:       '#ffffff',
-  emerald:     '#1D9E75',
-  emeraldDark: '#0F6E56',
-  emeraldDeep: '#074a3a',
-  warm1:       '#f0c382',
-  warm2:       '#d49960',
-  warm3:       '#c97c4b',
-};
-
-const heroGradient = `
-  radial-gradient(ellipse 88% 70% at 8% 50%,
-    ${T.warm1} 0%, ${T.warm2} 22%, ${T.warm3}99 46%, transparent 68%),
-  radial-gradient(ellipse 84% 80% at 94% 55%,
-    ${T.emerald} 0%, ${T.emeraldDark}cc 28%, ${T.emeraldDeep}aa 52%, transparent 70%),
-  linear-gradient(112deg, ${T.warm2} 0%, ${T.black} 42%, ${T.emeraldDeep} 100%)
-`.replace(/\s+/g, ' ');
+import { T, heroGradient, grainBg } from '../styles/brand';
+import CourtLines from '../components/CourtLines';
 
 const PASOS = [
   { n: '01', titulo: 'Crea tu perfil', desc: 'Elige tu posición, tu deporte y conecta con jugadores cerca de ti.' },
@@ -142,20 +120,12 @@ export default function Landing() {
         {/* Grain / textura */}
         <div style={{
           position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.045'/%3E%3C/svg%3E")`,
+          backgroundImage: grainBg,
           backgroundSize: '200px 200px', opacity: 0.45,
         }} />
 
         {/* Líneas de cancha — muy sutiles */}
-        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-          <line x1="600" y1="0" x2="600" y2="800" stroke="#fff" strokeWidth="1.5"/>
-          <circle cx="600" cy="400" r="115" fill="none" stroke="#fff" strokeWidth="1.5"/>
-          <circle cx="600" cy="400" r="4" fill="#fff"/>
-          <rect x="0" y="215" width="175" height="370" fill="none" stroke="#fff" strokeWidth="1.5"/>
-          <rect x="1025" y="215" width="175" height="370" fill="none" stroke="#fff" strokeWidth="1.5"/>
-          <rect x="0" y="290" width="62" height="220" fill="none" stroke="#fff" strokeWidth="1.5"/>
-          <rect x="1138" y="290" width="62" height="220" fill="none" stroke="#fff" strokeWidth="1.5"/>
-        </svg>
+        <CourtLines style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
 
         {/* Atleta */}
         <div style={{

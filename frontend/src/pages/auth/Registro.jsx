@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import api from '../../services/api'
 import { signInWithGoogle, signInWithFacebook } from '../../services/firebase'
+import AuthShell, { Eyebrow } from '../../components/auth/AuthShell'
+import { OAuthButton, FormDivider, FormError } from '../../components/auth/ui'
+import { T } from '../../styles/brand'
 
 const DEPORTES_DISPONIBLES = ['fútbol','básquet','voley','tenis','natación','ciclismo','running','boxeo','padel','otro']
 
@@ -52,110 +55,102 @@ export default function Registro() {
     } finally { setCargando(false) }
   }
 
+  const ocupado = cargando || !!oauthCargando
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 py-10">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-[#00e676]">Street<span className="text-white">Player</span></h1>
-          <p className="text-[#64748b] mt-2">Crea tu perfil de jugador</p>
-        </div>
+    <AuthShell>
+      <Eyebrow>● Nuevo jugador</Eyebrow>
+      <h1 className="font-impact uppercase text-4xl leading-[0.95] font-normal mb-2">
+        Crea tu <em className="italic" style={{ color: T.emerald }}>leyenda.</em>
+      </h1>
+      <p className="text-white/40 text-sm mb-8">Tu perfil de jugador en menos de un minuto.</p>
 
-        <div className="bg-[#12121a] border border-[#1e1e2e] rounded-3xl p-8 space-y-5">
-
-          {/* ── OAuth: acceso rápido ── */}
-          <div className="space-y-3">
-            <button onClick={() => handleOAuth('google')} disabled={!!oauthCargando || cargando}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-[#2e2e3e] bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition-all disabled:opacity-50">
-              {oauthCargando === 'google'
-                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.2-5.5l-6.6-5.5C29.6 35 26.9 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.1C9.4 35.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.6 5.5C42.1 36 44 30.4 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-              }
-              Registrarse con Google
-            </button>
-            <button onClick={() => handleOAuth('facebook')} disabled={!!oauthCargando || cargando}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-[#2e2e3e] bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-white text-sm font-semibold transition-all disabled:opacity-50">
-              {oauthCargando === 'facebook'
-                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
-              }
-              Registrarse con Facebook
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#1e1e2e]" />
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">o completá el formulario</span>
-            <div className="flex-1 h-px bg-[#1e1e2e]" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Usuario *</label>
-                <input className="input" placeholder="cr7_jr" value={form.username}
-                  onChange={(e) => setForm({...form, username: e.target.value})} required />
-              </div>
-              <div>
-                <label className="label">Nombre *</label>
-                <input className="input" placeholder="Carlos" value={form.nombre}
-                  onChange={(e) => setForm({...form, nombre: e.target.value})} required />
-              </div>
-            </div>
-            <div>
-              <label className="label">Email *</label>
-              <input type="email" className="input" placeholder="tu@email.com" value={form.email}
-                onChange={(e) => setForm({...form, email: e.target.value})} required />
-            </div>
-            <div>
-              <label className="label">Contraseña *</label>
-              <input type="password" className="input" placeholder="Mínimo 6 caracteres" value={form.password}
-                onChange={(e) => setForm({...form, password: e.target.value})} required minLength={6} />
-            </div>
-            <div>
-              <label className="label">Ciudad</label>
-              <div className="flex gap-2">
-                <input className="input flex-1" placeholder="Lima, Arequipa..." value={form.ciudad}
-                  onChange={(e) => setForm({...form, ciudad: e.target.value})} />
-                <button type="button" onClick={solicitarGeo} disabled={geoLoading}
-                  className="px-3 py-2 rounded-xl border border-[#1e1e2e] text-[#64748b] hover:text-white text-sm transition-colors shrink-0"
-                  title="Detectar mi ciudad automáticamente">
-                  {geoLoading ? '...' : coords ? '✓' : '📍'}
-                </button>
-              </div>
-              {coords && !form.ciudad && <p className="text-xs text-[#00e676] mt-1">Ubicación detectada — se autocompletará al registrarte</p>}
-            </div>
-
-            <div>
-              <label className="label">Deportes que practicas *</label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {DEPORTES_DISPONIBLES.map((d) => (
-                  <button type="button" key={d}
-                    onClick={() => toggleDeporte(d)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
-                      form.deportes.includes(d)
-                        ? 'bg-[#00e676]/20 border-[#00e676] text-[#00e676]'
-                        : 'border-[#1e1e2e] text-[#64748b] hover:border-[#2e2e3e]'
-                    }`}>
-                    {d}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-xl px-4 py-3">{error}</p>
-            )}
-
-            <button type="submit" disabled={cargando} className="btn-green w-full py-3 text-base disabled:opacity-50">
-              {cargando ? 'Creando perfil...' : '¡Entrar a la cancha! ⚽'}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-[#64748b]">
-            ¿Ya tienes cuenta? <Link to="/login" className="text-[#00e676] hover:underline font-medium">Iniciar sesión</Link>
-          </p>
-        </div>
+      {/* ── OAuth: acceso rápido ── */}
+      <div className="space-y-3 mb-5">
+        <OAuthButton
+          provider="google"
+          loading={oauthCargando === 'google'}
+          disabled={ocupado}
+          onClick={() => handleOAuth('google')}
+        >
+          Registrarse con Google
+        </OAuthButton>
+        <OAuthButton
+          provider="facebook"
+          loading={oauthCargando === 'facebook'}
+          disabled={ocupado}
+          onClick={() => handleOAuth('facebook')}
+        >
+          Registrarse con Facebook
+        </OAuthButton>
       </div>
-    </div>
+
+      <FormDivider>o completa el formulario</FormDivider>
+
+      <form onSubmit={handleSubmit} className="space-y-4 mt-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Usuario *</label>
+            <input className="input" placeholder="cr7_jr" value={form.username}
+              onChange={(e) => setForm({...form, username: e.target.value})} required />
+          </div>
+          <div>
+            <label className="label">Nombre *</label>
+            <input className="input" placeholder="Carlos" value={form.nombre}
+              onChange={(e) => setForm({...form, nombre: e.target.value})} required />
+          </div>
+        </div>
+        <div>
+          <label className="label">Email *</label>
+          <input type="email" className="input" placeholder="tu@email.com" value={form.email}
+            onChange={(e) => setForm({...form, email: e.target.value})} required />
+        </div>
+        <div>
+          <label className="label">Contraseña *</label>
+          <input type="password" className="input" placeholder="Mínimo 6 caracteres" value={form.password}
+            onChange={(e) => setForm({...form, password: e.target.value})} required minLength={6} />
+        </div>
+        <div>
+          <label className="label">Ciudad</label>
+          <div className="flex gap-2">
+            <input className="input flex-1" placeholder="Lima, Arequipa..." value={form.ciudad}
+              onChange={(e) => setForm({...form, ciudad: e.target.value})} />
+            <button type="button" onClick={solicitarGeo} disabled={geoLoading}
+              className="px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-white hover:border-sp-green/50 text-sm transition-colors shrink-0"
+              title="Detectar mi ciudad automáticamente">
+              {geoLoading ? '...' : coords ? '✓' : '📍'}
+            </button>
+          </div>
+          {coords && !form.ciudad && <p className="text-xs text-sp-green mt-1">Ubicación detectada — se autocompletará al registrarte</p>}
+        </div>
+
+        <div>
+          <label className="label">Deportes que practicas *</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {DEPORTES_DISPONIBLES.map((d) => (
+              <button type="button" key={d}
+                onClick={() => toggleDeporte(d)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                  form.deportes.includes(d)
+                    ? 'bg-sp-green/15 border-sp-green text-sp-green-light'
+                    : 'border-white/10 text-white/40 hover:border-white/25 hover:text-white/70'
+                }`}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <FormError>{error}</FormError>
+
+        <button type="submit" disabled={cargando} className="btn-hero">
+          {cargando ? 'Creando perfil...' : '¡Entrar a la cancha! ⚽'}
+        </button>
+      </form>
+
+      <p className="text-center text-sm text-white/40 mt-7">
+        ¿Ya tienes cuenta? <Link to="/login" className="text-sp-green hover:underline font-medium">Iniciar sesión</Link>
+      </p>
+    </AuthShell>
   )
 }
