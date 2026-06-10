@@ -53,7 +53,7 @@ export default function Login() {
         : await signInWithFacebook();
       const { data } = await api.post('/auth/firebase', { idToken });
       login(data.token, data.refreshToken, { ...data.usuario, provider });
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') return;
       setError(err.response?.data?.error || 'Error al iniciar sesión con ' + provider);
@@ -66,7 +66,7 @@ export default function Login() {
     try {
       const { data } = await api.post('/auth/login', form);
       login(data.token, data.refreshToken, { ...data.usuario, provider: 'email' });
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     } finally { setCargando(false); }
@@ -82,7 +82,7 @@ export default function Login() {
         password: form.password,
       });
       login(data.token, data.refreshToken, { ...data.usuario, provider: 'email' });
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       setError(err.response?.data?.error || 'Contraseña incorrecta');
     } finally { setCargando(false); }

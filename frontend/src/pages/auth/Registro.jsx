@@ -27,7 +27,7 @@ export default function Registro() {
         : await signInWithFacebook()
       const { data } = await api.post('/auth/firebase', { idToken })
       login(data.token, data.refreshToken, { ...data.usuario, provider })
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') return
       setError(err.response?.data?.error || 'Error al continuar con ' + provider)
@@ -49,7 +49,7 @@ export default function Registro() {
       const payload = { ...form, ...(coords && !form.ciudad ? { lat: coords.lat, lng: coords.lng } : {}) }
       const { data } = await api.post('/auth/registro', payload)
       login(data.token, data.refreshToken, data.usuario)
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       setError(err.response?.data?.error || 'Error al registrarse')
     } finally { setCargando(false) }
