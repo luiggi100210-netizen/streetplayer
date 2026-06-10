@@ -18,7 +18,7 @@ function iniciarCronSanciones() {
 
       for (const { usuario_id, evento_id } of vencidos) {
         // Restar XP
-        await darXP(usuario_id, 'no_calificar', evento_id);
+        await darXP(usuario_id, 'no_calificar', evento_id, client);
 
         // Registrar sanción
         await client.query(

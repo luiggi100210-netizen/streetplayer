@@ -1,8 +1,13 @@
 const pool              = require('../config/database');
+const withTransaction   = require('../db/withTransaction');
 const { darXP }         = require('../services/xp.service');
 const { notificar }     = require('../services/notificaciones.service');
 const asyncHandler  = require('../middleware/asyncHandler');
 const crypto        = require('crypto');
+
+function httpError(status, mensaje) {
+  return Object.assign(new Error(mensaje), { status });
+}
 
 function generarCodigoInvitacion() {
   return crypto.randomBytes(5).toString('hex').toUpperCase();
@@ -94,28 +99,29 @@ const crearEvento = asyncHandler(async (req, res) => {
 
   const codigo_invitacion = es_privado ? generarCodigoInvitacion() : null;
 
-  const { rows } = await pool.query(
-    `INSERT INTO eventos
-       (creador_id, titulo, tipo, descripcion, deporte, nivel, foto_url,
-        nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
-        formato, cupos_total, precio, es_privado, codigo_invitacion)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-     RETURNING *`,
-    [req.usuario.id, titulo, tipo, descripcion, deporte, nivel, foto_url ?? null,
-     nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
-     formato, cupos_total, precio, es_privado, codigo_invitacion]
-  );
+  const { evento, whatsapp } = await withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `INSERT INTO eventos
+         (creador_id, titulo, tipo, descripcion, deporte, nivel, foto_url,
+          nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
+          formato, cupos_total, precio, es_privado, codigo_invitacion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+       RETURNING *`,
+      [req.usuario.id, titulo, tipo, descripcion, deporte, nivel, foto_url ?? null,
+       nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
+       formato, cupos_total, precio, es_privado, codigo_invitacion]
+    );
 
-  const evento    = rows[0];
-  const whatsapp  = generarLinkWhatsApp(evento);
-  await pool.query('UPDATE eventos SET link_whatsapp = $1 WHERE id = $2', [whatsapp, evento.id]);
-
-  await pool.query(
-    'INSERT INTO evento_participantes (evento_id, usuario_id, equipo) VALUES ($1,$2,$3)',
-    [evento.id, req.usuario.id, 'A']
-  );
-  await pool.query('UPDATE eventos SET cupos_ocupados = 1 WHERE id = $1', [evento.id]);
-  await darXP(req.usuario.id, 'crear_evento', evento.id);
+    const ev   = rows[0];
+    const link = generarLinkWhatsApp(ev);
+    await client.query('UPDATE eventos SET link_whatsapp = $1, cupos_ocupados = 1 WHERE id = $2', [link, ev.id]);
+    await client.query(
+      'INSERT INTO evento_participantes (evento_id, usuario_id, equipo) VALUES ($1,$2,$3)',
+      [ev.id, req.usuario.id, 'A']
+    );
+    await darXP(req.usuario.id, 'crear_evento', ev.id, client);
+    return { evento: ev, whatsapp: link };
+  });
 
   // Notificar a usuarios cercanos (radio 10 km) que tengan ubicación guardada
   if (latitud && longitud) {
@@ -144,30 +150,40 @@ const unirseEvento = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { equipo = 'A', codigo } = req.body;
 
-  const { rows: [evento] } = await pool.query('SELECT * FROM eventos WHERE id = $1', [id]);
-  if (!evento)                     return res.status(404).json({ error: 'Evento no encontrado' });
-  if (evento.estado !== 'abierto') return res.status(400).json({ error: 'El evento no está disponible' });
-  if (evento.cupos_ocupados >= evento.cupos_total) return res.status(400).json({ error: 'El evento está lleno' });
-  if (evento.es_privado && evento.codigo_invitacion !== codigo) {
-    return res.status(403).json({ error: 'Código de invitación incorrecto' });
-  }
+  const evento = await withTransaction(async (client) => {
+    // FOR UPDATE bloquea la fila: dos inscripciones simultáneas se serializan
+    // y la segunda ve los cupos ya actualizados (no se puede sobre-inscribir)
+    const { rows: [ev] } = await client.query('SELECT * FROM eventos WHERE id = $1 FOR UPDATE', [id]);
+    if (!ev)                     throw httpError(404, 'Evento no encontrado');
+    if (ev.estado !== 'abierto') throw httpError(400, 'El evento no está disponible');
+    if (ev.cupos_ocupados >= ev.cupos_total) throw httpError(400, 'El evento está lleno');
+    if (ev.es_privado && ev.codigo_invitacion !== codigo) {
+      throw httpError(403, 'Código de invitación incorrecto');
+    }
 
-  const { rows: [yaInscrito] } = await pool.query(
-    'SELECT 1 FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2',
-    [id, req.usuario.id]
-  );
-  if (yaInscrito) return res.status(400).json({ error: 'Ya estás inscrito en este evento' });
+    const { rows: [yaInscrito] } = await client.query(
+      'SELECT 1 FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2',
+      [id, req.usuario.id]
+    );
+    if (yaInscrito) throw httpError(400, 'Ya estás inscrito en este evento');
 
-  await pool.query(
-    'INSERT INTO evento_participantes (evento_id, usuario_id, equipo) VALUES ($1,$2,$3)',
-    [id, req.usuario.id, equipo]
-  );
-  await pool.query('UPDATE eventos SET cupos_ocupados = cupos_ocupados + 1 WHERE id = $1', [id]);
+    await client.query(
+      'INSERT INTO evento_participantes (evento_id, usuario_id, equipo) VALUES ($1,$2,$3)',
+      [id, req.usuario.id, equipo]
+    );
+    await client.query(
+      `UPDATE eventos SET
+         cupos_ocupados = cupos_ocupados + 1,
+         estado = CASE WHEN cupos_ocupados + 1 >= cupos_total THEN 'lleno' ELSE estado END
+       WHERE id = $1`,
+      [id]
+    );
+    return ev;
+  });
 
+  // Notificaciones fuera de la transacción: no retienen el lock de la fila
   const nuevoTotal = evento.cupos_ocupados + 1;
   if (nuevoTotal >= evento.cupos_total) {
-    await pool.query("UPDATE eventos SET estado = 'lleno' WHERE id = $1", [id]);
-
     // Notificar a TODOS los participantes que el evento está lleno
     const { rows: todos } = await pool.query(
       'SELECT usuario_id FROM evento_participantes WHERE evento_id = $1',
@@ -189,22 +205,24 @@ const unirseEvento = asyncHandler(async (req, res) => {
 // DELETE /api/eventos/:id/salir
 const salirEvento = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { rows: [ev] } = await pool.query('SELECT estado FROM eventos WHERE id = $1', [id]);
-  if (ev?.estado === 'confirmado') {
-    return res.status(400).json({ error: 'El evento ya fue confirmado. No puedes salir.' });
-  }
-  const { rows } = await pool.query(
-    'DELETE FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2 RETURNING *',
-    [id, req.usuario.id]
-  );
-  if (rows.length === 0) return res.status(404).json({ error: 'No estás inscrito en este evento' });
-  await pool.query(
-    `UPDATE eventos SET
-       cupos_ocupados = GREATEST(0, cupos_ocupados - 1),
-       estado = CASE WHEN estado = 'lleno' THEN 'abierto' ELSE estado END
-     WHERE id = $1`,
-    [id]
-  );
+  await withTransaction(async (client) => {
+    const { rows: [ev] } = await client.query('SELECT estado FROM eventos WHERE id = $1 FOR UPDATE', [id]);
+    if (ev?.estado === 'confirmado') {
+      throw httpError(400, 'El evento ya fue confirmado. No puedes salir.');
+    }
+    const { rows } = await client.query(
+      'DELETE FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2 RETURNING *',
+      [id, req.usuario.id]
+    );
+    if (rows.length === 0) throw httpError(404, 'No estás inscrito en este evento');
+    await client.query(
+      `UPDATE eventos SET
+         cupos_ocupados = GREATEST(0, cupos_ocupados - 1),
+         estado = CASE WHEN estado = 'lleno' THEN 'abierto' ELSE estado END
+       WHERE id = $1`,
+      [id]
+    );
+  });
   res.json({ mensaje: 'Saliste del evento' });
 });
 
@@ -305,14 +323,14 @@ const finalizarEvento = asyncHandler(async (req, res) => {
         [id, uid]
       )).rows[0]?.equipo;
 
-      await darXP(uid, 'asistir_pichanga', id);
+      await darXP(uid, 'asistir_pichanga', id, client);
 
       const gano   = (equipoParticipante === 'A' && resultado === 'equipo_a') ||
                      (equipoParticipante === 'B' && resultado === 'equipo_b');
       const empato = resultado === 'empate';
 
-      if (gano)   await darXP(uid, 'ganar_partido', id);
-      if (empato) await darXP(uid, 'empatar', id);
+      if (gano)   await darXP(uid, 'ganar_partido', id, client);
+      if (empato) await darXP(uid, 'empatar', id, client);
 
       await client.query(
         `UPDATE usuarios SET
@@ -339,7 +357,7 @@ const finalizarEvento = asyncHandler(async (req, res) => {
       [id]
     );
     for (const { usuario_id } of ausentes) {
-      await darXP(usuario_id, 'no_asistir', id);
+      await darXP(usuario_id, 'no_asistir', id, client);
       await client.query(
         'INSERT INTO sanciones (usuario_id, evento_id, motivo, xp_penalidad) VALUES ($1,$2,$3,15)',
         [usuario_id, id, 'no_show']

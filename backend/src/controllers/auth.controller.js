@@ -3,6 +3,7 @@ const pool              = require('../config/database');
 const bcrypt            = require('bcryptjs');
 const jwt               = require('jsonwebtoken');
 const asyncHandler      = require('../middleware/asyncHandler');
+const withTransaction   = require('../db/withTransaction');
 const { reverseGeocode } = require('../utils/geocoding');
 const admin             = require('../services/firebase');
 
@@ -62,15 +63,16 @@ const registro = asyncHandler(async (req, res) => {
   }
 
   const hash = await bcrypt.hash(password, 10);
-  const { rows } = await pool.query(
-    `INSERT INTO usuarios (username, email, password_hash, nombre, ciudad, departamento, deportes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
-    [username.toLowerCase(), email.toLowerCase(), hash, nombre, ciudadFinal, departamentoFinal, deportes || []]
-  );
-
-  const usuario = rows[0];
-  await pool.query('INSERT INTO ranking (usuario_id) VALUES ($1) ON CONFLICT DO NOTHING', [usuario.id]);
+  const usuario = await withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `INSERT INTO usuarios (username, email, password_hash, nombre, ciudad, departamento, deportes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
+      [username.toLowerCase(), email.toLowerCase(), hash, nombre, ciudadFinal, departamentoFinal, deportes || []]
+    );
+    await client.query('INSERT INTO ranking (usuario_id) VALUES ($1) ON CONFLICT DO NOTHING', [rows[0].id]);
+    return rows[0];
+  });
 
   const token        = generarToken({ id: usuario.id, username: usuario.username, esAdmin: false });
   const refreshToken = await generarRefreshToken(usuario.id);
@@ -202,18 +204,20 @@ const loginFirebase = asyncHandler(async (req, res) => {
   // 3. Crear usuario nuevo
   if (rows.length === 0) {
     const username = generarUsername(name, email);
-    const inserted = await pool.query(
-      `INSERT INTO usuarios
-         (username, email, nombre, foto_url, firebase_uid, provider, deportes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
-      [username, email.toLowerCase(), name || username, picture || null, uid, provider, []]
-    );
-    await pool.query(
-      'INSERT INTO ranking (usuario_id) VALUES ($1) ON CONFLICT DO NOTHING',
-      [inserted.rows[0].id]
-    );
-    rows = inserted.rows;
+    rows = await withTransaction(async (client) => {
+      const inserted = await client.query(
+        `INSERT INTO usuarios
+           (username, email, nombre, foto_url, firebase_uid, provider, deportes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, username, email, nombre, foto_url, xp, nivel_xp`,
+        [username, email.toLowerCase(), name || username, picture || null, uid, provider, []]
+      );
+      await client.query(
+        'INSERT INTO ranking (usuario_id) VALUES ($1) ON CONFLICT DO NOTHING',
+        [inserted.rows[0].id]
+      );
+      return inserted.rows;
+    });
   }
 
   const usuario = rows[0];

@@ -17,6 +17,18 @@ app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Health check (Render) — registrado antes del rate limiter
+// para que los pings de la plataforma nunca reciban 429
+const pool = require('./config/database');
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok' });
+  } catch {
+    res.status(503).json({ status: 'error', detalle: 'BD no disponible' });
+  }
+});
+
 app.use(rateLimit({
   windowMs:        15 * 60 * 1000,
   max:             300,

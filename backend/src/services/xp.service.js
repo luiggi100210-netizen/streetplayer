@@ -56,20 +56,26 @@ function calcularProgreso(xp) {
   return { nivel: actual.nombre, siguiente: siguiente?.nombre ?? null, progreso, xpSiguiente: siguiente?.min ?? null };
 }
 
-async function darXP(usuarioId, motivo, referenciaId = null) {
+/**
+ * Otorga (o resta) XP de forma atómica.
+ * Si recibe un `client`, participa en la transacción del llamador
+ * (sin BEGIN/COMMIT propios); si no, gestiona la suya.
+ */
+async function darXP(usuarioId, motivo, referenciaId = null, client = null) {
   const cantidad = XP_TABLA[motivo];
   if (cantidad === undefined) throw new Error(`Motivo XP desconocido: ${motivo}`);
 
-  const client = await pool.connect();
+  const txPropia = !client;
+  const db = client ?? await pool.connect();
   try {
-    await client.query('BEGIN');
+    if (txPropia) await db.query('BEGIN');
 
-    await client.query(
+    await db.query(
       'INSERT INTO xp_log (usuario_id, cantidad, motivo, referencia_id) VALUES ($1,$2,$3,$4)',
       [usuarioId, cantidad, motivo, referenciaId]
     );
 
-    const { rows } = await client.query(
+    const { rows } = await db.query(
       'UPDATE usuarios SET xp = GREATEST(0, xp + $1) WHERE id = $2 RETURNING xp',
       [cantidad, usuarioId]
     );
@@ -77,20 +83,20 @@ async function darXP(usuarioId, motivo, referenciaId = null) {
     const nuevoXp = rows[0]?.xp ?? 0;
     const nivel   = calcularNivel(nuevoXp);
 
-    await client.query(
+    await db.query(
       'UPDATE usuarios SET nivel_xp = $1 WHERE id = $2',
       [nivel, usuarioId]
     );
 
-    await client.query('COMMIT');
+    if (txPropia) await db.query('COMMIT');
     // fire-and-forget — no bloquea la respuesta
     verificarMedallas(usuarioId).catch(() => {});
     return { xp: nuevoXp, nivel };
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (txPropia) await db.query('ROLLBACK');
     throw err;
   } finally {
-    client.release();
+    if (txPropia) db.release();
   }
 }
 
