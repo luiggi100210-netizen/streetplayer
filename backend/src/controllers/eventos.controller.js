@@ -14,9 +14,15 @@ function generarCodigoInvitacion() {
   return crypto.randomBytes(5).toString('hex').toUpperCase();
 }
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://streetplayer.pe';
+
 function generarLinkWhatsApp(evento) {
-  const url   = `https://streetplayer.pe/eventos/${evento.id}`;
-  const texto = `⚽ ¡Te invito a jugar!\n🏟️ ${evento.titulo}\n📍 ${evento.nombre_cancha || evento.direccion || ''}\n📅 ${new Date(evento.fecha_evento).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}\n👥 ${evento.formato}vs${evento.formato}\n🔗 ${url}\n\nStreetPlayer — Juega. Rankea. Domina.`;
+  const url = `${FRONTEND_URL}/eventos/${evento.id}`;
+  // Solo se comparte la ubicación de la cancha — nunca la de un jugador
+  const pinCancha = evento.latitud && evento.longitud
+    ? `\n🗺️ Cómo llegar: https://maps.google.com/?q=${evento.latitud},${evento.longitud}`
+    : '';
+  const texto = `⚽ ¡Te invito a jugar!\n🏟️ ${evento.titulo}\n📍 ${evento.nombre_cancha || evento.direccion || ''}${pinCancha}\n📅 ${new Date(evento.fecha_evento).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}\n👥 ${evento.formato}vs${evento.formato}\n🔗 ${url}\n\nStreetPlayer — Juega. Rankea. Domina.`;
   return `https://wa.me/?text=${encodeURIComponent(texto)}`;
 }
 

@@ -550,19 +550,22 @@ export default function Perfil() {
               />
               <div>
                 <label className="label">Mi ubicación (para eventos cercanos)</label>
-                <p className="text-xs text-sp-muted mb-2">Toca el mapa para marcar dónde juegas habitualmente</p>
+                <p className="text-xs text-sp-muted mb-2">
+                  Toca el mapa para marcar dónde juegas habitualmente.{' '}
+                  <span className="text-sp-green/80">🔒 Es privada: nadie la ve, solo sirve para recomendarte eventos cerca de ti.</span>
+                </p>
                 <MapaPicker
                   value={form.latitud && form.longitud ? { lat: parseFloat(form.latitud), lng: parseFloat(form.longitud) } : null}
                   onChange={({ lat, lng }) => setForm(p => ({ ...p, latitud: lat, longitud: lng }))}
                   height="220px"
                 />
                 {form.latitud && (
-                  <p className="text-xs text-[#00e676] mt-2">
+                  <p className="text-xs text-sp-green mt-2">
                     Ubicación guardada
                     <button
                       type="button"
                       onClick={() => setForm(p => ({ ...p, latitud: null, longitud: null }))}
-                      className="ml-3 text-[#64748b] hover:text-red-400 transition-colors"
+                      className="ml-3 text-sp-muted hover:text-red-400 transition-colors"
                     >
                       Quitar
                     </button>

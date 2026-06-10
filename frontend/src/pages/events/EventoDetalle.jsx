@@ -1025,8 +1025,12 @@ export default function EventoDetalle() {
           const mapsUrl = tieneCoords
             ? `https://www.google.com/maps/dir/?api=1&destination=${evento.latitud},${evento.longitud}`
             : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${evento.nombre_cancha || ''} ${evento.direccion || ''}`.trim())}`;
+          // Solo se comparte la ubicación de la cancha — nunca la de un jugador
+          const pinCancha = tieneCoords
+            ? `\n🗺️ Cómo llegar: https://maps.google.com/?q=${evento.latitud},${evento.longitud}`
+            : '';
           const waTexto = encodeURIComponent(
-            `⚽ ¡Te invito al evento "${evento.titulo}" en StreetPlayer!\n📍 ${evento.nombre_cancha || evento.direccion || ''}\n🔗 ${window.location.href}`
+            `⚽ ¡Te invito al evento "${evento.titulo}" en StreetPlayer!\n📍 ${evento.nombre_cancha || evento.direccion || ''}${pinCancha}\n🔗 ${window.location.href}`
           );
           return (
             <div className="card space-y-3">
