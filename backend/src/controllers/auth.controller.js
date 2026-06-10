@@ -21,10 +21,8 @@ function generarUsername(nombre, email) {
 }
 
 /** Genera un JWT de corta duración para uso como access token. */
-function generarToken(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.ACCESS_TOKEN_EXPIRES || '15m',
-  });
+function generarToken(payload, expiresIn = process.env.ACCESS_TOKEN_EXPIRES || '15m') {
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
 }
 
 /** Hashea un token crudo con SHA-256. */
@@ -123,7 +121,11 @@ const loginAdmin = asyncHandler(async (req, res) => {
   const valido = await bcrypt.compare(password, adminUser.password_hash);
   if (!valido) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-  const token = generarToken({ id: adminUser.id, username: adminUser.username, rol: adminUser.rol, esAdmin: true });
+  // El panel admin no usa refresh tokens: token único de jornada laboral
+  const token = generarToken(
+    { id: adminUser.id, username: adminUser.username, rol: adminUser.rol, esAdmin: true },
+    process.env.ADMIN_TOKEN_EXPIRES || '8h'
+  );
   const { password_hash, ...datos } = adminUser;
   res.json({ token, admin: datos });
 });
@@ -132,6 +134,17 @@ const loginAdmin = asyncHandler(async (req, res) => {
 // GET /api/auth/me
 // ──────────────────────────────────────────────────────────
 const me = asyncHandler(async (req, res) => {
+  // Los tokens de admin referencian la tabla admins, no usuarios
+  if (req.usuario.esAdmin) {
+    const { rows } = await pool.query(
+      'SELECT * FROM admins WHERE id = $1 AND activo = true',
+      [req.usuario.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Admin no encontrado' });
+    const { password_hash, ...datos } = rows[0];
+    return res.json({ ...datos, esAdmin: true });
+  }
+
   const { rows } = await pool.query(
     `SELECT u.*, r.puntos AS ranking_puntos, r.posicion, r.victorias, r.derrotas
      FROM usuarios u

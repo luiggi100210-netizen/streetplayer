@@ -11,8 +11,8 @@ const { iniciarCronSanciones, iniciarCronRecordatorios } = require('./services/s
 const PORT   = process.env.PORT || 4000;
 const server = http.createServer(app);
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? [];
-const io = new Server(server, { cors: { origin: allowedOrigins, credentials: true } });
+const corsOptions = require('./config/cors');
+const io = new Server(server, { cors: corsOptions });
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;

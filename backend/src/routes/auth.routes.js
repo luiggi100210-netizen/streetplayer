@@ -1,8 +1,20 @@
-const router   = require('express').Router();
-const { body } = require('express-validator');
+const router    = require('express').Router();
+const { body }  = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const { verificarToken } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { registro, login, loginAdmin, me, loginFirebase, refresh, logout } = require('../controllers/auth.controller');
+
+// Anti fuerza bruta: solo para endpoints que validan credenciales.
+// /me, /refresh y /logout son operaciones de sesión frecuentes y
+// quedan bajo el rate limit global definido en app.js.
+const credencialesLimiter = rateLimit({
+  windowMs:        15 * 60 * 1000,
+  max:             10,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message:         { error: 'Demasiados intentos. Espera 15 minutos.' },
+});
 
 const validarRegistro = [
   body('username').trim().notEmpty().withMessage('username requerido')
@@ -23,12 +35,12 @@ const validarLogin = [
   body('password').notEmpty().withMessage('Contraseña requerida'),
 ];
 
-router.post('/registro',    validarRegistro, validate, registro);
-router.post('/login',       validarLogin,    validate, login);
-router.post('/firebase',    loginFirebase);
+router.post('/registro',    credencialesLimiter, validarRegistro, validate, registro);
+router.post('/login',       credencialesLimiter, validarLogin,    validate, login);
+router.post('/firebase',    credencialesLimiter, loginFirebase);
 router.post('/refresh',     refresh);
 router.post('/logout',      logout);
-router.post('/admin/login', validarLogin, validate, loginAdmin);
+router.post('/admin/login', credencialesLimiter, validarLogin, validate, loginAdmin);
 router.get('/me',           verificarToken, me);
 
 module.exports = router;

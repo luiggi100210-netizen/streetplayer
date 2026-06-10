@@ -4,18 +4,14 @@ const express   = require('express');
 const cors      = require('cors');
 const rateLimit = require('express-rate-limit');
 
+const corsOptions = require('./config/cors');
+
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) ?? [];
-const corsOptions = {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    if (allowedOrigins.length === 0 || allowedOrigins.includes('*')) return cb(null, true);
-    const ok = allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin);
-    cb(ok ? null : new Error('CORS'), ok);
-  },
-  credentials: true,
-};
+// Render sirve la app detrás de un proxy: sin esto express-rate-limit
+// no puede identificar la IP real del cliente (X-Forwarded-For)
+app.set('trust proxy', 1);
+
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
@@ -28,21 +24,11 @@ app.use(rateLimit({
   legacyHeaders:   false,
 }));
 
-const authLimiter = rateLimit({
-  windowMs:        15 * 60 * 1000,
-  max:             10,
-  standardHeaders: true,
-  legacyHeaders:   false,
-  message:         { error: 'Demasiados intentos. Espera 15 minutos.' },
-});
-
 // Archivos estáticos subidos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
-// /auth/me no lleva rate limit — es verificación de sesión, no login
-app.use('/api/auth/me',         require('./routes/auth.routes'));
-app.use('/api/auth',            authLimiter, require('./routes/auth.routes'));
+app.use('/api/auth',            require('./routes/auth.routes'));
 app.use('/api/usuarios',        require('./routes/usuarios.routes'));
 app.use('/api/eventos',         require('./routes/eventos.routes'));
 app.use('/api/calificaciones',  require('./routes/calificaciones.routes'));
