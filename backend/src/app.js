@@ -2,6 +2,7 @@ require('dotenv').config();
 const path      = require('path');
 const express   = require('express');
 const cors      = require('cors');
+const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const corsOptions = require('./config/cors');
@@ -11,6 +12,10 @@ const app = express();
 // Render sirve la app detrás de un proxy: sin esto express-rate-limit
 // no puede identificar la IP real del cliente (X-Forwarded-For)
 app.set('trust proxy', 1);
+
+// Headers de seguridad; CORP cross-origin para que el frontend (otro
+// dominio en producción) pueda mostrar las imágenes de /uploads
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));

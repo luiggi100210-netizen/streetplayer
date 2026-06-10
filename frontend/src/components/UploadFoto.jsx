@@ -18,7 +18,8 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
       const { data } = await api.post('/upload/foto', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      onChange(BACKEND_ORIGIN + data.url);
+      // Cloudinary devuelve URL absoluta; el disco local, ruta relativa
+      onChange(data.url.startsWith('http') ? data.url : BACKEND_ORIGIN + data.url);
     } catch {
       setError('No se pudo subir. Máx 5 MB (JPG, PNG, WebP).');
     }

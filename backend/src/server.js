@@ -7,6 +7,7 @@ const app    = require('./app');
 const initDB    = require('./db/init');
 const seedAdmin = require('./db/seedAdmin');
 const { iniciarCronSanciones, iniciarCronRecordatorios } = require('./services/sanciones.cron');
+const { iniciarCronLimpieza } = require('./services/limpieza.cron');
 
 const PORT   = process.env.PORT || 4000;
 const server = http.createServer(app);
@@ -38,5 +39,6 @@ initDB().then(() => seedAdmin()).then(() => {
     console.log(`StreetPlayer Backend corriendo en puerto ${PORT}`);
     iniciarCronSanciones();
     iniciarCronRecordatorios();
+    iniciarCronLimpieza();
   });
 });
