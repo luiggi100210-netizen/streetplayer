@@ -8,12 +8,14 @@ const { registro, login, loginAdmin, me, loginFirebase, refresh, logout } = requ
 // Anti fuerza bruta: solo para endpoints que validan credenciales.
 // /me, /refresh y /logout son operaciones de sesión frecuentes y
 // quedan bajo el rate limit global definido en app.js.
+// En desarrollo se omite: las pruebas manuales agotan los 10 intentos.
 const credencialesLimiter = rateLimit({
   windowMs:        15 * 60 * 1000,
   max:             10,
   standardHeaders: true,
   legacyHeaders:   false,
   message:         { error: 'Demasiados intentos. Espera 15 minutos.' },
+  skip:            () => process.env.NODE_ENV !== 'production',
 });
 
 const validarRegistro = [
