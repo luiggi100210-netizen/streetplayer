@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { formatFechaEvento as formatFecha } from '../../utils/date';
 import { useGeolocation } from '../../hooks/useGeolocation';
+import MapaEventos from '../../components/MapaEventos';
+
+const RADIOS_KM = [5, 10, 20, 50];
 
 const DEPORTES = ['', 'futbol', 'basquet', 'tenis', 'padel', 'voley', 'running', 'ciclismo'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃', ciclismo: '🚴', otro: '🎯' };
@@ -92,6 +95,14 @@ function TarjetaEvento({ evento }) {
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
               }}>{evento.nivel}</span>
             )}
+            {evento.distancia_km != null && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', marginLeft: 'auto',
+                padding: '3px 8px', borderRadius: 4, color: '#1D9E75',
+                background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.3)',
+                fontFamily: 'JetBrains Mono, monospace',
+              }}>📍 {evento.distancia_km} km</span>
+            )}
           </div>
 
           {/* Título */}
@@ -159,13 +170,15 @@ export default function Eventos() {
   const [eventos,   setEventos]   = useState([]);
   const [cargando,  setCargando]  = useState(true);
   const [filtros,   setFiltros]   = useState({ deporte: '', ciudad: '', estado: 'abierto' });
+  const [radio,     setRadio]     = useState(20);
+  const [vista,     setVista]     = useState('lista'); // 'lista' | 'mapa'
   const [pagina,    setPagina]    = useState(1);
   const [hayMas,    setHayMas]    = useState(false);
   const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation();
 
   useEffect(() => {
     setPagina(1);
-  }, [filtros, coords]);
+  }, [filtros, coords, radio]);
 
   useEffect(() => {
     const cargar = async () => {
@@ -175,7 +188,7 @@ export default function Eventos() {
         if (filtros.deporte) p.set('deporte', filtros.deporte);
         if (filtros.ciudad)  p.set('ciudad',  filtros.ciudad);
         if (filtros.estado)  p.set('estado',  filtros.estado);
-        if (coords)          { p.set('lat', coords.lat); p.set('lng', coords.lng); }
+        if (coords)          { p.set('lat', coords.lat); p.set('lng', coords.lng); p.set('radio', radio); }
         p.set('page', pagina);
         const { data } = await api.get(`/eventos?${p}`);
         setEventos(data);
@@ -184,7 +197,7 @@ export default function Eventos() {
       setCargando(false);
     };
     cargar();
-  }, [filtros, coords, pagina]);
+  }, [filtros, coords, radio, pagina]);
 
   const setF = (k, v) => setFiltros(p => ({ ...p, [k]: v }));
 
@@ -264,6 +277,32 @@ export default function Eventos() {
             >
               {geoLoading ? '...' : coords ? '📍 Cerca' : '📍 Cerca de mí'}
             </button>
+
+            {/* Radio de búsqueda — visible con ubicación activa */}
+            {coords && RADIOS_KM.map(km => (
+              <button key={km} onClick={() => setRadio(km)}
+                style={{
+                  fontSize: 10, fontWeight: 700, padding: '5px 9px', borderRadius: 999, cursor: 'pointer',
+                  border: `1px solid ${radio === km ? '#1D9E75' : 'rgba(255,255,255,0.08)'}`,
+                  background: radio === km ? '#1D9E7522' : 'transparent',
+                  color: radio === km ? '#1D9E75' : 'rgba(255,255,255,0.35)',
+                  transition: 'all .15s', whiteSpace: 'nowrap',
+                }}>{km} km</button>
+            ))}
+
+            {/* Toggle Lista / Mapa */}
+            <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 999, overflow: 'hidden' }}>
+              {[['lista', '☰ Lista'], ['mapa', '🗺️ Mapa']].map(([v, label]) => (
+                <button key={v} onClick={() => setVista(v)}
+                  style={{
+                    fontSize: 11, fontWeight: 700, padding: '6px 14px', cursor: 'pointer', border: 'none',
+                    textTransform: 'uppercase', letterSpacing: '0.08em',
+                    background: vista === v ? '#1D9E75' : 'transparent',
+                    color: vista === v ? '#fff' : 'rgba(255,255,255,0.4)',
+                    transition: 'all .2s',
+                  }}>{label}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -282,6 +321,8 @@ export default function Eventos() {
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 24 }}>Intenta con otros filtros o crea el primero</p>
           <Link to="/eventos/nuevo" className="btn-primary">+ Crear evento</Link>
         </div>
+      ) : vista === 'mapa' ? (
+        <MapaEventos eventos={eventos} coords={coords} />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

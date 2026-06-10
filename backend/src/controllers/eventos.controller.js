@@ -2,6 +2,7 @@ const pool              = require('../config/database');
 const withTransaction   = require('../db/withTransaction');
 const { darXP }         = require('../services/xp.service');
 const { notificar }     = require('../services/notificaciones.service');
+const { reverseGeocode } = require('../utils/geocoding');
 const asyncHandler  = require('../middleware/asyncHandler');
 const crypto        = require('crypto');
 
@@ -21,39 +22,47 @@ function generarLinkWhatsApp(evento) {
 
 // GET /api/eventos
 const listarEventos = asyncHandler(async (req, res) => {
-  const { tipo, deporte, lat, lng, radio = 20, estado = 'abierto', page = 1 } = req.query;
+  const { tipo, deporte, ciudad, lat, lng, radio = 20, estado = 'abierto', page = 1 } = req.query;
   const limit  = 15;
   const offset = (page - 1) * limit;
-  const params = [];
-  let idx = 1;
 
-  let query = `
+  const params = [req.usuario?.id ?? null];
+  const where  = ['e.es_privado = false'];
+  let selectDistancia = '';
+  let orden = 'e.fecha_evento DESC';
+
+  if (estado)  { params.push(estado);                where.push(`e.estado = $${params.length}`); }
+  if (tipo)    { params.push(tipo);                  where.push(`e.tipo = $${params.length}`); }
+  if (deporte) { params.push(deporte.toLowerCase()); where.push(`LOWER(e.deporte) = $${params.length}`); }
+  if (ciudad)  { params.push(`%${ciudad.trim()}%`);  where.push(`e.ciudad ILIKE $${params.length}`); }
+
+  if (lat && lng) {
+    params.push(parseFloat(lat), parseFloat(lng));
+    const i = params.length; // $i-1 = lat, $i = lng
+    const distancia = `6371 * acos(LEAST(1,
+      cos(radians($${i - 1})) * cos(radians(e.latitud)) *
+      cos(radians(e.longitud) - radians($${i})) +
+      sin(radians($${i - 1})) * sin(radians(e.latitud))))`;
+
+    selectDistancia = `, ROUND((${distancia})::numeric, 1) AS distancia_km`;
+    params.push(parseFloat(radio));
+    where.push(`e.latitud IS NOT NULL AND (${distancia}) <= $${params.length}`);
+    // Con ubicación activa, lo más cercano primero
+    orden = `(${distancia}) ASC, e.fecha_evento DESC`;
+  }
+
+  params.push(limit, offset);
+  const query = `
     SELECT e.*,
       u.username AS creador_username, u.nombre AS creador_nombre, u.foto_url AS creador_foto,
       (SELECT COUNT(*) FROM evento_participantes WHERE evento_id = e.id AND estado = 'confirmado') AS inscritos,
-      EXISTS(SELECT 1 FROM evento_participantes WHERE evento_id = e.id AND usuario_id = $${idx++}) AS yo_inscrito
+      EXISTS(SELECT 1 FROM evento_participantes WHERE evento_id = e.id AND usuario_id = $1) AS yo_inscrito
+      ${selectDistancia}
     FROM eventos e
     JOIN usuarios u ON e.creador_id = u.id
-    WHERE e.es_privado = false
-  `;
-  params.push(req.usuario?.id ?? null);
-
-  if (estado)  { query += ` AND e.estado = $${idx++}`;                params.push(estado); }
-  if (tipo)    { query += ` AND e.tipo = $${idx++}`;                   params.push(tipo); }
-  if (deporte) { query += ` AND LOWER(e.deporte) = $${idx++}`;         params.push(deporte.toLowerCase()); }
-
-  if (lat && lng) {
-    query += ` AND (
-      6371 * acos(LEAST(1, cos(radians($${idx})) * cos(radians(e.latitud)) *
-        cos(radians(e.longitud) - radians($${idx + 1})) +
-        sin(radians($${idx})) * sin(radians(e.latitud))))
-    ) <= $${idx + 2}`;
-    params.push(parseFloat(lat), parseFloat(lng), parseFloat(radio));
-    idx += 3;
-  }
-
-  query += ` ORDER BY e.fecha_evento DESC LIMIT $${idx++} OFFSET $${idx++}`;
-  params.push(limit, offset);
+    WHERE ${where.join(' AND ')}
+    ORDER BY ${orden}
+    LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
   const { rows } = await pool.query(query, params);
   res.json(rows);
@@ -99,17 +108,26 @@ const crearEvento = asyncHandler(async (req, res) => {
 
   const codigo_invitacion = es_privado ? generarCodigoInvitacion() : null;
 
+  // Ciudad/departamento por geocoding inverso — fuera de la transacción
+  // (es una llamada HTTP externa; no retener la conexión durante ella)
+  let ciudadEvento = null, departamentoEvento = null;
+  if (latitud != null && longitud != null) {
+    const geo = await reverseGeocode(latitud, longitud);
+    ciudadEvento       = geo.ciudad       ?? null;
+    departamentoEvento = geo.departamento ?? null;
+  }
+
   const { evento, whatsapp } = await withTransaction(async (client) => {
     const { rows } = await client.query(
       `INSERT INTO eventos
          (creador_id, titulo, tipo, descripcion, deporte, nivel, foto_url,
-          nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
-          formato, cupos_total, precio, es_privado, codigo_invitacion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+          nombre_cancha, direccion, latitud, longitud, ciudad, departamento,
+          fecha_evento, duracion_min, formato, cupos_total, precio, es_privado, codigo_invitacion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING *`,
       [req.usuario.id, titulo, tipo, descripcion, deporte, nivel, foto_url ?? null,
-       nombre_cancha, direccion, latitud, longitud, fecha_evento, duracion_min,
-       formato, cupos_total, precio, es_privado, codigo_invitacion]
+       nombre_cancha, direccion, latitud, longitud, ciudadEvento, departamentoEvento,
+       fecha_evento, duracion_min, formato, cupos_total, precio, es_privado, codigo_invitacion]
     );
 
     const ev   = rows[0];

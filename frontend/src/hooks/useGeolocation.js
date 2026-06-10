@@ -7,20 +7,23 @@ export function useGeolocation() {
 
   const solicitar = useCallback(() => {
     if (!navigator.geolocation) {
-      setError('El navegador no soporta geolocalización');
+      setError('Tu navegador no soporta geolocalización');
       return;
     }
     setLoading(true);
+    setError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLoading(false);
       },
-      () => {
-        setError('No se pudo obtener la ubicación');
+      (err) => {
+        setError(err.code === err.PERMISSION_DENIED
+          ? 'Permiso de ubicación denegado — actívalo en la barra del navegador'
+          : 'No se pudo obtener tu ubicación, intenta de nuevo');
         setLoading(false);
       },
-      { timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 8000 }
     );
   }, []);
 

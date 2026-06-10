@@ -43,6 +43,7 @@ const validarFinalizar = [
 
 const validarListar = [
   query('page').optional().isInt({ min: 1 }).withMessage('page debe ser un número positivo'),
+  query('ciudad').optional().trim().isLength({ max: 100 }).withMessage('ciudad: máximo 100 caracteres'),
   query('radio').optional().isFloat({ min: 1, max: 100 }).withMessage('radio: entre 1 y 100 km'),
   query('lat').optional().isFloat({ min: -90, max: 90 }).withMessage('latitud inválida'),
   query('lng').optional().isFloat({ min: -180, max: 180 }).withMessage('longitud inválida'),
