@@ -18,6 +18,7 @@ const SQL_FILES = [
   'retos_full_migration.sql',
   'publicidad_migration.sql',
   'admin_full_migration.sql',
+  'formato_migration.sql',
 ];
 
 async function init() {

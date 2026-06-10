@@ -10,7 +10,7 @@ const validarCrear = [
   body('titulo').trim().notEmpty().withMessage('titulo requerido')
     .isLength({ min: 5, max: 100 }).withMessage('titulo: entre 5 y 100 caracteres'),
   body('fecha_evento').isISO8601().withMessage('fecha_evento debe ser una fecha válida (ISO 8601)'),
-  body('formato').optional().isInt({ min: 1, max: 11 }).withMessage('formato: número de jugadores entre 1 y 11'),
+  body('formato').optional().isIn([5, 6, 7, 8, 9, 10, 11]).withMessage('formato: debe ser 5, 6, 7, 8, 9, 10 u 11 jugadores por equipo'),
   body('cupos_total').optional().isInt({ min: 2, max: 50 }).withMessage('cupos_total: entre 2 y 50'),
   body('precio').optional().isFloat({ min: 0 }).withMessage('precio debe ser mayor o igual a 0'),
   body('duracion_min').optional().isInt({ min: 15, max: 300 }).withMessage('duracion_min: entre 15 y 300 minutos'),

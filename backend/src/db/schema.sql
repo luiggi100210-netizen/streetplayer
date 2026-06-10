@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   deportes          TEXT[]        DEFAULT '{}',
   posicion          VARCHAR(30)   CHECK (posicion IN ('portero','defensa','mediocampista','delantero',NULL)),
   pie_dominante     VARCHAR(10)   CHECK (pie_dominante IN ('derecho','izquierdo','ambos',NULL)),
-  formato_preferido INTEGER       CHECK (formato_preferido IN (5,7,8,9,10,11,NULL)),
+  formato_preferido INTEGER       CHECK (formato_preferido IN (5,6,7,8,9,10,11)),
   -- Rol en plataforma
   rol               VARCHAR(20)   DEFAULT 'jugador' CHECK (rol IN ('jugador','capitan','organizador','admin')),
   -- Gamificación
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS eventos (
   longitud        NUMERIC(10,7),
   fecha_evento    TIMESTAMPTZ   NOT NULL,
   duracion_min    INTEGER       DEFAULT 90,
-  formato         INTEGER       DEFAULT 5 CHECK (formato IN (5,7,8,9,10,11)),
+  formato         INTEGER       DEFAULT 5 CHECK (formato IN (5,6,7,8,9,10,11)),
   cupos_total     INTEGER       DEFAULT 10,
   cupos_ocupados  INTEGER       DEFAULT 0,
   precio          NUMERIC(8,2)  DEFAULT 0,
