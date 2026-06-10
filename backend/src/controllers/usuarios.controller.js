@@ -113,7 +113,7 @@ const buscarUsuarios = asyncHandler(async (req, res) => {
 const publicacionesUsuario = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { rows } = await pool.query(
-    `SELECT p.*, u.username, u.nombre, u.foto_url,
+    `SELECT p.*, p.imagen_url AS foto_url, u.username, u.nombre, u.foto_url AS autor_foto,
             (SELECT COUNT(*) FROM publicacion_likes WHERE publicacion_id = p.id) AS total_likes,
             (SELECT COUNT(*) FROM comentarios WHERE publicacion_id = p.id) AS total_comentarios,
             EXISTS(SELECT 1 FROM publicacion_likes WHERE publicacion_id = p.id AND usuario_id = $2) AS yo_di_like

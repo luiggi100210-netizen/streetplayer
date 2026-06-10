@@ -67,7 +67,7 @@ function TarjetaPublicacion({ pub }) {
         {/* Header autor */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <Link to={`/perfil/${pub.usuario_id}`} style={{ textDecoration: 'none' }}>
-            <Avatar foto={pub.foto_url} username={pub.username} size={38} color={colorNivel} />
+            <Avatar foto={pub.autor_foto} username={pub.username} size={38} color={colorNivel} />
           </Link>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Link to={`/perfil/${pub.usuario_id}`} style={{ textDecoration: 'none' }}>

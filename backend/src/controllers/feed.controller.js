@@ -8,8 +8,8 @@ const obtenerFeed = asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const { rows } = await pool.query(
-    `SELECT p.*,
-      u.username, u.nombre, u.foto_url, u.verificado, u.nivel_xp,
+    `SELECT p.*, p.imagen_url AS foto_url,
+      u.username, u.nombre, u.foto_url AS autor_foto, u.verificado, u.nivel_xp,
       (SELECT COUNT(*) FROM publicacion_likes WHERE publicacion_id = p.id) AS total_likes,
       (SELECT COUNT(*) FROM comentarios WHERE publicacion_id = p.id) AS total_comentarios,
       EXISTS(SELECT 1 FROM publicacion_likes WHERE publicacion_id = p.id AND usuario_id = $1) AS yo_di_like,
@@ -28,11 +28,12 @@ const obtenerFeed = asyncHandler(async (req, res) => {
 
 // POST /api/feed
 const crearPublicacion = asyncHandler(async (req, res) => {
-  const { contenido, foto_url, evento_id } = req.body;
+  const { contenido, foto_url, evento_id, deporte } = req.body;
   const { rows } = await pool.query(
-    `INSERT INTO publicaciones (usuario_id, contenido, foto_url, evento_id)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
-    [req.usuario.id, contenido || null, foto_url || null, evento_id || null]
+    `INSERT INTO publicaciones (usuario_id, contenido, imagen_url, evento_id, deporte)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *, imagen_url AS foto_url`,
+    [req.usuario.id, contenido || null, foto_url || null, evento_id || null, deporte || null]
   );
   res.status(201).json(rows[0]);
 });

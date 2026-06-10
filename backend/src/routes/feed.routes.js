@@ -8,10 +8,13 @@ const validarId = param('id').isUUID().withMessage('ID inválido');
 
 const validarPublicacion = [
   body('contenido').optional().trim().isLength({ max: 500 }).withMessage('contenido: máximo 500 caracteres'),
-  body('foto_url').optional().isURL().withMessage('foto_url debe ser una URL válida'),
+  // Acepta URL absoluta (Cloudinary) o ruta local servida por el backend (/uploads/...)
+  body('foto_url').optional().custom(v => /^(https?:\/\/|\/uploads\/)/.test(v))
+    .withMessage('foto_url debe ser una URL válida'),
+  body('deporte').optional().trim().isLength({ max: 50 }),
   body('evento_id').optional().isUUID().withMessage('evento_id inválido'),
   body().custom((_, { req }) => {
-    if (!req.body.contenido && !req.body.foto_url) {
+    if (!req.body.contenido?.trim() && !req.body.foto_url) {
       throw new Error('Publicación vacía: contenido o foto_url requerido');
     }
     return true;
