@@ -6,11 +6,9 @@ import {
   setSession, setTokens, clearSession, clearAll,
 } from '../services/authStorage';
 
-const AuthContext = createContext(null);
+import { API_BASE } from '../config';
 
-const BASE = import.meta.env.VITE_BACKEND_URL
-  ? `${import.meta.env.VITE_BACKEND_URL}/api`
-  : '/api';
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [usuario,  setUsuario]  = useState(null);
@@ -24,7 +22,7 @@ export function AuthProvider({ children }) {
       // ── Caso 1: hay access token — verificar con el backend ──
       if (token) {
         try {
-          const { data } = await axios.get(`${BASE}/auth/me`, {
+          const { data } = await axios.get(`${API_BASE}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setUsuario(data);
@@ -38,10 +36,10 @@ export function AuthProvider({ children }) {
       // ── Caso 2: hay refresh token — renovar silenciosamente ──
       if (refreshToken) {
         try {
-          const { data: renewed } = await axios.post(`${BASE}/auth/refresh`, { refreshToken });
+          const { data: renewed } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
           setTokens(renewed.token, renewed.refreshToken);
 
-          const { data: me } = await axios.get(`${BASE}/auth/me`, {
+          const { data: me } = await axios.get(`${API_BASE}/auth/me`, {
             headers: { Authorization: `Bearer ${renewed.token}` },
           });
           setUsuario(me);
@@ -77,7 +75,7 @@ export function AuthProvider({ children }) {
     const refreshToken = getRefresh();
     if (refreshToken) {
       // Fire-and-forget — no bloquear el logout si el backend falla
-      axios.post(`${BASE}/auth/logout`, { refreshToken }).catch(() => {});
+      axios.post(`${API_BASE}/auth/logout`, { refreshToken }).catch(() => {});
     }
     clearSession();
     disconnectSocket();

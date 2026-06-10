@@ -1,10 +1,12 @@
 import { io } from 'socket.io-client';
+import { getToken } from './authStorage';
+import { BACKEND_ORIGIN } from '../config';
 
 let _socket = null;
 let _token  = null;
 
 export function getSocket() {
-  const token = localStorage.getItem('sp_token');
+  const token = getToken();
   if (!token) {
     if (_socket) { _socket.disconnect(); _socket = null; _token = null; }
     return null;
@@ -12,8 +14,7 @@ export function getSocket() {
   if (_socket && token === _token) return _socket;
   if (_socket) _socket.disconnect();
   _token  = token;
-  const url = import.meta.env.VITE_BACKEND_URL || '/';
-  _socket = io(url, { auth: { token }, transports: ['websocket', 'polling'] });
+  _socket = io(BACKEND_ORIGIN || '/', { auth: { token }, transports: ['websocket', 'polling'] });
   return _socket;
 }
 

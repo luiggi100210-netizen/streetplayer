@@ -31,6 +31,13 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+/** Mensaje de bloqueo si la cuenta está baneada o suspendida; null si está activa. */
+function errorEstadoCuenta(estado) {
+  if (estado === 'baneado')    return 'Tu cuenta fue suspendida permanentemente';
+  if (estado === 'suspendido') return 'Tu cuenta está suspendida temporalmente';
+  return null;
+}
+
 /**
  * Genera un refresh token opaco (UUID), lo almacena en BD como hash
  * y devuelve el token crudo al llamador para enviarlo al cliente.
@@ -94,8 +101,8 @@ const login = asyncHandler(async (req, res) => {
   if (rows.length === 0) return res.status(401).json({ error: 'Credenciales incorrectas' });
   const usuario = rows[0];
 
-  if (usuario.estado === 'baneado')    return res.status(403).json({ error: 'Tu cuenta fue suspendida permanentemente' });
-  if (usuario.estado === 'suspendido') return res.status(403).json({ error: 'Tu cuenta está suspendida temporalmente' });
+  const bloqueoLogin = errorEstadoCuenta(usuario.estado);
+  if (bloqueoLogin) return res.status(403).json({ error: bloqueoLogin });
 
   const valido = await bcrypt.compare(password, usuario.password_hash);
   if (!valido) return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -221,8 +228,8 @@ const loginFirebase = asyncHandler(async (req, res) => {
   }
 
   const usuario = rows[0];
-  if (usuario.estado === 'baneado')    return res.status(403).json({ error: 'Tu cuenta fue suspendida permanentemente' });
-  if (usuario.estado === 'suspendido') return res.status(403).json({ error: 'Tu cuenta está suspendida temporalmente' });
+  const bloqueoFirebase = errorEstadoCuenta(usuario.estado);
+  if (bloqueoFirebase) return res.status(403).json({ error: bloqueoFirebase });
 
   await pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
@@ -254,8 +261,8 @@ const refresh = asyncHandler(async (req, res) => {
   const rt = rows[0];
   if (rt.revocado)                  return res.status(401).json({ error: 'Sesión revocada' });
   if (new Date() > rt.expires_at)   return res.status(401).json({ error: 'Sesión expirada' });
-  if (rt.estado === 'baneado')      return res.status(403).json({ error: 'Tu cuenta fue suspendida permanentemente' });
-  if (rt.estado === 'suspendido')   return res.status(403).json({ error: 'Tu cuenta está suspendida temporalmente' });
+  const bloqueoRefresh = errorEstadoCuenta(rt.estado);
+  if (bloqueoRefresh) return res.status(403).json({ error: bloqueoRefresh });
 
   // Rotar: revocar el token actual antes de emitir uno nuevo
   await pool.query('UPDATE refresh_tokens SET revocado = true WHERE id = $1', [rt.id]);

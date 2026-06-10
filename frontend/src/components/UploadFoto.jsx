@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import api from '../services/api';
-
-const STATIC_BASE = import.meta.env.VITE_BACKEND_URL || '';
+import { BACKEND_ORIGIN } from '../config';
 
 export default function UploadFoto({ value, onChange, label = 'Foto', rounded = false, size = 96 }) {
   const inputRef           = useRef(null);
@@ -16,10 +15,10 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
     try {
       const form = new FormData();
       form.append('foto', file);
-      const { data } = await api.post('/upload', form, {
+      const { data } = await api.post('/upload/foto', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      onChange(STATIC_BASE + data.url);
+      onChange(BACKEND_ORIGIN + data.url);
     } catch {
       setError('No se pudo subir. Máx 5 MB (JPG, PNG, WebP).');
     }

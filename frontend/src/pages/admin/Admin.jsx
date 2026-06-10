@@ -5,12 +5,10 @@ import { Analytics, MapaUsuarios } from './AdminAnalytics';
 import { Configuracion, Medallas, Sanciones, Finanzas, Notificaciones } from './AdminConfig';
 import { AuditLog, Privacidad } from './AdminAuditoria';
 
-const ADMIN_BASE = import.meta.env.VITE_BACKEND_URL
-  ? `${import.meta.env.VITE_BACKEND_URL}/api/admin`
-  : '/api/admin';
+import { API_BASE } from '../../config';
 
 function adminApi(token) {
-  return axios.create({ baseURL: ADMIN_BASE, headers: { Authorization: `Bearer ${token}` } });
+  return axios.create({ baseURL: `${API_BASE}/admin`, headers: { Authorization: `Bearer ${token}` } });
 }
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────

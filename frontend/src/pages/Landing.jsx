@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { T, heroGradient, grainBg } from '../styles/brand';
 import CourtLines from '../components/CourtLines';
+import { COLORES_NIVEL } from '../constants';
 
 const PASOS = [
   { n: '01', titulo: 'Crea tu perfil', desc: 'Elige tu posición, tu deporte y conecta con jugadores cerca de ti.' },
@@ -37,13 +38,13 @@ const FEATURES = [
 ];
 
 const NIVELES = [
-  { nivel: 'Rookie',     xp: '0 XP',     color: '#888888' },
-  { nivel: 'Amateur',    xp: '100 XP',   color: '#9FE1CB' },
-  { nivel: 'Intermedio', xp: '300 XP',   color: '#60a5fa' },
-  { nivel: 'Avanzado',   xp: '600 XP',   color: '#a78bfa' },
-  { nivel: 'Pro',        xp: '1 000 XP', color: '#fbbf24' },
-  { nivel: 'Élite',      xp: '2 000 XP', color: '#f87171' },
-  { nivel: 'Leyenda',    xp: '5 000 XP', color: '#fde68a' },
+  { nivel: 'Rookie',     xp: '0 XP',     color: COLORES_NIVEL.rookie },
+  { nivel: 'Amateur',    xp: '100 XP',   color: COLORES_NIVEL.amateur },
+  { nivel: 'Intermedio', xp: '300 XP',   color: COLORES_NIVEL.intermedio },
+  { nivel: 'Avanzado',   xp: '600 XP',   color: COLORES_NIVEL.avanzado },
+  { nivel: 'Pro',        xp: '1 000 XP', color: COLORES_NIVEL.pro },
+  { nivel: 'Élite',      xp: '2 000 XP', color: COLORES_NIVEL.elite },
+  { nivel: 'Leyenda',    xp: '5 000 XP', color: COLORES_NIVEL.leyenda },
 ];
 
 const STATS = [

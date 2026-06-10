@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../../config';
 
 export default function AdminLogin({ onLogin }) {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -11,8 +12,7 @@ export default function AdminLogin({ onLogin }) {
     setLoading(true);
     setError('');
     try {
-      const base = import.meta.env.VITE_BACKEND_URL ?? '';
-      const { data } = await axios.post(`${base}/api/auth/admin/login`, form);
+      const { data } = await axios.post(`${API_BASE}/auth/admin/login`, form);
       localStorage.setItem('admin_token', data.token);
       onLogin(data.token, data.admin);
     } catch (err) {

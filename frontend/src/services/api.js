@@ -1,11 +1,8 @@
 import axios from 'axios';
 import { getToken, getRefresh, setTokens, clearSession } from './authStorage';
+import { API_BASE } from '../config';
 
-const BASE = import.meta.env.VITE_BACKEND_URL
-  ? `${import.meta.env.VITE_BACKEND_URL}/api`
-  : '/api';
-
-const api = axios.create({ baseURL: BASE, timeout: 15000 });
+const api = axios.create({ baseURL: API_BASE, timeout: 15000 });
 
 // ── Request: adjunta el access token a cada petición ──────
 api.interceptors.request.use((config) => {
@@ -28,7 +25,7 @@ api.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE}/auth/refresh`, { refreshToken });
+          const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
           setTokens(data.token, data.refreshToken);
           original.headers.Authorization = `Bearer ${data.token}`;
           return api(original); // reintentar la petición original
