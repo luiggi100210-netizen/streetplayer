@@ -33,8 +33,16 @@ const obtenerPerfil = asyncHandler(async (req, res) => {
 // PUT /api/usuarios/perfil
 const actualizarPerfil = asyncHandler(async (req, res) => {
   const { nombre, apodo, bio, ciudad, departamento, deportes,
-          posicion, pie_dominante, formato_preferido, foto_url,
-          latitud, longitud } = req.body;
+          posicion, pie_dominante, formato_preferido, foto_url } = req.body;
+
+  // latitud/longitud son distintos al resto de campos: el usuario puede
+  // querer borrar su ubicación a propósito (enviándola como null), así que
+  // COALESCE no sirve aquí (no distingue "no la mandé" de "la mandé null").
+  // Solo se tocan si la clave vino en el body; si no vino, se preserva la
+  // que ya había — antes se pisaba a NULL en cualquier PUT que no incluyera
+  // ubicación.
+  const tocaUbicacion = 'latitud' in req.body || 'longitud' in req.body;
+
   const { rows } = await pool.query(
     `UPDATE usuarios SET
       nombre            = COALESCE($1,  nombre),
@@ -47,15 +55,15 @@ const actualizarPerfil = asyncHandler(async (req, res) => {
       pie_dominante     = COALESCE($8,  pie_dominante),
       formato_preferido = COALESCE($9,  formato_preferido),
       foto_url          = COALESCE($10, foto_url),
-      latitud           = $11,
-      longitud          = $12
-     WHERE id = $13
+      latitud           = CASE WHEN $11 THEN $12 ELSE latitud  END,
+      longitud          = CASE WHEN $11 THEN $13 ELSE longitud END
+     WHERE id = $14
      RETURNING id, username, nombre, apodo, bio, ciudad, departamento,
                deportes, posicion, pie_dominante, formato_preferido,
                nivel_xp, xp, foto_url, latitud, longitud`,
     [nombre, apodo, bio, ciudad, departamento, deportes,
      posicion, pie_dominante, formato_preferido, foto_url,
-     latitud ?? null, longitud ?? null, req.usuario.id]
+     tocaUbicacion, req.body.latitud ?? null, req.body.longitud ?? null, req.usuario.id]
   );
   res.json(rows[0]);
 });

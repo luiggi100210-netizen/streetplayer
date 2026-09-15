@@ -199,6 +199,18 @@ const iniciarTorneo = asyncHandler(async (req, res) => {
   if (confirmados.length < 2) return res.status(400).json({ error: 'Necesitas al menos 2 equipos confirmados' });
 
   const equipos = confirmados.map(r => r.equipo_id);
+
+  // Un bracket de eliminacion sin "bye" (avance automatico) solo cierra
+  // limpio si el numero de equipos es potencia de 2: con 6 equipos, por
+  // ejemplo, la ronda 1 ya es pareja (3 partidos) pero deja 3 ganadores —
+  // numero impar — y la ronda 2 vuelve a dejar a uno sin rival. Implementar
+  // "bye" real requeriria cambios de esquema (equipo_visita_id nulo) y de
+  // frontend, asi que por ahora se exige potencia de 2 al iniciar.
+  const esPotenciaDeDos = (equipos.length & (equipos.length - 1)) === 0;
+  if (torneo.formato === 'eliminacion' && !esPotenciaDeDos) {
+    return res.status(400).json({ error: 'Los torneos de eliminación necesitan un número de equipos confirmados que sea potencia de 2 (2, 4, 8, 16...)' });
+  }
+
   const fechaBase = new Date(torneo.fecha_inicio);
   fechaBase.setUTCHours(12, 0, 0, 0);
   const STEP = 100;
@@ -262,9 +274,17 @@ const registrarResultado = asyncHandler(async (req, res) => {
   if (!partido) return res.status(404).json({ error: 'Partido no encontrado' });
   if (partido.estado === 'finalizado') return res.status(400).json({ error: 'Partido ya finalizado' });
 
-  const gl = parseInt(goles_local);
-  const gv = parseInt(goles_visita);
-  const ganador_id = gl > gv ? partido.equipo_local_id : gv > gl ? partido.equipo_visita_id : partido.equipo_local_id;
+  const gl = parseInt(goles_local, 10);
+  const gv = parseInt(goles_visita, 10);
+  if (!Number.isInteger(gl) || !Number.isInteger(gv) || gl < 0 || gv < 0) {
+    return res.status(400).json({ error: 'goles_local y goles_visita deben ser números enteros no negativos' });
+  }
+  // En eliminacion cada partido necesita un ganador para que el bracket
+  // avance; antes un empate se resolvia en silencio como "gana el local".
+  if (gl === gv && partido.formato === 'eliminacion') {
+    return res.status(400).json({ error: 'Un partido de eliminación no puede quedar empatado — registra el resultado tras penales o tiempo extra' });
+  }
+  const ganador_id = gl > gv ? partido.equipo_local_id : partido.equipo_visita_id;
   const perdedor_id = ganador_id === partido.equipo_local_id ? partido.equipo_visita_id : partido.equipo_local_id;
 
   const client = await pool.connect();
