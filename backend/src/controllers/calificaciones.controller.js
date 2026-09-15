@@ -52,6 +52,20 @@ const calificar = asyncHandler(async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // Reclama el derecho a calificar de forma atomica: si el pendiente ya no
+    // existe (porque ya se califico antes, o el plazo vencio), no se
+    // reprocesa. Sin esto, un reenvio, doble clic o retry tras timeout
+    // duplicaba goles/asistencias/tarjetas en jugador_stats y usuarios, y
+    // volvia a otorgar el XP de calificar_jugadores.
+    const { rowCount: reclamado } = await client.query(
+      'DELETE FROM calificaciones_pendientes WHERE evento_id = $1 AND usuario_id = $2',
+      [evento_id, req.usuario.id]
+    );
+    if (reclamado === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Ya calificaste este evento o el plazo venció' });
+    }
+
     for (const cal of calificaciones) {
       const { usuario_id, estrellas, tags_positivos = [], tags_negativos = [], goles = 0, asistencias = 0, amarillas = 0, rojas = 0 } = cal;
 
@@ -98,11 +112,6 @@ const calificar = asyncHandler(async (req, res) => {
     }
 
     await darXP(req.usuario.id, 'calificar_jugadores', evento_id);
-
-    await client.query(
-      'DELETE FROM calificaciones_pendientes WHERE evento_id = $1 AND usuario_id = $2',
-      [evento_id, req.usuario.id]
-    );
 
     await client.query('COMMIT');
     res.json({ mensaje: 'Calificaciones guardadas correctamente' });

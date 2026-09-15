@@ -135,7 +135,7 @@ const historialUsuario = asyncHandler(async (req, res) => {
       COALESCE(js.goles, 0)       AS goles,
       COALESCE(js.asistencias, 0) AS asistencias,
       COALESCE(js.calificacion_promedio, 0) AS calificacion,
-      js.tarjeta_amarilla, js.tarjeta_roja
+      js.tarjetas_amarillas, js.tarjetas_rojas
      FROM evento_participantes ep
      JOIN eventos e ON e.id = ep.evento_id
      LEFT JOIN jugador_stats js ON js.evento_id = e.id AND js.usuario_id = ep.usuario_id

@@ -100,7 +100,7 @@ function iniciarCronRecordatorios() {
              WHERE n.usuario_id = ep.usuario_id
                AND n.referencia_id = e.id
                AND n.mensaje LIKE '%⏰%'
-               AND n.creado_en > NOW() - INTERVAL '3 hours'
+               AND n.fecha > NOW() - INTERVAL '3 hours'
            )`
       );
       for (const { id, titulo, usuario_id } of proximos) {
