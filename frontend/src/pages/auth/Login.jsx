@@ -48,9 +48,13 @@ export default function Login() {
   const handleOAuth = async (provider) => {
     setOauthCargando(provider); setError('');
     try {
+      // "Continuar como X" reutiliza la sesión de Firebase del navegador si
+      // sigue siendo válida, sin volver a abrir el selector de cuenta; un
+      // login nuevo o "usar otra cuenta" siempre lo fuerza.
+      const opciones = { forzarSelector: modo !== 'recordado' };
       const idToken = provider === 'google'
-        ? await signInWithGoogle()
-        : await signInWithFacebook();
+        ? await signInWithGoogle(opciones)
+        : await signInWithFacebook(opciones);
       const { data } = await api.post('/auth/firebase', { idToken });
       login(data.token, data.refreshToken, { ...data.usuario, provider });
       navigate('/home');
