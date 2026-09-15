@@ -1,5 +1,6 @@
 const pool         = require('../config/database');
 const asyncHandler = require('../middleware/asyncHandler');
+const { logAdmin }  = require('./admin.extras.controller');
 
 // GET /api/admin/dashboard
 const dashboard = asyncHandler(async (req, res) => {
@@ -61,11 +62,14 @@ const cambiarEstadoUsuario = asyncHandler(async (req, res) => {
       [id, estado === 'baneado' ? 'baneo' : 'suspension', motivo, req.admin.id]
     );
   }
+  await logAdmin(req, 'cambiar_estado_usuario', 'usuario', id, { estado, motivo });
   res.json({ mensaje: `Usuario ${estado} correctamente` });
 });
 
 // GET /api/admin/reportes
 const listarReportes = asyncHandler(async (req, res) => {
+  const { page = 1 } = req.query;
+  const limit = 50, offset = (page - 1) * limit;
   const { rows } = await pool.query(
     `SELECT r.*,
       ur.username AS reportado_por_username,
@@ -73,7 +77,8 @@ const listarReportes = asyncHandler(async (req, res) => {
      FROM reportes r
      JOIN usuarios ur ON r.reportado_por = ur.id
      LEFT JOIN usuarios uu ON r.usuario_id = uu.id
-     ORDER BY r.fecha DESC LIMIT 50`
+     ORDER BY r.fecha DESC LIMIT $1 OFFSET $2`,
+    [limit, offset]
   );
   res.json(rows);
 });
@@ -108,12 +113,18 @@ const listarTorneosAdmin = asyncHandler(async (req, res) => {
 // PUT /api/admin/torneos/:id/aprobar
 const aprobarTorneo = asyncHandler(async (req, res) => {
   await pool.query('UPDATE torneos SET aprobado = true, estado = $1 WHERE id = $2', ['aprobado', req.params.id]);
+  await logAdmin(req, 'aprobar_torneo', 'torneo', req.params.id);
   res.json({ mensaje: 'Torneo aprobado' });
 });
 
 // GET /api/admin/anuncios
 const listarAnuncios = asyncHandler(async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM anuncios ORDER BY fecha_creacion DESC');
+  const { page = 1 } = req.query;
+  const limit = 30, offset = (page - 1) * limit;
+  const { rows } = await pool.query(
+    'SELECT * FROM anuncios ORDER BY fecha_creacion DESC LIMIT $1 OFFSET $2',
+    [limit, offset]
+  );
   res.json(rows);
 });
 
@@ -189,11 +200,14 @@ const solicitarPublicidad = asyncHandler(async (req, res) => {
 
 // GET /api/admin/publicidad/solicitudes
 const listarSolicitudes = asyncHandler(async (req, res) => {
-  const { estado } = req.query;
+  const { estado, page = 1 } = req.query;
+  const limit = 100, offset = (page - 1) * limit;
   let query = 'SELECT * FROM publicidad_solicitudes WHERE 1=1';
   const params = [];
-  if (estado) { query += ` AND estado = $1`; params.push(estado); }
-  query += ' ORDER BY fecha_solicitud DESC LIMIT 100';
+  let idx = 1;
+  if (estado) { query += ` AND estado = $${idx++}`; params.push(estado); }
+  query += ` ORDER BY fecha_solicitud DESC LIMIT $${idx++} OFFSET $${idx++}`;
+  params.push(limit, offset);
   const { rows } = await pool.query(query, params);
   res.json(rows);
 });
@@ -254,6 +268,7 @@ const toggleAnuncio = asyncHandler(async (req, res) => {
 // DELETE /api/admin/anuncios/:id
 const eliminarAnuncio = asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM anuncios WHERE id = $1', [req.params.id]);
+  await logAdmin(req, 'eliminar_anuncio', 'anuncio', req.params.id);
   res.json({ mensaje: 'Anuncio eliminado' });
 });
 
@@ -298,12 +313,14 @@ const listarEventosAdmin = asyncHandler(async (req, res) => {
 // DELETE /api/admin/usuarios/:id/foto
 const eliminarFotoUsuario = asyncHandler(async (req, res) => {
   await pool.query('UPDATE usuarios SET foto_url = NULL WHERE id = $1', [req.params.id]);
+  await logAdmin(req, 'eliminar_foto_usuario', 'usuario', req.params.id);
   res.json({ mensaje: 'Foto eliminada' });
 });
 
 // PUT /api/admin/torneos/:id/rechazar
 const rechazarTorneo = asyncHandler(async (req, res) => {
   await pool.query('UPDATE torneos SET aprobado = false, estado = $1 WHERE id = $2', ['cancelado', req.params.id]);
+  await logAdmin(req, 'rechazar_torneo', 'torneo', req.params.id);
   res.json({ mensaje: 'Torneo rechazado' });
 });
 

@@ -12,7 +12,6 @@ const logAdmin = async (req, accion, entidad = null, entidad_id = null, detalles
     );
   } catch {}
 };
-module.exports.logAdmin = logAdmin;
 
 // ── ANALYTICS ─────────────────────────────────────────────────────────────────
 const getAnalytics = asyncHandler(async (req, res) => {
@@ -123,14 +122,16 @@ const getFinanzas = asyncHandler(async (req, res) => {
 
 // ── SANCIONES ─────────────────────────────────────────────────────────────────
 const listarSanciones = asyncHandler(async (req, res) => {
+  const { page = 1 } = req.query;
+  const limit = 100, offset = (page - 1) * limit;
   const { rows } = await pool.query(`
     SELECT s.*, u.username, u.email, u.foto_url, u.estado AS estado_usuario,
            a.username AS admin_username
     FROM sanciones s
     JOIN usuarios u ON u.id = s.usuario_id
     LEFT JOIN admins a ON a.id = s.admin_id
-    ORDER BY s.fecha_inicio DESC LIMIT 100
-  `);
+    ORDER BY s.fecha_inicio DESC LIMIT $1 OFFSET $2
+  `, [limit, offset]);
   res.json(rows);
 });
 
@@ -147,11 +148,13 @@ const levantarSancion = asyncHandler(async (req, res) => {
 
 // ── MEDALLAS ──────────────────────────────────────────────────────────────────
 const listarMedallasAdmin = asyncHandler(async (req, res) => {
+  const { page = 1 } = req.query;
+  const limit = 50, offset = (page - 1) * limit;
   const { rows } = await pool.query(`
     SELECT m.*,
            (SELECT COUNT(*) FROM medallas_usuario WHERE medalla_id = m.id) AS total_otorgadas
-    FROM medallas m ORDER BY m.tipo ASC, m.nombre ASC
-  `);
+    FROM medallas m ORDER BY m.tipo ASC, m.nombre ASC LIMIT $1 OFFSET $2
+  `, [limit, offset]);
   res.json(rows);
 });
 
@@ -332,6 +335,7 @@ const solicitarPrivacidad = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  logAdmin,
   getAnalytics, getMapaUsuarios, getFinanzas,
   listarSanciones, levantarSancion,
   listarMedallasAdmin, crearMedalla, otorgarMedalla,

@@ -24,6 +24,8 @@ if (usaCloudinary) {
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
 if (!usaCloudinary && !fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
 const storage = usaCloudinary
   ? multer.memoryStorage()
   : multer.diskStorage({
@@ -35,7 +37,7 @@ const uploadMiddleware = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (req, file, cb) => {
-    ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)
+    ALLOWED_MIME.includes(file.mimetype)
       ? cb(null, true)
       : cb(Object.assign(new Error('Solo se permiten imágenes JPEG, PNG o WebP'), { status: 400 }));
   },
@@ -43,6 +45,18 @@ const uploadMiddleware = multer({
 
 const subirFoto = asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
+
+  // El mimetype anterior lo declara el cliente y es falsificable — se valida
+  // el contenido real del archivo (magic bytes) antes de aceptarlo.
+  const { fileTypeFromBuffer, fileTypeFromFile } = await import('file-type');
+  const tipoReal = usaCloudinary
+    ? await fileTypeFromBuffer(req.file.buffer)
+    : await fileTypeFromFile(req.file.path);
+
+  if (!tipoReal || !ALLOWED_MIME.includes(tipoReal.mime)) {
+    if (!usaCloudinary) fs.unlink(req.file.path, () => {});
+    return res.status(400).json({ error: 'El contenido del archivo no es una imagen JPEG, PNG o WebP válida' });
+  }
 
   if (!usaCloudinary) {
     return res.json({ url: `/uploads/${req.file.filename}` });
