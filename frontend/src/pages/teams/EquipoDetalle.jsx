@@ -3,11 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import UploadFoto from '../../components/UploadFoto';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 function ModalRetoRapido({ equipoRetadoId, equipoNombre, onClose }) {
   const [form, setForm] = useState({ cancha: '', hora_propuesta: '', formato_reto: 'tiempo', valor_formato: 15, monto_apuesta: 0 });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  useEscapeKey(() => onClose(false));
   const enviar = async () => {
     setEnviando(true); setError('');
     try {
@@ -55,6 +57,7 @@ export default function EquipoDetalle() {
   const [editando, setEditando] = useState(false);
   const [formEdit, setFormEdit] = useState({});
   const [guardando, setGuardando] = useState(false);
+  const [errorEdit, setErrorEdit] = useState('');
 
   // Invitar miembro
   const [busquedaUser, setBusquedaUser] = useState('');
@@ -101,11 +104,14 @@ export default function EquipoDetalle() {
 
   const guardarEdicion = async () => {
     setGuardando(true);
+    setErrorEdit('');
     try {
       const { data } = await api.put(`/equipos/${id}`, formEdit);
       setEquipo(p => ({ ...p, ...data }));
       setEditando(false);
-    } catch {}
+    } catch (err) {
+      setErrorEdit(err.response?.data?.error || 'No se pudieron guardar los cambios');
+    }
     setGuardando(false);
   };
 
@@ -115,7 +121,9 @@ export default function EquipoDetalle() {
     try {
       const { data } = await api.get(`/usuarios/buscar?q=${encodeURIComponent(q)}`);
       setResultados(data.slice(0, 5));
-    } catch {}
+    } catch {
+      setResultados([]);
+    }
   };
 
   const invitar = async (usuarioId) => {
@@ -281,6 +289,7 @@ export default function EquipoDetalle() {
             rounded
             size={80}
           />
+          {errorEdit && <p className="text-xs text-red-400">{errorEdit}</p>}
           <div className="flex gap-3">
             <button onClick={guardarEdicion} disabled={guardando} className="btn-primary flex-1 text-sm">
               {guardando ? 'GUARDANDO...' : 'GUARDAR'}

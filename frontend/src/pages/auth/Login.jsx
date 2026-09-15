@@ -147,10 +147,11 @@ export default function Login() {
           <form onSubmit={handleSubmitRecordado} className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="label !mb-0">Contraseña</label>
+                <label htmlFor="login-recordado-password" className="label !mb-0">Contraseña</label>
                 <Link to="/recuperar" className="text-xs text-sp-green hover:underline">¿La olvidaste?</Link>
               </div>
               <input
+                id="login-recordado-password"
                 type="password"
                 className="input"
                 placeholder="••••••••"
@@ -214,16 +215,16 @@ export default function Login() {
       {/* Email + contraseña */}
       <form onSubmit={handleSubmit} className="space-y-4 mt-5">
         <div>
-          <label className="label">Email</label>
-          <input type="email" className="input" placeholder="tu@email.com"
+          <label htmlFor="login-email" className="label">Email</label>
+          <input id="login-email" type="email" className="input" placeholder="tu@email.com"
             value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
         </div>
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="label !mb-0">Contraseña</label>
+            <label htmlFor="login-password" className="label !mb-0">Contraseña</label>
             <Link to="/recuperar" className="text-xs text-sp-green hover:underline">¿La olvidaste?</Link>
           </div>
-          <input type="password" className="input" placeholder="••••••••"
+          <input id="login-password" type="password" className="input" placeholder="••••••••"
             value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
         </div>
 

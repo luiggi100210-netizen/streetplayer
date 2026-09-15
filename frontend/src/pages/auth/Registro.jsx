@@ -90,30 +90,30 @@ export default function Registro() {
       <form onSubmit={handleSubmit} className="space-y-4 mt-5">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Usuario *</label>
-            <input className="input" placeholder="cr7_jr" value={form.username}
+            <label htmlFor="registro-username" className="label">Usuario *</label>
+            <input id="registro-username" className="input" placeholder="cr7_jr" value={form.username}
               onChange={(e) => setForm({...form, username: e.target.value})} required />
           </div>
           <div>
-            <label className="label">Nombre *</label>
-            <input className="input" placeholder="Carlos" value={form.nombre}
+            <label htmlFor="registro-nombre" className="label">Nombre *</label>
+            <input id="registro-nombre" className="input" placeholder="Carlos" value={form.nombre}
               onChange={(e) => setForm({...form, nombre: e.target.value})} required />
           </div>
         </div>
         <div>
-          <label className="label">Email *</label>
-          <input type="email" className="input" placeholder="tu@email.com" value={form.email}
+          <label htmlFor="registro-email" className="label">Email *</label>
+          <input id="registro-email" type="email" className="input" placeholder="tu@email.com" value={form.email}
             onChange={(e) => setForm({...form, email: e.target.value})} required />
         </div>
         <div>
-          <label className="label">Contraseña *</label>
-          <input type="password" className="input" placeholder="Mínimo 6 caracteres" value={form.password}
+          <label htmlFor="registro-password" className="label">Contraseña *</label>
+          <input id="registro-password" type="password" className="input" placeholder="Mínimo 6 caracteres" value={form.password}
             onChange={(e) => setForm({...form, password: e.target.value})} required minLength={6} />
         </div>
         <div>
-          <label className="label">Ciudad</label>
+          <label htmlFor="registro-ciudad" className="label">Ciudad</label>
           <div className="flex gap-2">
-            <input className="input flex-1" placeholder="Lima, Arequipa..." value={form.ciudad}
+            <input id="registro-ciudad" className="input flex-1" placeholder="Lima, Arequipa..." value={form.ciudad}
               onChange={(e) => setForm({...form, ciudad: e.target.value})} />
             <button type="button" onClick={solicitarGeo} disabled={geoLoading}
               className="px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-white hover:border-sp-green/50 text-sm transition-colors shrink-0"

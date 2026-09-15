@@ -6,6 +6,7 @@ import { Configuracion, Medallas, Sanciones, Finanzas, Notificaciones } from './
 import { AuditLog, Privacidad } from './AdminAuditoria';
 import { inputS, labelS } from './adminUi';
 import { getAdminToken, clearAdminToken } from '../../services/authStorage';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 import { API_BASE } from '../../config';
 
@@ -89,6 +90,7 @@ function Btn({ children, onClick, color = '#7c3aed', danger, small, disabled }) 
 }
 
 function Modal({ children, onClose, width = 560 }) {
+  useEscapeKey(onClose);
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: '#000b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 16, width: '100%', maxWidth: width, maxHeight: '90vh', overflowY: 'auto' }}>
@@ -102,11 +104,15 @@ function Modal({ children, onClose, width = 560 }) {
 function Dashboard({ api }) {
   const [data, setData] = useState(null);
   const [stats, setStats] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([api.get('/dashboard'), api.get('/stats')]).then(([d, s]) => { setData(d.data); setStats(s.data); }).catch(() => {});
+    Promise.all([api.get('/dashboard'), api.get('/stats')])
+      .then(([d, s]) => { setData(d.data); setStats(s.data); })
+      .catch(err => setError(err.response?.data?.error || 'No se pudo cargar el dashboard'));
   }, []);
 
+  if (error) return <p style={{ color: '#f87171', padding: 32 }}>{error}</p>;
   if (!data) return <p style={{ color: '#64748b', padding: 32 }}>Cargando...</p>;
 
   return (
@@ -184,9 +190,13 @@ function ModalUsuario({ api, userId, onClose, onRefresh }) {
   const [data, setData] = useState(null);
   const [modalAccion, setModalAccion] = useState(null);
   const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState('');
+
+  useEscapeKey(() => { if (modalAccion) setModalAccion(null); });
 
   useEffect(() => {
-    api.get(`/usuarios/${userId}`).then(r => setData(r.data)).catch(() => {});
+    api.get(`/usuarios/${userId}`).then(r => setData(r.data))
+      .catch(err => setError(err.response?.data?.error || 'No se pudo cargar el usuario'));
   }, [userId]);
 
   const cambiarEstado = async (estado) => {
@@ -202,6 +212,11 @@ function ModalUsuario({ api, userId, onClose, onRefresh }) {
     api.get(`/usuarios/${userId}`).then(r => setData(r.data));
   };
 
+  if (error) return (
+    <Modal onClose={onClose} width={640}>
+      <div style={{ padding: 40, textAlign: 'center', color: '#f87171' }}>{error}</div>
+    </Modal>
+  );
   if (!data) return (
     <Modal onClose={onClose} width={640}>
       <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Cargando...</div>
@@ -356,13 +371,17 @@ function Usuarios({ api }) {
   const [page, setPage] = useState(1);
   const [detalle, setDetalle] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const { data } = await api.get('/usuarios', { params: { buscar: buscar || undefined, estado: estadoFiltro || undefined, page } });
       setLista(data);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudieron cargar los usuarios');
+    }
     setLoading(false);
   }, [buscar, estadoFiltro, page]);
 
@@ -381,6 +400,8 @@ function Usuarios({ api }) {
           <option value="baneado">Baneado</option>
         </select>
       </div>
+
+      {error && <p style={{ color: '#f87171', fontSize: 12, marginBottom: 12 }}>{error}</p>}
 
       <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -648,9 +669,9 @@ function Anuncios({ api }) {
   };
 
   const guardarEdicion = async (form) => {
-    setSaving(true);
+    setSaving(true); setError('');
     try { await api.put(`/anuncios/${editando.id}`, form); setEditando(null); cargar(); }
-    catch {}
+    catch (err) { setError(err.response?.data?.error || 'No se pudieron guardar los cambios'); }
     setSaving(false);
   };
 
@@ -731,6 +752,7 @@ function Anuncios({ api }) {
                       onGuardar={guardarEdicion}
                       onCancelar={() => setEditando(null)}
                       saving={saving}
+                      error={error}
                     />
                   </div>
                 )}
@@ -756,9 +778,12 @@ function Publicidad({ api }) {
   const [editando, setEditando] = useState(null);
   const [publicarModal, setPublicarModal] = useState(null);
   const [pubSaving, setPubSaving] = useState(false);
+  const [pubError, setPubError] = useState('');
+  const [errorTarifas, setErrorTarifas] = useState('');
 
   useEffect(() => {
-    api.get('/publicidad/tarifas').then(r => setTarifas(r.data)).catch(() => {});
+    api.get('/publicidad/tarifas').then(r => setTarifas(r.data))
+      .catch(err => setErrorTarifas(err.response?.data?.error || 'No se pudieron cargar las tarifas'));
     cargarSolicitudes();
   }, []);
 
@@ -781,9 +806,9 @@ function Publicidad({ api }) {
   };
 
   const publicarAnuncio = async (form) => {
-    setPubSaving(true);
+    setPubSaving(true); setPubError('');
     try { await api.post('/anuncios', form); setPublicarModal(null); }
-    catch {}
+    catch (err) { setPubError(err.response?.data?.error || 'No se pudo publicar el anuncio'); }
     setPubSaving(false);
   };
 
@@ -796,6 +821,7 @@ function Publicidad({ api }) {
       {/* Tarifas */}
       <div>
         <h2 style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Tarifas vigentes</h2>
+        {errorTarifas && <p style={{ color: '#f87171', fontSize: 12, marginBottom: 12 }}>{errorTarifas}</p>}
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
           {tarifas.map(t => (
             <div key={t.id} style={{ background: '#0d0d1a', border: `1px solid ${TIPO_COLOR[t.tipo] || '#1e1e2e'}33`, borderRadius: 14, padding: '20px 22px', flex: 1, minWidth: 180, position: 'relative', overflow: 'hidden' }}>
@@ -927,6 +953,7 @@ function Publicidad({ api }) {
               onGuardar={publicarAnuncio}
               onCancelar={() => setPublicarModal(null)}
               saving={pubSaving}
+              error={pubError}
             />
           </div>
         </Modal>

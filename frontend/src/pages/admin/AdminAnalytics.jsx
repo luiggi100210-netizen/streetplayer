@@ -107,11 +107,14 @@ function Funnel({ data }) {
 
 export function Analytics({ api }) {
   const [data, setData] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/analytics').then(r => setData(r.data)).catch(() => {});
+    api.get('/analytics').then(r => setData(r.data))
+      .catch(err => setError(err.response?.data?.error || 'No se pudieron cargar las analíticas'));
   }, []);
 
+  if (error) return <p style={{ color: '#f87171', padding: 32 }}>{error}</p>;
   if (!data) return <p style={{ color: '#64748b', padding: 32 }}>Cargando analytics...</p>;
 
   return (

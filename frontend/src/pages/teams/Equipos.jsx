@@ -11,6 +11,7 @@ export default function Equipos() {
   const [miEquipo, setMiEquipo]     = useState(null);  // equipo donde el user es capitán
   const [retos, setRetos]           = useState([]);
   const [cargando, setCargando]     = useState(true);
+  const [errorEquipos, setErrorEquipos] = useState('');
   const [filtros, setFiltros]       = useState({ q: '', deporte: '', ciudad: '' });
   const [tab, setTab]               = useState('buscar'); // 'buscar' | 'miequipo' | 'retos'
   const [mostrarCrear, setMostrarCrear] = useState(false);
@@ -24,7 +25,9 @@ export default function Equipos() {
       if (filtros.ciudad)  params.set('ciudad', filtros.ciudad);
       const { data } = await api.get(`/equipos?${params}`);
       setEquipos(data);
-    } catch {}
+    } catch (err) {
+      setErrorEquipos(err.response?.data?.error || 'No se pudieron cargar los equipos');
+    }
     setCargando(false);
   }, [filtros]);
 
@@ -119,6 +122,8 @@ export default function Equipos() {
             </div>
           </div>
 
+          {errorEquipos && <p className="text-xs text-red-400 text-center">{errorEquipos}</p>}
+
           {cargando ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map(i => <div key={i} className="card animate-pulse h-40" />)}
@@ -204,6 +209,7 @@ function TarjetaEquipo({ equipo }) {
 function SeccionRetos({ miEquipo, retos, onRefresh }) {
   const [respondiendo, setRespondiendo] = useState(null);
   const [enviando, setEnviando]         = useState(false);
+  const [error, setError]               = useState('');
 
   const recibidos  = retos.filter(r => r.retado_id   === miEquipo.id && r.estado === 'pendiente');
   const enviados   = retos.filter(r => r.retador_id  === miEquipo.id && r.estado === 'pendiente');
@@ -212,16 +218,21 @@ function SeccionRetos({ miEquipo, retos, onRefresh }) {
   const responder = async (id, accion) => {
     setRespondiendo(id);
     setEnviando(true);
+    setError('');
     try {
       await api.put(`/retos/${id}/responder`, { accion });
       await onRefresh();
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo responder al reto');
+    }
     setRespondiendo(null);
     setEnviando(false);
   };
 
   return (
     <div className="space-y-5">
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+
       {/* Retos recibidos */}
       <div>
         <h2 className="font-impact text-base mb-3 text-yellow-400">RETOS RECIBIDOS {recibidos.length > 0 && `(${recibidos.length})`}</h2>

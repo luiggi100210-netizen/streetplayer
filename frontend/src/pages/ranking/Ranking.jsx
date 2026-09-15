@@ -18,17 +18,21 @@ export default function Ranking() {
   const [ranking,  setRanking]  = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '' });
+  const [error,    setError]    = useState('');
 
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
+      setError('');
       try {
         const params = new URLSearchParams();
         if (filtros.deporte) params.set('deporte', filtros.deporte);
         if (filtros.ciudad)  params.set('ciudad',  filtros.ciudad);
         const { data } = await api.get(`/ranking?${params}`);
         setRanking(data);
-      } catch {}
+      } catch (err) {
+        setError(err.response?.data?.error || 'No se pudo cargar el ranking');
+      }
       setCargando(false);
     };
     cargar();
@@ -164,6 +168,8 @@ export default function Ranking() {
           </div>
         </div>
       )}
+
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
 
       {/* ── TABLA RANKING ── */}
       <div className="card p-0 overflow-hidden">

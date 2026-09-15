@@ -17,10 +17,12 @@ export default function Buscar() {
   const [resultados, setRes]    = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [buscado, setBuscado]   = useState(false);
+  const [error, setError]       = useState('');
 
   const buscar = useCallback(async () => {
     setBuscando(true);
     setBuscado(true);
+    setError('');
     try {
       const params = new URLSearchParams();
       if (q)       params.set('q', q);
@@ -29,7 +31,9 @@ export default function Buscar() {
       if (coords)  { params.set('lat', coords.lat); params.set('lng', coords.lng); }
       const { data } = await api.get(`/usuarios/buscar?${params}`);
       setRes(data);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo completar la búsqueda');
+    }
     setBuscando(false);
   }, [q, deporte, ciudad, coords]);
 
@@ -81,6 +85,8 @@ export default function Buscar() {
           </div>
         </div>
       </div>
+
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
 
       {/* Resultados */}
       {buscando && (

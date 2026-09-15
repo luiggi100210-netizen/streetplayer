@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MapaPicker from '../../components/MapaPicker';
 import { QRCodeSVG } from 'qrcode.react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 const TIPO_COLOR = { pichanga: '#1D9E75', reto: '#f87171', campeonato: '#fbbf24' };
 const TIPO_LABEL = { pichanga: 'Pichanga', reto: 'Reto', campeonato: 'Campeonato' };
@@ -18,6 +19,7 @@ function ModalFinalizar({ evento, onClose, onFinalizado }) {
   const [golesA, setGolesA] = useState(0);
   const [golesB, setGolesB] = useState(0);
   const [guardando, setGuardando] = useState(false);
+  useEscapeKey(onClose);
   const [error, setError]         = useState('');
 
   const toggleAsistente = (uid) =>
@@ -108,6 +110,7 @@ function ModalFinalizar({ evento, onClose, onFinalizado }) {
 }
 
 function ModalConfirmarAsistencia({ equipo, onConfirmar, onCancelar, cargando }) {
+  useEscapeKey(onCancelar);
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
       <div className="bg-sp-card border border-sp-border rounded-2xl w-full max-w-sm p-6 space-y-4">
@@ -248,6 +251,7 @@ function MiniCanchaSVG() {
 const MAX_SUPLENTES = 5;
 
 function ModalConfirmarPartido({ evento, onConfirmar, onCancelar, cargando }) {
+  useEscapeKey(onCancelar);
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-sp-card border border-sp-green/40 rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-[0_0_40px_rgba(29,158,117,0.2)]">

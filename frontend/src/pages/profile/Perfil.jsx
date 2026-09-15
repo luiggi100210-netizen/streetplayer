@@ -87,15 +87,18 @@ export default function Perfil() {
   const guardarUbicacionActual = () => {
     if (!navigator.geolocation) return;
     setGuardandoUbic(true);
+    setError('');
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
           await api.put('/usuarios/perfil', { latitud: coords.latitude, longitud: coords.longitude });
           setPerfil(p => ({ ...p, latitud: coords.latitude, longitud: coords.longitude }));
-        } catch {}
+        } catch (err) {
+          setError(err.response?.data?.error || 'No se pudo guardar tu ubicación');
+        }
         setGuardandoUbic(false);
       },
-      () => setGuardandoUbic(false),
+      () => { setError('No se pudo obtener tu ubicación'); setGuardandoUbic(false); },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };

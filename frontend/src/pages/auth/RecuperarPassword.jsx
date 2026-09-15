@@ -57,8 +57,8 @@ export default function RecuperarPassword() {
           </p>
           <form onSubmit={pedirCodigo} className="space-y-4">
             <div>
-              <label className="label">Email</label>
-              <input type="email" className="input" placeholder="tu@email.com"
+              <label htmlFor="recuperar-email" className="label">Email</label>
+              <input id="recuperar-email" type="email" className="input" placeholder="tu@email.com"
                 value={form.email} onChange={set('email')} autoFocus required />
             </div>
             <FormError>{error}</FormError>
@@ -75,16 +75,17 @@ export default function RecuperarPassword() {
           {aviso && <p className="text-xs text-sp-green mb-6">{aviso} Vence en 15 minutos.</p>}
           <form onSubmit={cambiarPassword} className="space-y-4">
             <div>
-              <label className="label">Código de 6 dígitos</label>
+              <label htmlFor="recuperar-codigo" className="label">Código de 6 dígitos</label>
               <input
+                id="recuperar-codigo"
                 inputMode="numeric" maxLength={6} className="input text-center tracking-[0.5em] text-lg font-bold"
                 placeholder="••••••"
                 value={form.codigo} onChange={set('codigo')} autoFocus required
               />
             </div>
             <div>
-              <label className="label">Nueva contraseña</label>
-              <input type="password" className="input" placeholder="Mínimo 6 caracteres"
+              <label htmlFor="recuperar-password" className="label">Nueva contraseña</label>
+              <input id="recuperar-password" type="password" className="input" placeholder="Mínimo 6 caracteres"
                 value={form.password} onChange={set('password')} minLength={6} required />
             </div>
             <FormError>{error}</FormError>

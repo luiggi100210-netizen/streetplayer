@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Btn, inputS, labelS } from './adminUi';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 function Badge({ estado }) {
   const COLORS = { activo: '#00e676', pendiente: '#fbbf24', inactivo: '#64748b', completado: '#a78bfa', rechazado: '#f87171' };
@@ -13,20 +14,26 @@ export function Configuracion({ api }) {
   const [editando, setEditando] = useState({});
   const [guardando, setGuardando] = useState({});
   const [ok, setOk] = useState({});
+  const [errores, setErrores] = useState({});
+  const [errorCarga, setErrorCarga] = useState('');
 
   useEffect(() => {
-    api.get('/config').then(r => setConfig(r.data)).catch(() => {});
+    api.get('/config').then(r => setConfig(r.data))
+      .catch(err => setErrorCarga(err.response?.data?.error || 'No se pudo cargar la configuración'));
   }, []);
 
   const guardar = async (clave, valor) => {
     setGuardando(p => ({ ...p, [clave]: true }));
+    setErrores(p => { const n = { ...p }; delete n[clave]; return n; });
     try {
       await api.put(`/config/${clave}`, { valor });
       setConfig(p => p.map(c => c.clave === clave ? { ...c, valor } : c));
       setEditando(p => { const n = { ...p }; delete n[clave]; return n; });
       setOk(p => ({ ...p, [clave]: true }));
       setTimeout(() => setOk(p => { const n = { ...p }; delete n[clave]; return n; }), 2000);
-    } catch {}
+    } catch (err) {
+      setErrores(p => ({ ...p, [clave]: err.response?.data?.error || 'No se pudo guardar' }));
+    }
     setGuardando(p => ({ ...p, [clave]: false }));
   };
 
@@ -35,12 +42,14 @@ export function Configuracion({ api }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <p style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>Cambios se aplican de inmediato. Los valores boolean usan "true" o "false".</p>
+      {errorCarga && <p style={{ color: '#f87171', fontSize: 12 }}>{errorCarga}</p>}
       {config.map(c => (
-        <div key={c.clave} style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div key={c.clave} style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>{tipoIcon[c.tipo] || '⚙️'}</span>
           <div style={{ flex: 1 }}>
             <p style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 13 }}>{c.clave}</p>
             <p style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{c.descripcion}</p>
+            {errores[c.clave] && <p style={{ color: '#f87171', fontSize: 11, marginTop: 2 }}>{errores[c.clave]}</p>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {editando[c.clave] !== undefined ? (
@@ -69,10 +78,13 @@ export function Medallas({ api }) {
   const [form, setForm] = useState({ nombre: '', descripcion: '', icono: '🏅', tipo: 'logro' });
   const [otorgar, setOtorgar] = useState(null);
   const [usuarioId, setUsuarioId] = useState('');
+  useEscapeKey(() => { if (otorgar) { setOtorgar(null); setUsuarioId(''); } });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errorCarga, setErrorCarga] = useState('');
 
-  const cargar = () => api.get('/medallas').then(r => setLista(r.data)).catch(() => {});
+  const cargar = () => api.get('/medallas').then(r => setLista(r.data))
+    .catch(err => setErrorCarga(err.response?.data?.error || 'No se pudieron cargar las medallas'));
   useEffect(() => { cargar(); }, []);
 
   const crear = async (e) => {
@@ -116,6 +128,8 @@ export function Medallas({ api }) {
       </div>
 
       {/* Lista */}
+      <div>
+      {errorCarga && <p style={{ color: '#f87171', fontSize: 12, marginBottom: 12 }}>{errorCarga}</p>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
         {lista.map(m => (
           <div key={m.id} style={{ background: '#0d0d1a', border: `1px solid ${TIPO_COLOR[m.tipo] || '#1e1e2e'}33`, borderRadius: 10, padding: 16 }}>
@@ -133,6 +147,7 @@ export function Medallas({ api }) {
             </div>
           </div>
         ))}
+      </div>
       </div>
 
       {/* Modal otorgar */}
@@ -156,7 +171,9 @@ export function Medallas({ api }) {
 // ─── Sanciones ────────────────────────────────────────────────────────────────
 export function Sanciones({ api }) {
   const [lista, setLista] = useState([]);
-  const cargar = () => api.get('/sanciones').then(r => setLista(r.data)).catch(() => {});
+  const [errorCarga, setErrorCarga] = useState('');
+  const cargar = () => api.get('/sanciones').then(r => setLista(r.data))
+    .catch(err => setErrorCarga(err.response?.data?.error || 'No se pudieron cargar las sanciones'));
   useEffect(() => { cargar(); }, []);
 
   const levantar = async (id, username) => {
@@ -166,6 +183,8 @@ export function Sanciones({ api }) {
   };
 
   return (
+    <div>
+    {errorCarga && <p style={{ color: '#f87171', fontSize: 12, marginBottom: 12 }}>{errorCarga}</p>}
     <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
@@ -202,13 +221,19 @@ export function Sanciones({ api }) {
         </tbody>
       </table>
     </div>
+    </div>
   );
 }
 
 // ─── Finanzas ─────────────────────────────────────────────────────────────────
 export function Finanzas({ api }) {
   const [data, setData] = useState(null);
-  useEffect(() => { api.get('/finanzas').then(r => setData(r.data)).catch(() => {}); }, []);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api.get('/finanzas').then(r => setData(r.data))
+      .catch(err => setError(err.response?.data?.error || 'No se pudieron cargar las finanzas'));
+  }, []);
+  if (error) return <p style={{ color: '#f87171', padding: 32 }}>{error}</p>;
   if (!data) return <p style={{ color: '#64748b', padding: 32 }}>Cargando...</p>;
 
   const max = Math.max(...(data.tendencia_publicidad.map(t => +t.ingresos)), 1);

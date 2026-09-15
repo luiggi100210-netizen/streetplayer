@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { formatFechaCorta as formatFecha } from '../../utils/date';
+import { ErrorText, SkeletonGrid } from '../../components/ListStates';
+import { construirParamsFiltros } from '../../utils/filtros';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃' };
@@ -226,17 +228,18 @@ export default function Torneos() {
   const [cargando, setCargando] = useState(true);
   const [filtros,  setFiltros]  = useState({ deporte: '', ciudad: '', estado: 'aprobado' }); // 'aprobado' = inscripciones abiertas
   const [formulario, setFormulario] = useState(false);
+  const [error, setError] = useState('');
 
   const cargar = async () => {
     setCargando(true);
+    setError('');
     try {
-      const p = new URLSearchParams();
-      if (filtros.deporte) p.set('deporte', filtros.deporte);
-      if (filtros.ciudad)  p.set('ciudad',  filtros.ciudad);
-      if (filtros.estado)  p.set('estado',  filtros.estado);
+      const p = construirParamsFiltros(filtros);
       const { data } = await api.get(`/torneos?${p}`);
       setTorneos(data);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudieron cargar los torneos');
+    }
     setCargando(false);
   };
 
@@ -313,13 +316,11 @@ export default function Torneos() {
         />
       )}
 
+      <ErrorText>{error}</ErrorText>
+
       {/* ── GRID ── */}
       {cargando ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} style={{ height: 300, borderRadius: 12, background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          ))}
-        </div>
+        <SkeletonGrid height={300} />
       ) : torneos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 24px' }}>
           <p style={{ fontSize: 48, marginBottom: 12 }}>🏆</p>

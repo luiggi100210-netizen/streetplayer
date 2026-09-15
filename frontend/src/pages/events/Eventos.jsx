@@ -4,6 +4,8 @@ import api from '../../services/api';
 import { formatFechaEvento as formatFecha } from '../../utils/date';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import MapaEventos from '../../components/MapaEventos';
+import { ErrorText, SkeletonGrid } from '../../components/ListStates';
+import { construirParamsFiltros } from '../../utils/filtros';
 
 const RADIOS_KM = [5, 10, 20, 50];
 
@@ -169,6 +171,7 @@ const LIMIT = 15;
 export default function Eventos() {
   const [eventos,   setEventos]   = useState([]);
   const [cargando,  setCargando]  = useState(true);
+  const [error,     setError]     = useState('');
   const [filtros,   setFiltros]   = useState({ deporte: '', ciudad: '', estado: 'abierto' });
   const [radio,     setRadio]     = useState(20);
   const [vista,     setVista]     = useState('lista'); // 'lista' | 'mapa'
@@ -183,17 +186,17 @@ export default function Eventos() {
   useEffect(() => {
     const cargar = async () => {
       setCargando(true);
+      setError('');
       try {
-        const p = new URLSearchParams();
-        if (filtros.deporte) p.set('deporte', filtros.deporte);
-        if (filtros.ciudad)  p.set('ciudad',  filtros.ciudad);
-        if (filtros.estado)  p.set('estado',  filtros.estado);
-        if (coords)          { p.set('lat', coords.lat); p.set('lng', coords.lng); p.set('radio', radio); }
+        const p = construirParamsFiltros(filtros);
+        if (coords) { p.set('lat', coords.lat); p.set('lng', coords.lng); p.set('radio', radio); }
         p.set('page', pagina);
         const { data } = await api.get(`/eventos?${p}`);
         setEventos(data);
         setHayMas(data.length === LIMIT);
-      } catch {}
+      } catch (err) {
+        setError(err.response?.data?.error || 'No se pudieron cargar los eventos');
+      }
       setCargando(false);
     };
     cargar();
@@ -307,13 +310,11 @@ export default function Eventos() {
         </div>
       </div>
 
+      <ErrorText>{error}</ErrorText>
+
       {/* ── GRID ── */}
       {cargando ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} style={{ height: 280, borderRadius: 12, background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          ))}
-        </div>
+        <SkeletonGrid height={280} />
       ) : eventos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 24px' }}>
           <p style={{ fontSize: 48, marginBottom: 12 }}>📍</p>

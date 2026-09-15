@@ -3,13 +3,14 @@ import axios from 'axios';
 import { API_BASE } from '../../config';
 import { setAdminToken } from '../../services/authStorage';
 
-function Campo({ label, type, value, onChange }) {
+function Campo({ id, label, type, value, onChange }) {
   return (
     <div>
-      <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
+      <label htmlFor={id} style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
         {label}
       </label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={onChange}
@@ -63,9 +64,9 @@ export default function AdminLogin({ onLogin }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Campo label="Email" type="email" value={form.email}
+          <Campo id="admin-email" label="Email" type="email" value={form.email}
             onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-          <Campo label="Contraseña" type="password" value={form.password}
+          <Campo id="admin-password" label="Contraseña" type="password" value={form.password}
             onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
 
           {error && (

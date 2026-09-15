@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -48,6 +49,7 @@ function ModalLanzarReto({ miEquipoId, onClose, onCreado }) {
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  useEscapeKey(onClose);
 
   useEffect(() => {
     const cargar = async () => {
@@ -63,7 +65,9 @@ function ModalLanzarReto({ miEquipoId, onClose, onCreado }) {
         const params = lat ? `?lat=${lat}&lng=${lng}&radio=20` : '';
         const { data } = await api.get(`/retos/cercanos${params}`);
         setEquiposCercanos(data);
-      } catch {}
+      } catch (err) {
+        setError(err.response?.data?.error || 'No se pudieron cargar los equipos cercanos');
+      }
       setCargandoEquipos(false);
     };
     cargar();
@@ -132,6 +136,7 @@ function ModalLanzarReto({ miEquipoId, onClose, onCreado }) {
                 ))}
               </div>
             )}
+            {error && <p style={{ marginTop: 12, fontSize: 12, color: '#f87171', textAlign: 'center' }}>{error}</p>}
             <button
               onClick={() => equipoElegido && setPaso(2)}
               disabled={!equipoElegido}
@@ -301,7 +306,9 @@ function ModalChat({ reto, usuario, onClose }) {
   const [mensajes, setMensajes] = useState([]);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
   const bottomRef = useRef(null);
+  useEscapeKey(onClose);
 
   const cargar = useCallback(async () => {
     try {
@@ -324,11 +331,14 @@ function ModalChat({ reto, usuario, onClose }) {
     e.preventDefault();
     if (!texto.trim()) return;
     setEnviando(true);
+    setError('');
     try {
       const { data } = await api.post(`/retos/${reto.id}/chat`, { contenido: texto });
       setMensajes(p => [...p, data]);
       setTexto('');
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo enviar el mensaje');
+    }
     setEnviando(false);
   };
 
@@ -370,6 +380,7 @@ function ModalChat({ reto, usuario, onClose }) {
           <div ref={bottomRef} />
         </div>
 
+        {error && <p style={{ fontSize: 11, color: '#f87171', textAlign: 'center', padding: '0 12px' }}>{error}</p>}
         <form onSubmit={enviar} style={{ padding: 12, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: 8, flexShrink: 0 }}>
           <input value={texto} onChange={e => setTexto(e.target.value)}
             placeholder="Escribe algo..." className="input flex-1" style={{ fontSize: 13 }} />

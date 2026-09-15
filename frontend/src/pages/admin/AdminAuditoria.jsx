@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Btn, inputS, labelS } from './adminUi';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 function Badge({ estado }) {
   const COLORS = { pendiente: '#fbbf24', procesando: '#38bdf8', completado: '#00e676', rechazado: '#f87171' };
@@ -11,9 +12,11 @@ function Badge({ estado }) {
 export function AuditLog({ api }) {
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(1);
+  const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
-    api.get('/audit-log', { params: { page } }).then(r => setLogs(r.data)).catch(() => {});
+    api.get('/audit-log', { params: { page } }).then(r => setLogs(r.data))
+      .catch(err => setError(err.response?.data?.error || 'No se pudo cargar el audit log'));
   }, [page]);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -28,6 +31,7 @@ export function AuditLog({ api }) {
   return (
     <div>
       <p style={{ color: '#64748b', fontSize: 12, marginBottom: 16 }}>Registro de todas las acciones realizadas por administradores.</p>
+      {error && <p style={{ color: '#f87171', fontSize: 12, marginBottom: 12 }}>{error}</p>}
       <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -91,6 +95,7 @@ const TIPO_PRIVACIDAD = {
 function ModalGestionar({ solicitud, onGuardar, onCerrar }) {
   const [estado, setEstado] = useState(solicitud.estado);
   const [respuesta, setRespuesta] = useState(solicitud.respuesta_admin || '');
+  useEscapeKey(onCerrar);
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#000b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
@@ -123,6 +128,7 @@ function ModalGestionar({ solicitud, onGuardar, onCerrar }) {
 }
 
 function ModalExportar({ datos, onCerrar }) {
+  useEscapeKey(onCerrar);
   const exportar = () => {
     const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -168,9 +174,11 @@ export function Privacidad({ api }) {
   const [gestionando, setGestionando] = useState(null);
   const [exportando, setExportando] = useState(null);
   const [loadingExport, setLoadingExport] = useState(null);
+  const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
-    api.get('/privacidad/solicitudes', { params: { estado: filtroEstado || undefined } }).then(r => setSolicitudes(r.data)).catch(() => {});
+    api.get('/privacidad/solicitudes', { params: { estado: filtroEstado || undefined } }).then(r => setSolicitudes(r.data))
+      .catch(err => setError(err.response?.data?.error || 'No se pudieron cargar las solicitudes'));
   }, [filtroEstado]);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -219,6 +227,8 @@ export function Privacidad({ api }) {
           </button>
         ))}
       </div>
+
+      {error && <p style={{ color: '#f87171', fontSize: 12 }}>{error}</p>}
 
       {/* Tabla */}
       <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, overflow: 'auto' }}>

@@ -33,6 +33,8 @@ export default function Mensajes() {
   const [cargMsgs,    setCargMsgs]    = useState(false);
   const [enviando,    setEnviando]    = useState(false);
   const [errorEnvio,  setErrorEnvio]  = useState(false);
+  const [errorConvs,  setErrorConvs]  = useState('');
+  const [errorMsgs,   setErrorMsgs]   = useState('');
   const [buscarQ,     setBuscarQ]     = useState('');
   const [buscarRes,   setBuscarRes]   = useState([]);
   const [vistaMovil,  setVistaMovil]  = useState('lista'); // 'lista' | 'chat'
@@ -42,10 +44,13 @@ export default function Mensajes() {
 
   // ── Cargar conversaciones ────────────────────────────────
   const cargarConvs = useCallback(async () => {
+    setErrorConvs('');
     try {
       const { data } = await api.get('/mensajes');
       setConvs(data);
-    } catch {}
+    } catch (err) {
+      setErrorConvs(err.response?.data?.error || 'No se pudieron cargar tus conversaciones');
+    }
     setCargConvs(false);
   }, []);
 
@@ -57,11 +62,14 @@ export default function Mensajes() {
     setVistaMovil('chat');
     setCargMsgs(true);
     setMensajes([]);
+    setErrorMsgs('');
     try {
       const { data } = await api.get(`/mensajes/${conv.id}/mensajes`);
       setMensajes(data);
       setConvs(prev => prev.map(c => c.id === conv.id ? { ...c, no_leidos: 0 } : c));
-    } catch {}
+    } catch (err) {
+      setErrorMsgs(err.response?.data?.error || 'No se pudo cargar la conversación');
+    }
     setCargMsgs(false);
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'instant' }), 0);
     inputRef.current?.focus();
@@ -102,7 +110,9 @@ export default function Mensajes() {
       try {
         const { data } = await api.get(`/usuarios/buscar?q=${encodeURIComponent(buscarQ)}`);
         setBuscarRes(data.filter(u => u.id !== yo?.id).slice(0, 6));
-      } catch {}
+      } catch (err) {
+        setErrorConvs(err.response?.data?.error || 'No se pudo completar la búsqueda');
+      }
     }, 350);
     return () => clearTimeout(t);
   }, [buscarQ, yo]);
@@ -218,6 +228,9 @@ export default function Mensajes() {
 
       {/* Lista de conversaciones */}
       <div className="flex-1 overflow-y-auto">
+        {errorConvs && (
+          <p className="text-[11px] text-red-400 text-center px-4 py-2">{errorConvs}</p>
+        )}
         {cargConvs ? (
           <div className="flex items-center justify-center h-32">
             <div className="w-5 h-5 border-2 border-sp-green border-t-transparent rounded-full animate-spin" />
@@ -308,6 +321,9 @@ export default function Mensajes() {
 
         {/* Mensajes */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+          {errorMsgs && (
+            <p className="text-[11px] text-red-400 text-center py-2">{errorMsgs}</p>
+          )}
           {cargMsgs ? (
             <div className="flex justify-center py-10">
               <div className="w-5 h-5 border-2 border-sp-green border-t-transparent rounded-full animate-spin" />

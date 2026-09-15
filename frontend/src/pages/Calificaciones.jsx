@@ -29,6 +29,7 @@ export default function Calificaciones() {
   const [cargando, setCargando]       = useState(true);
   const [enviando, setEnviando]       = useState(false);
   const [ok, setOk]                   = useState(false);
+  const [error, setError]             = useState('');
 
   useEffect(() => {
     api.get('/calificaciones/pendientes')
@@ -75,11 +76,14 @@ export default function Calificaciones() {
     });
 
     setEnviando(true);
+    setError('');
     try {
       await api.post('/calificaciones', { evento_id: eventoSel.evento_id, calificaciones: lista });
       setOk(true);
       setPendientes(prev => prev.filter(p => p.evento_id !== eventoSel.evento_id));
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudieron enviar las calificaciones');
+    }
     setEnviando(false);
   };
 
@@ -230,6 +234,8 @@ export default function Calificaciones() {
           );
         })}
       </div>
+
+      {error && <p className="text-xs text-red-400 text-center mt-4">{error}</p>}
 
       <button
         onClick={enviar}

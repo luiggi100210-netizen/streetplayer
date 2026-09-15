@@ -23,6 +23,7 @@ function TarjetaPublicacion({ pub }) {
   const [showComs,  setShowComs]  = useState(false);
   const [newCom,    setNewCom]    = useState('');
   const [sending,   setSending]   = useState(false);
+  const [error,     setError]     = useState('');
   const colorNivel = COLORES_NIVEL[pub.nivel_xp] || '#888';
   const esReto = pub.contenido?.startsWith('⚔️ RETO:');
 
@@ -31,7 +32,9 @@ function TarjetaPublicacion({ pub }) {
       await api.post(`/feed/${pub.id}/like`);
       setLiked(p => !p);
       setLikes(p => liked ? p - 1 : p + 1);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo registrar el like');
+    }
   };
 
   const toggleComments = async () => {
@@ -40,18 +43,23 @@ function TarjetaPublicacion({ pub }) {
       const { data } = await api.get(`/feed/${pub.id}/comentarios`);
       setComments(data);
       setShowComs(true);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudieron cargar los comentarios');
+    }
   };
 
   const sendComment = async e => {
     e.preventDefault();
     if (!newCom.trim()) return;
     setSending(true);
+    setError('');
     try {
       const { data } = await api.post(`/feed/${pub.id}/comentarios`, { contenido: newCom });
       setComments(p => [...p, data]);
       setNewCom('');
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo enviar el comentario');
+    }
     setSending(false);
   };
 
@@ -156,6 +164,7 @@ function TarjetaPublicacion({ pub }) {
             </form>
           </div>
         )}
+        {error && <p style={{ fontSize: 11, color: '#f87171', marginTop: 8 }}>{error}</p>}
       </div>
     </div>
   );
@@ -166,13 +175,17 @@ function TarjetaReto({ reto, mioEquipoId, onResponder }) {
   const cfg      = ESTADO_RETO[reto.estado] || ESTADO_RETO.pendiente;
   const esMiReto = reto.retado_id === mioEquipoId && reto.estado === 'pendiente';
   const [respondiendo, setRespondiendo] = useState(false);
+  const [error, setError] = useState('');
 
   const responder = async (accion) => {
     setRespondiendo(true);
+    setError('');
     try {
       await api.put(`/retos/${reto.id}/responder`, { accion });
       onResponder();
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo responder al reto');
+    }
     setRespondiendo(false);
   };
 
@@ -239,6 +252,7 @@ function TarjetaReto({ reto, mioEquipoId, onResponder }) {
             </button>
           </div>
         )}
+        {error && <p style={{ fontSize: 11, color: '#f87171', marginTop: 8, textAlign: 'center' }}>{error}</p>}
       </div>
     </div>
   );
@@ -251,6 +265,7 @@ function Composer({ usuario, onPublicado }) {
   const [deporte,   setDeporte]   = useState('futbol');
   const [fotoUrl,   setFotoUrl]   = useState('');
   const [publicando, setPublicando] = useState(false);
+  const [error, setError] = useState('');
 
   const DEPORTES = ['futbol','basquet','tenis','padel','voley','running'];
 
@@ -258,6 +273,7 @@ function Composer({ usuario, onPublicado }) {
     e.preventDefault();
     if (!contenido.trim() && !fotoUrl) return;
     setPublicando(true);
+    setError('');
     try {
       const payload = modo === 'reto'
         ? { contenido: `⚔️ RETO: ${contenido}`, deporte }
@@ -267,7 +283,9 @@ function Composer({ usuario, onPublicado }) {
       setContenido('');
       setFotoUrl('');
       setModo('post');
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo publicar');
+    }
     setPublicando(false);
   };
 
@@ -332,6 +350,8 @@ function Composer({ usuario, onPublicado }) {
                 />
               </div>
             )}
+
+            {error && <p style={{ fontSize: 11, color: '#f87171', marginBottom: 8 }}>{error}</p>}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={publicar} disabled={publicando || (!contenido.trim() && !fotoUrl)} style={{
@@ -460,9 +480,11 @@ export default function Home() {
   const [cargando,  setCargando]  = useState(true);
   const [miEquipoId, setMiEquipoId] = useState(null);
   const [torneos,   setTorneos]   = useState([]);
+  const [error,     setError]     = useState('');
 
   const cargar = async () => {
     setCargando(true);
+    setError('');
     try {
       const [feedRes, retosRes, eventosRes, rankingRes, anunciosRes, torneosRes] = await Promise.all([
         api.get('/feed'),
@@ -483,7 +505,9 @@ export default function Home() {
         const { data: { mi_equipo_id } } = await api.get('/retos');
         if (mi_equipo_id) setMiEquipoId(mi_equipo_id);
       } catch {}
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo cargar el contenido');
+    }
     setCargando(false);
   };
 
@@ -538,6 +562,8 @@ export default function Home() {
               }}>{label}</button>
             ))}
           </div>
+
+          {error && <p className="text-xs text-red-400 text-center">{error}</p>}
 
           {/* ── TAB FEED ── */}
           {tab === 'feed' && (
