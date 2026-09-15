@@ -77,6 +77,7 @@ export default function Perfil() {
   const [form,         setForm]      = useState({});
   const [guardando,    setGuardando] = useState(false);
   const [tab,          setTab]       = useState('historial');
+  const [error,        setError]     = useState('');
   const [xpLog,        setXpLog]     = useState([]);
   const [medallasTorneos, setMedallasTorneos] = useState([]);
   const [guardandoUbic, setGuardandoUbic] = useState(false);
@@ -139,21 +140,27 @@ export default function Perfil() {
 
   const handleSeguir = async () => {
     setAccion(true);
+    setError('');
     try {
       await api.post(`/usuarios/${id}/seguir`);
       setSiguiendo(p => !p);
       setPerfil(p => ({ ...p, seguidores: siguiendo ? p.seguidores - 1 : p.seguidores + 1 }));
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo completar la acción');
+    }
     setAccion(false);
   };
 
   const handleGuardar = async () => {
     setGuardando(true);
+    setError('');
     try {
       const { data } = await api.put('/usuarios/perfil', form);
       setPerfil(p => ({ ...p, ...data }));
       setEditando(false);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudieron guardar los cambios');
+    }
     setGuardando(false);
   };
 
@@ -361,6 +368,8 @@ export default function Perfil() {
               </button>
             )}
           </div>
+
+          {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
 
           {/* Bio */}
           {perfil.bio && (

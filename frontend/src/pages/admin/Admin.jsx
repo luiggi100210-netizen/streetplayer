@@ -5,11 +5,26 @@ import { Analytics, MapaUsuarios } from './AdminAnalytics';
 import { Configuracion, Medallas, Sanciones, Finanzas, Notificaciones } from './AdminConfig';
 import { AuditLog, Privacidad } from './AdminAuditoria';
 import { inputS, labelS } from './adminUi';
+import { getAdminToken, clearAdminToken } from '../../services/authStorage';
 
 import { API_BASE } from '../../config';
 
 function adminApi(token) {
-  return axios.create({ baseURL: `${API_BASE}/admin`, headers: { Authorization: `Bearer ${token}` } });
+  const instance = axios.create({ baseURL: `${API_BASE}/admin`, headers: { Authorization: `Bearer ${token}` } });
+  // Sesión expirada/inválida: a diferencia de services/api.js no hay refresh
+  // token para admins, así que se limpia y se fuerza volver al login en vez
+  // de fallar en silencio en cada pestaña del panel.
+  instance.interceptors.response.use(
+    (res) => res,
+    (err) => {
+      if (err.response?.status === 401) {
+        clearAdminToken();
+        window.location.href = '/admin';
+      }
+      return Promise.reject(err);
+    }
+  );
+  return instance;
 }
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
@@ -1032,11 +1047,11 @@ function Panel({ token, admin, onLogout }) {
 }
 
 export default function Admin() {
-  const [token, setToken] = useState(() => localStorage.getItem('admin_token'));
+  const [token, setToken] = useState(() => getAdminToken());
   const [admin, setAdmin] = useState(null);
 
   const handleLogin = (tok, adminData) => { setToken(tok); setAdmin(adminData); };
-  const handleLogout = () => { localStorage.removeItem('admin_token'); setToken(null); setAdmin(null); };
+  const handleLogout = () => { clearAdminToken(); setToken(null); setAdmin(null); };
 
   if (!token) return <AdminLogin onLogin={handleLogin} />;
   return <Panel token={token} admin={admin} onLogout={handleLogout} />;

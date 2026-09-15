@@ -8,15 +8,17 @@
  */
 
 const KEYS = Object.freeze({
-  TOKEN:     'sp_token',
-  REFRESH:   'sp_refresh',
-  LAST_USER: 'sp_last_user',
+  TOKEN:       'sp_token',
+  REFRESH:     'sp_refresh',
+  LAST_USER:   'sp_last_user',
+  ADMIN_TOKEN: 'admin_token',
 });
 
 // ── Lecturas ──────────────────────────────────────────────
 
-export const getToken    = () => localStorage.getItem(KEYS.TOKEN);
-export const getRefresh  = () => localStorage.getItem(KEYS.REFRESH);
+export const getToken      = () => localStorage.getItem(KEYS.TOKEN);
+export const getRefresh    = () => localStorage.getItem(KEYS.REFRESH);
+export const getAdminToken = () => localStorage.getItem(KEYS.ADMIN_TOKEN);
 export const getLastUser = () => {
   try { return JSON.parse(localStorage.getItem(KEYS.LAST_USER)); }
   catch { return null; }
@@ -51,6 +53,8 @@ export const setTokens = (token, refreshToken) => {
   localStorage.setItem(KEYS.REFRESH, refreshToken);
 };
 
+export const setAdminToken = (token) => localStorage.setItem(KEYS.ADMIN_TOKEN, token);
+
 // ── Limpiezas ─────────────────────────────────────────────
 
 /**
@@ -62,6 +66,8 @@ export const clearSession = () => {
   localStorage.removeItem(KEYS.REFRESH);
   localStorage.removeItem('sp_user'); // clave legacy
 };
+
+export const clearAdminToken = () => localStorage.removeItem(KEYS.ADMIN_TOKEN);
 
 /**
  * Borra absolutamente todo, incluyendo el último usuario.

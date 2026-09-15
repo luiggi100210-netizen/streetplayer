@@ -579,6 +579,7 @@ function MvpVoting({ eventoId, participantes, usuarioId }) {
   const [votos,     setVotos]     = useState([]);
   const [miVoto,    setMiVoto]    = useState(null);
   const [enviando,  setEnviando]  = useState(false);
+  const [error,     setError]     = useState('');
 
   useEffect(() => {
     api.get(`/eventos/${eventoId}/mvp`)
@@ -589,11 +590,14 @@ function MvpVoting({ eventoId, participantes, usuarioId }) {
   const votar = async (votadoId) => {
     if (enviando) return;
     setEnviando(true);
+    setError('');
     try {
       const { data } = await api.post(`/eventos/${eventoId}/mvp`, { votado_id: votadoId });
       setVotos(data.conteo);
       setMiVoto(votadoId);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo registrar tu voto');
+    }
     setEnviando(false);
   };
 
@@ -640,6 +644,7 @@ function MvpVoting({ eventoId, participantes, usuarioId }) {
         })}
       </div>
       {miVoto && <p className="text-xs text-sp-muted text-center">Voto registrado. El MVP con más votos recibe +30 XP 🎖️</p>}
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
     </div>
   );
 }
@@ -649,22 +654,29 @@ function InvitarSeguidores({ eventoId }) {
   const [abierto,     setAbierto]     = useState(false);
   const [enviados,    setEnviados]    = useState(new Set());
   const [buscando,    setBuscando]    = useState(false);
+  const [error,       setError]       = useState('');
 
   const cargar = async () => {
     if (seguidores.length > 0) return;
     setBuscando(true);
+    setError('');
     try {
       const { data } = await api.get('/usuarios/buscar?q=');
       setSeguidores(data.slice(0, 20));
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo cargar la lista de jugadores');
+    }
     setBuscando(false);
   };
 
   const invitar = async (uid) => {
+    setError('');
     try {
       await api.post(`/eventos/${eventoId}/invitar`, { usuario_id: uid });
       setEnviados(prev => new Set([...prev, uid]));
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo enviar la invitación');
+    }
   };
 
   return (
@@ -708,6 +720,7 @@ function InvitarSeguidores({ eventoId }) {
           ))}
         </div>
       )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

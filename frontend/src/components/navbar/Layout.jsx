@@ -1,6 +1,6 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { getSocket } from '../../services/socket';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,7 +30,6 @@ export default function Layout() {
   const [msgsNoLeidos, setMsgsNoLeidos] = useState(0);
   const [menuAbierto, setMenuAbierto]   = useState(false);
   const [notifAbierto, setNotifAbierto] = useState(false);
-  const notifRef = useRef(null);
 
   const noLeidas = notifs.filter(n => !n.leida).length;
 
@@ -137,7 +136,7 @@ export default function Layout() {
             )}
 
             {/* Notificaciones */}
-            <div className="relative" ref={notifRef}>
+            <div className="relative">
               <button
                 onClick={abrirNotifs}
                 className={`relative w-10 h-10 rounded-lg flex items-center justify-center transition-colors border ${notifAbierto ? 'bg-sp-green/20 border-sp-green text-sp-green' : 'bg-sp-card border-sp-border text-sp-muted hover:border-sp-green hover:text-white'}`}

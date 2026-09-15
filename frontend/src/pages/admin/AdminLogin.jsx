@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../../config';
+import { setAdminToken } from '../../services/authStorage';
 
 function Campo({ label, type, value, onChange }) {
   return (
@@ -35,7 +36,7 @@ export default function AdminLogin({ onLogin }) {
     setError('');
     try {
       const { data } = await axios.post(`${API_BASE}/auth/admin/login`, form);
-      localStorage.setItem('admin_token', data.token);
+      setAdminToken(data.token);
       onLogin(data.token, data.admin);
     } catch (err) {
       setError(err.response?.data?.error || 'Credenciales inválidas');
