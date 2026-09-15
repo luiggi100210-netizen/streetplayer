@@ -1,5 +1,6 @@
-const pool         = require('../config/database');
-const asyncHandler = require('../middleware/asyncHandler');
+const pool            = require('../config/database');
+const withTransaction = require('../db/withTransaction');
+const asyncHandler    = require('../middleware/asyncHandler');
 
 // GET /api/ranking?deporte=fútbol&ciudad=Lima
 const obtenerRanking = asyncHandler(async (req, res) => {
@@ -37,33 +38,38 @@ const obtenerRanking = asyncHandler(async (req, res) => {
 });
 
 // POST /api/ranking/actualizar — (interno, llamado tras partido)
+// Las dos escrituras van en una sola transaccion: si el recalculo de
+// posiciones fallara, la suma de puntos tambien se revierte, en vez de
+// quedar el ranking con puntos nuevos pero posiciones desactualizadas.
 async function actualizarPuntos(usuarioId, resultado) {
   const puntos = resultado === 'victoria' ? 3 : resultado === 'empate' ? 1 : 0;
-  await pool.query(
-    `UPDATE ranking SET
-      puntos    = puntos + $1,
-      victorias = victorias + $2,
-      derrotas  = derrotas  + $3,
-      empates   = empates   + $4,
-      actualizado = NOW()
-     WHERE usuario_id = $5`,
-    [
-      puntos,
-      resultado === 'victoria' ? 1 : 0,
-      resultado === 'derrota'  ? 1 : 0,
-      resultado === 'empate'   ? 1 : 0,
-      usuarioId,
-    ]
-  );
-  await pool.query(`
-    UPDATE ranking r
-    SET posicion = sub.rn
-    FROM (
-      SELECT usuario_id, ROW_NUMBER() OVER (ORDER BY puntos DESC) AS rn
-      FROM ranking
-    ) sub
-    WHERE r.usuario_id = sub.usuario_id
-  `);
+  await withTransaction(async (client) => {
+    await client.query(
+      `UPDATE ranking SET
+        puntos    = puntos + $1,
+        victorias = victorias + $2,
+        derrotas  = derrotas  + $3,
+        empates   = empates   + $4,
+        actualizado = NOW()
+       WHERE usuario_id = $5`,
+      [
+        puntos,
+        resultado === 'victoria' ? 1 : 0,
+        resultado === 'derrota'  ? 1 : 0,
+        resultado === 'empate'   ? 1 : 0,
+        usuarioId,
+      ]
+    );
+    await client.query(`
+      UPDATE ranking r
+      SET posicion = sub.rn
+      FROM (
+        SELECT usuario_id, ROW_NUMBER() OVER (ORDER BY puntos DESC) AS rn
+        FROM ranking
+      ) sub
+      WHERE r.usuario_id = sub.usuario_id
+    `);
+  });
 }
 
 module.exports = { obtenerRanking, actualizarPuntos };

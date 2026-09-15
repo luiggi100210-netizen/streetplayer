@@ -120,6 +120,8 @@ const buscarUsuarios = asyncHandler(async (req, res) => {
 // GET /api/usuarios/:id/publicaciones
 const publicacionesUsuario = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { page = 1 } = req.query;
+  const limit = 20, offset = (page - 1) * limit;
   const { rows } = await pool.query(
     `SELECT p.*, p.imagen_url AS foto_url, u.username, u.nombre, u.foto_url AS autor_foto,
             (SELECT COUNT(*) FROM publicacion_likes WHERE publicacion_id = p.id) AS total_likes,
@@ -127,8 +129,8 @@ const publicacionesUsuario = asyncHandler(async (req, res) => {
             EXISTS(SELECT 1 FROM publicacion_likes WHERE publicacion_id = p.id AND usuario_id = $2) AS yo_di_like
      FROM publicaciones p JOIN usuarios u ON p.usuario_id = u.id
      WHERE p.usuario_id = $1
-     ORDER BY p.fecha DESC LIMIT 20`,
-    [id, req.usuario.id]
+     ORDER BY p.fecha DESC LIMIT $3 OFFSET $4`,
+    [id, req.usuario.id, limit, offset]
   );
   res.json(rows);
 });
@@ -136,6 +138,8 @@ const publicacionesUsuario = asyncHandler(async (req, res) => {
 // GET /api/usuarios/:id/historial
 const historialUsuario = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { page = 1 } = req.query;
+  const limit = 20, offset = (page - 1) * limit;
   const { rows } = await pool.query(
     `SELECT
       e.id, e.titulo, e.fecha_evento AS fecha, e.tipo, e.deporte,
@@ -151,8 +155,8 @@ const historialUsuario = asyncHandler(async (req, res) => {
        AND e.estado = 'finalizado'
        AND ep.estado IN ('asistio','confirmado')
      ORDER BY e.fecha_evento DESC
-     LIMIT 20`,
-    [id]
+     LIMIT $2 OFFSET $3`,
+    [id, limit, offset]
   );
   res.json(rows);
 });
@@ -207,11 +211,13 @@ const reportarUsuario = asyncHandler(async (req, res) => {
 // GET /api/usuarios/:id/xp-log
 const xpLogUsuario = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { page = 1 } = req.query;
+  const limit = 30, offset = (page - 1) * limit;
   const { rows } = await pool.query(
     `SELECT cantidad, motivo, fecha FROM xp_log
      WHERE usuario_id = $1
-     ORDER BY fecha DESC LIMIT 30`,
-    [id]
+     ORDER BY fecha DESC LIMIT $2 OFFSET $3`,
+    [id, limit, offset]
   );
   res.json(rows);
 });

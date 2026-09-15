@@ -28,6 +28,12 @@ const validarCrear = [
 const validarEquipoId = [body('equipo_id').isUUID().withMessage('equipo_id inválido')];
 const validarPartidoId = param('partidoId').isUUID().withMessage('ID de partido inválido');
 
+const validarPremios = [
+  body('premios').isArray({ max: 20 }).withMessage('premios debe ser un array de máximo 20 elementos'),
+  body('premios.*.puesto').isInt({ min: 1, max: 20 }).withMessage('puesto debe ser un número entero entre 1 y 20'),
+  body('premios.*.descripcion').trim().isLength({ min: 1, max: 200 }).withMessage('descripcion: entre 1 y 200 caracteres'),
+];
+
 router.get('/',    verificarToken, listarTorneos);
 router.post('/',   verificarToken, validarCrear, validate, crearTorneo);
 router.get('/:id', verificarToken, validarId, validate, obtenerTorneo);
@@ -39,7 +45,7 @@ router.delete('/:id/inscribir',verificarToken, validarId, validate, validarEquip
 // Panel organizador
 router.put('/:id/equipos/:equipoId/aceptar',  verificarToken, validarId, validate, aceptarEquipo);
 router.put('/:id/equipos/:equipoId/rechazar', verificarToken, validarId, validate, rechazarEquipo);
-router.put('/:id/premios',  verificarToken, validarId, validate, configurarPremios);
+router.put('/:id/premios',  verificarToken, validarId, validate, validarPremios, validate, configurarPremios);
 router.put('/:id/iniciar',  verificarToken, validarId, validate, iniciarTorneo);
 
 // Resultados de partidos

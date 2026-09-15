@@ -380,11 +380,13 @@ const registrarResultado = asyncHandler(async (req, res) => {
 // GET /api/torneos/usuario/:id/medallas
 const medallasTorneos = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const { page = 1 } = req.query;
+  const limit = 30, offset = (page - 1) * limit;
   const { rows } = await pool.query(
     `SELECT tm.tipo, tm.desbloqueada_en, t.id AS torneo_id, t.nombre AS torneo_nombre, t.deporte, t.fecha_inicio
      FROM torneo_medallas tm JOIN torneos t ON t.id=tm.torneo_id
-     WHERE tm.usuario_id=$1 ORDER BY tm.desbloqueada_en DESC`,
-    [id]
+     WHERE tm.usuario_id=$1 ORDER BY tm.desbloqueada_en DESC LIMIT $2 OFFSET $3`,
+    [id, limit, offset]
   );
   res.json(rows);
 });

@@ -21,6 +21,7 @@ const SQL_FILES = [
   'formato_migration.sql',
   'password_reset_migration.sql',
   'eventos_ubicacion_migration.sql',
+  'indices_migration.sql',
 ];
 
 async function init() {
