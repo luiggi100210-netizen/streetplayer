@@ -56,6 +56,10 @@ export default function Login() {
       navigate('/home');
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') return;
+      if (err.code === 'auth/timeout') {
+        setError('No se pudo completar el inicio de sesión. Revisa si el popup de Google/Facebook quedó abierto o bloqueado, y vuelve a intentarlo.');
+        return;
+      }
       setError(err.response?.data?.error || 'Error al iniciar sesión con ' + provider);
     } finally { setOauthCargando(''); }
   };
