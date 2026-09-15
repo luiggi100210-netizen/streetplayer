@@ -260,13 +260,13 @@ export default function Layout() {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
+                `relative flex flex-col items-center justify-center gap-0.5 min-w-0 px-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
               }
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
               </svg>
-              <span className="text-[9px] font-bold uppercase tracking-wider">{label}</span>
+              <span className="w-full text-center truncate text-[8px] leading-none font-bold uppercase">{label}</span>
               {to === '/mensajes' && msgsNoLeidos > 0 && (
                 <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-sp-green text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                   {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
@@ -277,13 +277,13 @@ export default function Layout() {
           <NavLink
             to="/mi-perfil"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
+              `flex flex-col items-center justify-center gap-0.5 min-w-0 px-0.5 transition-colors ${isActive ? 'text-sp-green' : 'text-sp-muted'}`
             }
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span className="text-[9px] font-bold uppercase tracking-wider">Perfil</span>
+            <span className="w-full text-center truncate text-[8px] leading-none font-bold uppercase">Perfil</span>
           </NavLink>
         </div>
       </nav>
