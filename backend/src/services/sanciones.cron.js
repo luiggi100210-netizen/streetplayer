@@ -9,11 +9,16 @@ function iniciarCronSanciones() {
     try {
       await client.query('BEGIN');
 
-      // Obtener pendientes vencidos
+      // Reclama los pendientes vencidos borrandolos de una: si el usuario
+      // califico justo antes de que corriera el cron, su propia petición ya
+      // borró esta fila (calificaciones.controller.js hace lo mismo al
+      // inicio de su transacción), así que este DELETE simplemente no la
+      // encuentra — evita sancionar a alguien que calificó a tiempo por una
+      // carrera entre el cron y la petición.
       const { rows: vencidos } = await client.query(
-        `SELECT cp.usuario_id, cp.evento_id
-         FROM calificaciones_pendientes cp
-         WHERE cp.vence_en < NOW()`
+        `DELETE FROM calificaciones_pendientes
+         WHERE vence_en < NOW()
+         RETURNING usuario_id, evento_id`
       );
 
       for (const { usuario_id, evento_id } of vencidos) {
@@ -53,12 +58,6 @@ function iniciarCronSanciones() {
           `INSERT INTO notificaciones (usuario_id, tipo, mensaje, referencia_id)
            VALUES ($1, 'sancion', 'No calificaste a tus compañeros. -10 XP aplicado.', $2)`,
           [usuario_id, evento_id]
-        );
-
-        // Eliminar de pendientes
-        await client.query(
-          'DELETE FROM calificaciones_pendientes WHERE evento_id = $1 AND usuario_id = $2',
-          [evento_id, usuario_id]
         );
       }
 

@@ -73,18 +73,24 @@ const seguir = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (id === req.usuario.id) return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
 
-  const { rows: existe } = await pool.query(
-    'SELECT 1 FROM seguidores WHERE seguidor_id = $1 AND seguido_id = $2',
+  // Antes era "SELECT existe → DELETE o INSERT": dos clics rapidos podian
+  // pasar el SELECT al mismo tiempo (ninguno ve al otro todavia) y ambos
+  // intentar INSERT, chocando con la PK (seguidor_id, seguido_id) y
+  // devolviendo un 500. DELETE primero y, si no habia nada que borrar,
+  // INSERT con ON CONFLICT DO NOTHING es idempotente ante ese doble clic.
+  const { rowCount: eliminado } = await pool.query(
+    'DELETE FROM seguidores WHERE seguidor_id = $1 AND seguido_id = $2',
     [req.usuario.id, id]
   );
+  if (eliminado > 0) return res.json({ siguiendo: false });
 
-  if (existe.length > 0) {
-    await pool.query('DELETE FROM seguidores WHERE seguidor_id = $1 AND seguido_id = $2', [req.usuario.id, id]);
-    return res.json({ siguiendo: false });
+  const { rowCount: insertado } = await pool.query(
+    'INSERT INTO seguidores (seguidor_id, seguido_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    [req.usuario.id, id]
+  );
+  if (insertado > 0) {
+    await notificar(id, 'seguidor', `${req.usuario.username} comenzó a seguirte`, req.usuario.id);
   }
-
-  await pool.query('INSERT INTO seguidores (seguidor_id, seguido_id) VALUES ($1, $2)', [req.usuario.id, id]);
-  await notificar(id, 'seguidor', `${req.usuario.username} comenzó a seguirte`, req.usuario.id);
 
   res.json({ siguiendo: true });
 });

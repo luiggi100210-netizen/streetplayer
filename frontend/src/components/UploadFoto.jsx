@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 import { BACKEND_ORIGIN } from '../config';
 
@@ -6,10 +6,13 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
   const inputRef           = useRef(null);
   const [subiendo, setSubiendo] = useState(false);
   const [error,    setError]    = useState('');
+  const montado = useRef(true);
+  useEffect(() => () => { montado.current = false; }, []);
 
   const handleFile = async e => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const input = e.target;
     setSubiendo(true);
     setError('');
     try {
@@ -18,13 +21,14 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
       const { data } = await api.post('/upload/foto', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      if (!montado.current) return;
       // Cloudinary devuelve URL absoluta; el disco local, ruta relativa
       onChange(data.url.startsWith('http') ? data.url : BACKEND_ORIGIN + data.url);
     } catch {
-      setError('No se pudo subir. Máx 5 MB (JPG, PNG, WebP).');
+      if (montado.current) setError('No se pudo subir. Máx 5 MB (JPG, PNG, WebP).');
     }
-    setSubiendo(false);
-    e.target.value = '';
+    if (montado.current) setSubiendo(false);
+    input.value = '';
   };
 
   const radius = rounded ? '50%' : 8;

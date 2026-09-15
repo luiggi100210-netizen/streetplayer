@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { disconnectSocket } from '../services/socket';
 import {
@@ -62,16 +62,16 @@ export function AuthProvider({ children }) {
    * Persiste la sesión completa.
    * Llamar tras login exitoso (email, Google, Facebook o registro).
    */
-  const login = (token, refreshToken, user) => {
+  const login = useCallback((token, refreshToken, user) => {
     setSession(token, refreshToken, user);
     setUsuario(user);
-  };
+  }, []);
 
   /**
    * Cierra la sesión: invalida el refresh token en el backend
    * y limpia el almacenamiento local (preserva last_user para "Continuar como").
    */
-  const logout = async () => {
+  const logout = useCallback(async () => {
     const refreshToken = getRefresh();
     if (refreshToken) {
       // Fire-and-forget — no bloquear el logout si el backend falla
@@ -80,10 +80,15 @@ export function AuthProvider({ children }) {
     clearSession();
     disconnectSocket();
     setUsuario(null);
-  };
+  }, []);
+
+  // Identidad estable: useAuth() lo consume practicamente toda pantalla, asi
+  // que recrear este objeto en cada render de AuthProvider invalidaba
+  // cualquier React.memo/useMemo rio abajo que dependiera de el.
+  const value = useMemo(() => ({ usuario, cargando, login, logout }), [usuario, cargando, login, logout]);
 
   return (
-    <AuthContext.Provider value={{ usuario, cargando, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

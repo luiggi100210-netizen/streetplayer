@@ -138,10 +138,18 @@ const invitarMiembro = asyncHandler(async (req, res) => {
   if (!equipo)                              return res.status(404).json({ error: 'Equipo no encontrado' });
   if (equipo.capitan_id !== req.usuario.id) return res.status(403).json({ error: 'Solo el capitán puede invitar miembros' });
 
+  const { rows: [existeUsuario] } = await pool.query('SELECT 1 FROM usuarios WHERE id = $1', [usuario_id]);
+  if (!existeUsuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
   const { rows: [yaEsMiembro] } = await pool.query(
     'SELECT 1 FROM equipo_miembros WHERE equipo_id = $1 AND usuario_id = $2', [id, usuario_id]
   );
   if (yaEsMiembro) return res.status(400).json({ error: 'El jugador ya es miembro del equipo' });
+
+  const { rows: [{ count: totalMiembros }] } = await pool.query(
+    'SELECT COUNT(*) FROM equipo_miembros WHERE equipo_id = $1', [id]
+  );
+  if (parseInt(totalMiembros) >= 50) return res.status(400).json({ error: 'El equipo alcanzó el máximo de 50 jugadores' });
 
   // Obtener equipo actual del jugador (para registrar origen del transfer)
   const { rows: [equipoActual] } = await pool.query(
