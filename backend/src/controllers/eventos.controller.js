@@ -319,10 +319,7 @@ const finalizarEvento = asyncHandler(async (req, res) => {
 
   const resultado = goles_a > goles_b ? 'equipo_a' : goles_b > goles_a ? 'equipo_b' : 'empate';
 
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-
+  await withTransaction(async (client) => {
     await client.query(
       `INSERT INTO resultados (evento_id, goles_equipo_a, goles_equipo_b, resultado, registrado_por)
        VALUES ($1,$2,$3,$4,$5) ON CONFLICT (evento_id) DO UPDATE
@@ -341,11 +338,17 @@ const finalizarEvento = asyncHandler(async (req, res) => {
       [id, asistentes.length > 0 ? asistentes : [null]]
     );
 
+    // Un solo SELECT para el equipo de todos los asistentes (antes: 1 por usuario)
+    const { rows: equiposRows } = await client.query(
+      'SELECT usuario_id, equipo FROM evento_participantes WHERE evento_id = $1 AND usuario_id = ANY($2::uuid[])',
+      [id, asistentes]
+    );
+    const equipoPorUsuario = new Map(equiposRows.map(r => [r.usuario_id, r.equipo]));
+
+    const statsIds = [], statsGano = [], statsEmpato = [], statsPerdio = [];
+
     for (const uid of asistentes) {
-      const equipoParticipante = (await client.query(
-        'SELECT equipo FROM evento_participantes WHERE evento_id = $1 AND usuario_id = $2',
-        [id, uid]
-      )).rows[0]?.equipo;
+      const equipoParticipante = equipoPorUsuario.get(uid);
 
       await darXP(uid, 'asistir_pichanga', id, client);
 
@@ -356,23 +359,34 @@ const finalizarEvento = asyncHandler(async (req, res) => {
       if (gano)   await darXP(uid, 'ganar_partido', id, client);
       if (empato) await darXP(uid, 'empatar', id, client);
 
+      statsIds.push(uid);
+      statsGano.push(gano ? 1 : 0);
+      statsEmpato.push(empato ? 1 : 0);
+      statsPerdio.push((!gano && !empato) ? 1 : 0);
+    }
+
+    // Un solo UPDATE para las estadísticas de todos los asistentes (antes: 1 por usuario)
+    if (statsIds.length > 0) {
       await client.query(
-        `UPDATE usuarios SET
+        `UPDATE usuarios AS u SET
            partidos_jugados   = partidos_jugados + 1,
-           partidos_ganados   = partidos_ganados   + $1,
-           partidos_empatados = partidos_empatados + $2,
-           partidos_perdidos  = partidos_perdidos  + $3
-         WHERE id = $4`,
-        [gano ? 1 : 0, empato ? 1 : 0, (!gano && !empato) ? 1 : 0, uid]
+           partidos_ganados   = partidos_ganados   + x.gano,
+           partidos_empatados = partidos_empatados + x.empato,
+           partidos_perdidos  = partidos_perdidos  + x.perdio
+         FROM unnest($1::uuid[], $2::int[], $3::int[], $4::int[]) AS x(id, gano, empato, perdio)
+         WHERE u.id = x.id`,
+        [statsIds, statsGano, statsEmpato, statsPerdio]
       );
     }
 
+    // Un solo INSERT para las calificaciones pendientes (antes: 1 por usuario)
     const vence = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    for (const uid of asistentes) {
+    if (asistentes.length > 0) {
       await client.query(
         `INSERT INTO calificaciones_pendientes (evento_id, usuario_id, vence_en)
-         VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
-        [id, uid, vence]
+         SELECT $1, x, $2 FROM unnest($3::uuid[]) AS x
+         ON CONFLICT DO NOTHING`,
+        [id, vence, asistentes]
       );
     }
 
@@ -382,13 +396,19 @@ const finalizarEvento = asyncHandler(async (req, res) => {
     );
     for (const { usuario_id } of ausentes) {
       await darXP(usuario_id, 'no_asistir', id, client);
+    }
+
+    // Un solo INSERT + UPDATE para las sanciones de todos los ausentes (antes: 1 par por usuario)
+    if (ausentes.length > 0) {
+      const ausenteIds = ausentes.map(a => a.usuario_id);
       await client.query(
-        'INSERT INTO sanciones (usuario_id, evento_id, motivo, xp_penalidad) VALUES ($1,$2,$3,15)',
-        [usuario_id, id, 'no_show']
+        `INSERT INTO sanciones (usuario_id, evento_id, motivo, xp_penalidad)
+         SELECT x, $1, 'no_show', 15 FROM unnest($2::uuid[]) AS x`,
+        [id, ausenteIds]
       );
       await client.query(
-        'UPDATE usuarios SET sanciones_activas = sanciones_activas + 1 WHERE id = $1',
-        [usuario_id]
+        'UPDATE usuarios SET sanciones_activas = sanciones_activas + 1 WHERE id = ANY($1::uuid[])',
+        [ausenteIds]
       );
     }
 
@@ -400,14 +420,9 @@ const finalizarEvento = asyncHandler(async (req, res) => {
        ON CONFLICT (evento_id) DO UPDATE SET fin_real = $2`,
       [id, fin]
     );
-    await client.query('COMMIT');
-    res.json({ mensaje: 'Evento finalizado. Los jugadores tienen 24h para calificar.' });
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
+  });
+
+  res.json({ mensaje: 'Evento finalizado. Los jugadores tienen 24h para calificar.' });
 });
 
 // PUT /api/eventos/:id
@@ -450,14 +465,16 @@ const cancelarEvento = asyncHandler(async (req, res) => {
   );
 
   // Penalizar al creador y notificar + penalizar jugadores
-  await darXP(req.usuario.id, 'cancelar_evento', id).catch(() => {});
+  await darXP(req.usuario.id, 'cancelar_evento', id)
+    .catch(err => console.error(`[cancelarEvento] darXP creador ${req.usuario.id} evento ${id}:`, err));
   await Promise.all(
     participantes
       .filter(p => p.usuario_id !== req.usuario.id)
       .map(async p => {
         await notificar(p.usuario_id, 'evento',
           `❌ El evento "${ev.titulo}" fue cancelado. Perdiste 10 XP.`, id);
-        await darXP(p.usuario_id, 'evento_no_realizado', id).catch(() => {});
+        await darXP(p.usuario_id, 'evento_no_realizado', id)
+          .catch(err => console.error(`[cancelarEvento] darXP participante ${p.usuario_id} evento ${id}:`, err));
       })
   );
 
