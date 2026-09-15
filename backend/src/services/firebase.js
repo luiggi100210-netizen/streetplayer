@@ -1,11 +1,15 @@
-const admin = require('firebase-admin');
+// firebase-admin v13+ reemplazó el namespace compat (admin.apps, admin.auth(), etc.)
+// por una API modular — se importa así y se re-expone `auth` con la misma forma
+// que usaban los controladores (admin.auth().verifyIdToken(...)).
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 
 const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   if (FIREBASE_PROJECT_ID && FIREBASE_CLIENT_EMAIL && FIREBASE_PRIVATE_KEY) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    initializeApp({
+      credential: cert({
         projectId:   FIREBASE_PROJECT_ID,
         clientEmail: FIREBASE_CLIENT_EMAIL,
         // Render guarda la clave con \n literal — convertirla a saltos reales
@@ -17,4 +21,4 @@ if (!admin.apps.length) {
   }
 }
 
-module.exports = admin;
+module.exports = { auth: getAuth };
