@@ -105,8 +105,8 @@ function ModalGestionar({ solicitud, onGuardar, onCerrar }) {
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={labelS}>Estado</label>
-            <select value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputS, marginTop: 5 }}>
+            <label htmlFor="priv-estado" style={labelS}>Estado</label>
+            <select id="priv-estado" value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputS, marginTop: 5 }}>
               <option value="pendiente">Pendiente</option>
               <option value="procesando">Procesando</option>
               <option value="completado">Completado</option>
@@ -114,8 +114,8 @@ function ModalGestionar({ solicitud, onGuardar, onCerrar }) {
             </select>
           </div>
           <div>
-            <label style={labelS}>Respuesta al usuario</label>
-            <textarea value={respuesta} onChange={e => setRespuesta(e.target.value)} rows={4} placeholder="Explica qué acción tomaste..." style={{ ...inputS, resize: 'none', marginTop: 5 }} />
+            <label htmlFor="priv-respuesta" style={labelS}>Respuesta al usuario</label>
+            <textarea id="priv-respuesta" value={respuesta} onChange={e => setRespuesta(e.target.value)} rows={4} placeholder="Explica qué acción tomaste..." style={{ ...inputS, resize: 'none', marginTop: 5 }} />
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <Btn onClick={onCerrar} color="#64748b">Cancelar</Btn>

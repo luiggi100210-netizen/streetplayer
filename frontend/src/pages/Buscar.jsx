@@ -61,16 +61,16 @@ export default function Buscar() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Deporte</label>
-            <select value={deporte} onChange={e => setDeporte(e.target.value)} className="input">
+            <label htmlFor="buscar-deporte" className="label">Deporte</label>
+            <select id="buscar-deporte" value={deporte} onChange={e => setDeporte(e.target.value)} className="input">
               <option value="">Todos</option>
               {DEPORTES.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Ciudad</label>
+            <label htmlFor="buscar-ciudad" className="label">Ciudad</label>
             <div className="flex gap-2">
-              <input value={ciudad} onChange={e => setCiudad(e.target.value)} onKeyDown={handleKey} placeholder="Lima, Bogotá..." className="input flex-1" />
+              <input id="buscar-ciudad" value={ciudad} onChange={e => setCiudad(e.target.value)} onKeyDown={handleKey} placeholder="Lima, Bogotá..." className="input flex-1" />
               <button
                 type="button"
                 onClick={solicitarGeo}

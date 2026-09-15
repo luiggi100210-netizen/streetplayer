@@ -108,8 +108,8 @@ export default function CrearEvento() {
           <h2 className="font-impact text-base">INFORMACIÓN BÁSICA</h2>
 
           <div>
-            <label className="label">Título del evento *</label>
-            <input value={form.titulo} onChange={e => set('titulo', e.target.value)} className="input"
+            <label htmlFor="ce-titulo" className="label">Título del evento *</label>
+            <input id="ce-titulo" value={form.titulo} onChange={e => set('titulo', e.target.value)} className="input"
               minLength={5} maxLength={100} placeholder='Ej: "Pichanga dominguera — 5vs5"' />
           </div>
 
@@ -130,8 +130,8 @@ export default function CrearEvento() {
           </div>
 
           <div>
-            <label className="label">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} className="input resize-none" placeholder="Reglas, qué traer, nivel esperado..." />
+            <label htmlFor="ce-descripcion" className="label">Descripción</label>
+            <textarea id="ce-descripcion" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={3} className="input resize-none" placeholder="Reglas, qué traer, nivel esperado..." />
           </div>
         </div>
 
@@ -140,19 +140,19 @@ export default function CrearEvento() {
           <h2 className="font-impact text-base">FECHA Y LUGAR</h2>
 
           <div>
-            <label className="label">Fecha y hora *</label>
-            <input type="datetime-local" value={form.fecha_evento} min={fechaMinimaLocal()}
+            <label htmlFor="ce-fecha" className="label">Fecha y hora *</label>
+            <input id="ce-fecha" type="datetime-local" value={form.fecha_evento} min={fechaMinimaLocal()}
               onChange={e => set('fecha_evento', e.target.value)} className="input" />
           </div>
 
           <div>
-            <label className="label">Nombre de la cancha</label>
-            <input value={form.nombre_cancha} onChange={e => set('nombre_cancha', e.target.value)} className="input" placeholder="Ej: Complejo Deportivo Los Pinos" />
+            <label htmlFor="ce-cancha" className="label">Nombre de la cancha</label>
+            <input id="ce-cancha" value={form.nombre_cancha} onChange={e => set('nombre_cancha', e.target.value)} className="input" placeholder="Ej: Complejo Deportivo Los Pinos" />
           </div>
 
           <div>
-            <label className="label">Dirección</label>
-            <input value={form.direccion} onChange={e => set('direccion', e.target.value)} className="input" placeholder="Av. Principal 1234" />
+            <label htmlFor="ce-direccion" className="label">Dirección</label>
+            <input id="ce-direccion" value={form.direccion} onChange={e => set('direccion', e.target.value)} className="input" placeholder="Av. Principal 1234" />
           </div>
 
           <div>
@@ -200,15 +200,15 @@ export default function CrearEvento() {
             </div>
 
             <div>
-              <label className="label">Cupos máx.</label>
-              <input type="number" min={2} max={50} value={form.cupos_total}
+              <label htmlFor="ce-cupos" className="label">Cupos máx.</label>
+              <input id="ce-cupos" type="number" min={2} max={50} value={form.cupos_total}
                 onChange={e => { setCuposTocado(true); set('cupos_total', Math.min(parseInt(e.target.value) || 2, 50)); }}
                 className="input" />
             </div>
 
             <div>
-              <label className="label">Precio (S/)</label>
-              <input type="number" min={0} max={9999} step="0.5" value={form.precio} onChange={e => set('precio', parseFloat(e.target.value) || 0)} className="input" />
+              <label htmlFor="ce-precio" className="label">Precio (S/)</label>
+              <input id="ce-precio" type="number" min={0} max={9999} step="0.5" value={form.precio} onChange={e => set('precio', parseFloat(e.target.value) || 0)} className="input" />
             </div>
           </div>
 
@@ -229,8 +229,8 @@ export default function CrearEvento() {
           </div>
 
           <div>
-            <label className="label">Nivel requerido</label>
-            <select value={form.nivel} onChange={e => set('nivel', e.target.value)} className="input">
+            <label htmlFor="ce-nivel" className="label">Nivel requerido</label>
+            <select id="ce-nivel" value={form.nivel} onChange={e => set('nivel', e.target.value)} className="input">
               <option value="todos">Todos los niveles</option>
               {['rookie','amateur','intermedio','avanzado','pro','elite'].map(n => (
                 <option key={n} value={n} className="capitalize">{n}</option>

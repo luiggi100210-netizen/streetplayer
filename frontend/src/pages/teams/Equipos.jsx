@@ -101,8 +101,9 @@ export default function Equipos() {
           {/* Filtros */}
           <div className="card flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-36">
-              <label className="label">Buscar</label>
+              <label htmlFor="eq-buscar" className="label">Buscar</label>
               <input
+                id="eq-buscar"
                 value={filtros.q}
                 onChange={e => setFiltros(p => ({ ...p, q: e.target.value }))}
                 placeholder="Nombre del equipo..."
@@ -110,15 +111,15 @@ export default function Equipos() {
               />
             </div>
             <div>
-              <label className="label">Deporte</label>
-              <select value={filtros.deporte} onChange={e => setFiltros(p => ({ ...p, deporte: e.target.value }))} className="input">
+              <label htmlFor="eq-deporte" className="label">Deporte</label>
+              <select id="eq-deporte" value={filtros.deporte} onChange={e => setFiltros(p => ({ ...p, deporte: e.target.value }))} className="input">
                 <option value="">Todos</option>
                 {DEPORTES.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Ciudad</label>
-              <input value={filtros.ciudad} onChange={e => setFiltros(p => ({ ...p, ciudad: e.target.value }))} placeholder="Lima..." className="input w-32" />
+              <label htmlFor="eq-ciudad" className="label">Ciudad</label>
+              <input id="eq-ciudad" value={filtros.ciudad} onChange={e => setFiltros(p => ({ ...p, ciudad: e.target.value }))} placeholder="Lima..." className="input w-32" />
             </div>
           </div>
 
@@ -350,24 +351,24 @@ function FormularioCrearEquipo({ onCerrar, onCreado }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="label">Nombre del equipo *</label>
-            <input value={form.nombre} onChange={e => set('nombre', e.target.value)} className="input w-full" placeholder="Los Cracks FC" />
+            <label htmlFor="eq-nombre" className="label">Nombre del equipo *</label>
+            <input id="eq-nombre" value={form.nombre} onChange={e => set('nombre', e.target.value)} className="input w-full" placeholder="Los Cracks FC" />
           </div>
           <div>
-            <label className="label">Deporte *</label>
-            <select value={form.deporte} onChange={e => set('deporte', e.target.value)} className="input w-full">
+            <label htmlFor="eq-crear-deporte" className="label">Deporte *</label>
+            <select id="eq-crear-deporte" value={form.deporte} onChange={e => set('deporte', e.target.value)} className="input w-full">
               {DEPORTES.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
             </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="label">Ciudad</label>
-            <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)} className="input w-full" placeholder="Lima" />
+            <label htmlFor="eq-crear-ciudad" className="label">Ciudad</label>
+            <input id="eq-crear-ciudad" value={form.ciudad} onChange={e => set('ciudad', e.target.value)} className="input w-full" placeholder="Lima" />
           </div>
           <div>
-            <label className="label">URL del escudo</label>
-            <input value={form.escudo_url} onChange={e => set('escudo_url', e.target.value)} className="input w-full" placeholder="https://..." />
+            <label htmlFor="eq-escudo" className="label">URL del escudo</label>
+            <input id="eq-escudo" value={form.escudo_url} onChange={e => set('escudo_url', e.target.value)} className="input w-full" placeholder="https://..." />
           </div>
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}

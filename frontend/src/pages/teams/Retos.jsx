@@ -164,13 +164,13 @@ function ModalLanzarReto({ miEquipoId, onClose, onCreado }) {
 
             <div className="space-y-4">
               <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Cancha / Lugar</label>
-                <input value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))}
+                <label htmlFor="reto-cancha" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Cancha / Lugar</label>
+                <input id="reto-cancha" value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))}
                   className="input w-full" placeholder="Ej: Cancha del parque norte, Jirón Manco Inca 340" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Fecha y hora propuesta</label>
-                <input type="datetime-local" value={form.hora_propuesta}
+                <label htmlFor="reto-fecha" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Fecha y hora propuesta</label>
+                <input id="reto-fecha" type="datetime-local" value={form.hora_propuesta}
                   onChange={e => setForm(p => ({ ...p, hora_propuesta: e.target.value }))}
                   className="input w-full" />
               </div>
@@ -188,16 +188,16 @@ function ModalLanzarReto({ miEquipoId, onClose, onCreado }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>
+                  <label htmlFor="reto-valor-formato" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>
                     {form.formato_reto === 'goles' ? 'Cantidad de goles' : 'Minutos de juego'}
                   </label>
-                  <input type="number" min="1" max="200" value={form.valor_formato}
+                  <input id="reto-valor-formato" type="number" min="1" max="200" value={form.valor_formato}
                     onChange={e => setForm(p => ({ ...p, valor_formato: e.target.value }))}
                     className="input w-full" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Apuesta (S/)</label>
-                  <input type="number" min="0" step="0.50" value={form.monto_apuesta}
+                  <label htmlFor="reto-apuesta" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Apuesta (S/)</label>
+                  <input id="reto-apuesta" type="number" min="0" step="0.50" value={form.monto_apuesta}
                     onChange={e => setForm(p => ({ ...p, monto_apuesta: e.target.value }))}
                     className="input w-full" placeholder="0" />
                 </div>
@@ -264,23 +264,23 @@ function ModalContraoferta({ reto, onClose, onHecha }) {
           </p>
           <div className="space-y-3">
             <div>
-              <label className="label">Cancha / Lugar</label>
-              <input value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))} className="input w-full" />
+              <label htmlFor="contra-cancha" className="label">Cancha / Lugar</label>
+              <input id="contra-cancha" value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))} className="input w-full" />
             </div>
             <div>
-              <label className="label">Fecha y hora</label>
-              <input type="datetime-local" value={form.hora_propuesta}
+              <label htmlFor="contra-fecha" className="label">Fecha y hora</label>
+              <input id="contra-fecha" type="datetime-local" value={form.hora_propuesta}
                 onChange={e => setForm(p => ({ ...p, hora_propuesta: e.target.value }))} className="input w-full" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <label className="label">{reto.formato_reto === 'goles' ? 'Goles' : 'Minutos'}</label>
-                <input type="number" min="1" value={form.valor_formato}
+                <label htmlFor="contra-valor-formato" className="label">{reto.formato_reto === 'goles' ? 'Goles' : 'Minutos'}</label>
+                <input id="contra-valor-formato" type="number" min="1" value={form.valor_formato}
                   onChange={e => setForm(p => ({ ...p, valor_formato: e.target.value }))} className="input w-full" />
               </div>
               <div>
-                <label className="label">Apuesta (S/)</label>
-                <input type="number" min="0" step="0.50" value={form.monto_apuesta}
+                <label htmlFor="contra-apuesta" className="label">Apuesta (S/)</label>
+                <input id="contra-apuesta" type="number" min="0" step="0.50" value={form.monto_apuesta}
                   onChange={e => setForm(p => ({ ...p, monto_apuesta: e.target.value }))} className="input w-full" />
               </div>
             </div>

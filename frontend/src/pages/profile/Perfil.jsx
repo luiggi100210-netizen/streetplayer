@@ -511,32 +511,32 @@ export default function Perfil() {
             <div className="card border-sp-green/30 space-y-4">
               <h2 className="font-impact text-lg">EDITAR PERFIL</h2>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="label">Nombre</label><input value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} className="input" /></div>
-                <div><label className="label">Apodo</label><input value={form.apodo} onChange={e => setForm(p => ({ ...p, apodo: e.target.value }))} className="input" placeholder='"El Tigre"' /></div>
+                <div><label htmlFor="perfil-nombre" className="label">Nombre</label><input id="perfil-nombre" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} className="input" /></div>
+                <div><label htmlFor="perfil-apodo" className="label">Apodo</label><input id="perfil-apodo" value={form.apodo} onChange={e => setForm(p => ({ ...p, apodo: e.target.value }))} className="input" placeholder='"El Tigre"' /></div>
               </div>
-              <div><label className="label">Bio</label><textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={2} className="input resize-none" /></div>
+              <div><label htmlFor="perfil-bio" className="label">Bio</label><textarea id="perfil-bio" value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={2} className="input resize-none" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="label">Ciudad</label><input value={form.ciudad} onChange={e => setForm(p => ({ ...p, ciudad: e.target.value }))} className="input" /></div>
-                <div><label className="label">Departamento</label><input value={form.departamento} onChange={e => setForm(p => ({ ...p, departamento: e.target.value }))} className="input" /></div>
+                <div><label htmlFor="perfil-ciudad" className="label">Ciudad</label><input id="perfil-ciudad" value={form.ciudad} onChange={e => setForm(p => ({ ...p, ciudad: e.target.value }))} className="input" /></div>
+                <div><label htmlFor="perfil-departamento" className="label">Departamento</label><input id="perfil-departamento" value={form.departamento} onChange={e => setForm(p => ({ ...p, departamento: e.target.value }))} className="input" /></div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="label">Posición</label>
-                  <select value={form.posicion} onChange={e => setForm(p => ({ ...p, posicion: e.target.value }))} className="input">
+                  <label htmlFor="perfil-posicion" className="label">Posición</label>
+                  <select id="perfil-posicion" value={form.posicion} onChange={e => setForm(p => ({ ...p, posicion: e.target.value }))} className="input">
                     <option value="">-</option>
                     {['portero','defensa','mediocampista','delantero'].map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Pie</label>
-                  <select value={form.pie_dominante} onChange={e => setForm(p => ({ ...p, pie_dominante: e.target.value }))} className="input">
+                  <label htmlFor="perfil-pie" className="label">Pie</label>
+                  <select id="perfil-pie" value={form.pie_dominante} onChange={e => setForm(p => ({ ...p, pie_dominante: e.target.value }))} className="input">
                     <option value="">-</option>
                     {['derecho','izquierdo','ambos'].map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Formato</label>
-                  <select value={form.formato_preferido} onChange={e => setForm(p => ({ ...p, formato_preferido: e.target.value }))} className="input">
+                  <label htmlFor="perfil-formato" className="label">Formato</label>
+                  <select id="perfil-formato" value={form.formato_preferido} onChange={e => setForm(p => ({ ...p, formato_preferido: e.target.value }))} className="input">
                     <option value="">-</option>
                     {[5,7,8,9,10,11].map(n => <option key={n} value={n}>{n}v{n}</option>)}
                   </select>

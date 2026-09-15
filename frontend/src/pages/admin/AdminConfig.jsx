@@ -108,12 +108,12 @@ export function Medallas({ api }) {
       <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, padding: 22 }}>
         <p style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 18 }}>Nueva medalla</p>
         <form onSubmit={crear} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><label style={labelS}>Ícono (emoji)</label><input value={form.icono} onChange={e => setForm(p => ({ ...p, icono: e.target.value }))} style={inputS} /></div>
-          <div><label style={labelS}>Nombre</label><input required value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} style={inputS} /></div>
-          <div><label style={labelS}>Descripción</label><textarea value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} rows={2} style={{ ...inputS, resize: 'none', marginTop: 5 }} /></div>
+          <div><label htmlFor="medalla-icono" style={labelS}>Ícono (emoji)</label><input id="medalla-icono" value={form.icono} onChange={e => setForm(p => ({ ...p, icono: e.target.value }))} style={inputS} /></div>
+          <div><label htmlFor="medalla-nombre" style={labelS}>Nombre</label><input id="medalla-nombre" required value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} style={inputS} /></div>
+          <div><label htmlFor="medalla-descripcion" style={labelS}>Descripción</label><textarea id="medalla-descripcion" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} rows={2} style={{ ...inputS, resize: 'none', marginTop: 5 }} /></div>
           <div>
-            <label style={labelS}>Tipo</label>
-            <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} style={{ ...inputS, marginTop: 5 }}>
+            <label htmlFor="medalla-tipo" style={labelS}>Tipo</label>
+            <select id="medalla-tipo" value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} style={{ ...inputS, marginTop: 5 }}>
               <option value="logro">Logro</option>
               <option value="habilidad">Habilidad</option>
               <option value="participacion">Participación</option>
@@ -155,8 +155,8 @@ export function Medallas({ api }) {
         <div style={{ position: 'fixed', inset: 0, background: '#000b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 14, padding: 26, width: 380 }}>
             <p style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 16 }}>Otorgar {otorgar.icono} {otorgar.nombre}</p>
-            <label style={labelS}>UUID del usuario</label>
-            <input value={usuarioId} onChange={e => setUsuarioId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style={{ ...inputS, marginBottom: 16 }} />
+            <label htmlFor="otorgar-uuid" style={labelS}>UUID del usuario</label>
+            <input id="otorgar-uuid" value={usuarioId} onChange={e => setUsuarioId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style={{ ...inputS, marginBottom: 16 }} />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <Btn onClick={() => { setOtorgar(null); setUsuarioId(''); }} color="#64748b">Cancelar</Btn>
               <Btn onClick={() => otorgarMedalla(otorgar.id)} color="#00e676">Otorgar</Btn>
@@ -304,8 +304,8 @@ export function Notificaciones({ api }) {
 
       <form onSubmit={enviar} style={{ background: '#0d0d1a', border: '1px solid #1e1e2e', borderRadius: 12, padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={labelS}>Tipo</label>
-          <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} style={{ ...inputS, marginTop: 5 }}>
+          <label htmlFor="notif-tipo" style={labelS}>Tipo</label>
+          <select id="notif-tipo" value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} style={{ ...inputS, marginTop: 5 }}>
             <option value="sistema">Sistema</option>
             <option value="evento">Evento</option>
             <option value="torneo">Torneo</option>
@@ -313,12 +313,12 @@ export function Notificaciones({ api }) {
           </select>
         </div>
         <div>
-          <label style={labelS}>Filtrar por ciudad (opcional)</label>
-          <input value={form.filtro_ciudad} onChange={e => setForm(p => ({ ...p, filtro_ciudad: e.target.value }))} placeholder="Lima, Arequipa... (vacío = todos)" style={inputS} />
+          <label htmlFor="notif-ciudad" style={labelS}>Filtrar por ciudad (opcional)</label>
+          <input id="notif-ciudad" value={form.filtro_ciudad} onChange={e => setForm(p => ({ ...p, filtro_ciudad: e.target.value }))} placeholder="Lima, Arequipa... (vacío = todos)" style={inputS} />
         </div>
         <div>
-          <label style={labelS}>Mensaje *</label>
-          <textarea required value={form.mensaje} onChange={e => setForm(p => ({ ...p, mensaje: e.target.value }))} rows={4} maxLength={300} placeholder="Escribe el mensaje aquí..." style={{ ...inputS, resize: 'none', marginTop: 5 }} />
+          <label htmlFor="notif-mensaje" style={labelS}>Mensaje *</label>
+          <textarea id="notif-mensaje" required value={form.mensaje} onChange={e => setForm(p => ({ ...p, mensaje: e.target.value }))} rows={4} maxLength={300} placeholder="Escribe el mensaje aquí..." style={{ ...inputS, resize: 'none', marginTop: 5 }} />
           <p style={{ color: '#64748b', fontSize: 11, textAlign: 'right', marginTop: 4 }}>{form.mensaje.length}/300</p>
         </div>
 

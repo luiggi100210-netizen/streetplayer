@@ -26,16 +26,16 @@ function ModalRetoRapido({ equipoRetadoId, equipoNombre, onClose }) {
           <button onClick={() => onClose(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 20, cursor: 'pointer' }}>✕</button>
         </div>
         <div className="space-y-3">
-          <div><label className="label">Cancha / Lugar</label><input value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))} className="input w-full" placeholder="Ej: Cancha del parque norte" /></div>
-          <div><label className="label">Fecha y hora propuesta</label><input type="datetime-local" value={form.hora_propuesta} onChange={e => setForm(p => ({ ...p, hora_propuesta: e.target.value }))} className="input w-full" /></div>
+          <div><label htmlFor="ed-cancha" className="label">Cancha / Lugar</label><input id="ed-cancha" value={form.cancha} onChange={e => setForm(p => ({ ...p, cancha: e.target.value }))} className="input w-full" placeholder="Ej: Cancha del parque norte" /></div>
+          <div><label htmlFor="ed-fecha" className="label">Fecha y hora propuesta</label><input id="ed-fecha" type="datetime-local" value={form.hora_propuesta} onChange={e => setForm(p => ({ ...p, hora_propuesta: e.target.value }))} className="input w-full" /></div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[{ v: 'tiempo', l: 'Por tiempo' }, { v: 'goles', l: 'Por goles' }].map(({ v, l }) => (
               <button key={v} onClick={() => setForm(p => ({ ...p, formato_reto: v }))} className={form.formato_reto === v ? 'btn-primary text-xs flex-1' : 'btn-ghost text-xs flex-1'}>{l}</button>
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">{form.formato_reto === 'goles' ? 'Goles' : 'Minutos'}</label><input type="number" min="1" value={form.valor_formato} onChange={e => setForm(p => ({ ...p, valor_formato: e.target.value }))} className="input w-full" /></div>
-            <div><label className="label">Apuesta (S/)</label><input type="number" min="0" step="0.5" value={form.monto_apuesta} onChange={e => setForm(p => ({ ...p, monto_apuesta: e.target.value }))} className="input w-full" /></div>
+            <div><label htmlFor="ed-valor-formato" className="label">{form.formato_reto === 'goles' ? 'Goles' : 'Minutos'}</label><input id="ed-valor-formato" type="number" min="1" value={form.valor_formato} onChange={e => setForm(p => ({ ...p, valor_formato: e.target.value }))} className="input w-full" /></div>
+            <div><label htmlFor="ed-apuesta" className="label">Apuesta (S/)</label><input id="ed-apuesta" type="number" min="0" step="0.5" value={form.monto_apuesta} onChange={e => setForm(p => ({ ...p, monto_apuesta: e.target.value }))} className="input w-full" /></div>
           </div>
         </div>
         {error && <p style={{ marginTop: 10, fontSize: 12, color: '#f87171' }}>{error}</p>}
@@ -274,12 +274,12 @@ export default function EquipoDetalle() {
           <h2 className="font-impact text-base">EDITAR EQUIPO</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Nombre</label>
-              <input value={formEdit.nombre} onChange={e => setFormEdit(p => ({ ...p, nombre: e.target.value }))} className="input w-full" />
+              <label htmlFor="ed-editar-nombre" className="label">Nombre</label>
+              <input id="ed-editar-nombre" value={formEdit.nombre} onChange={e => setFormEdit(p => ({ ...p, nombre: e.target.value }))} className="input w-full" />
             </div>
             <div>
-              <label className="label">Ciudad</label>
-              <input value={formEdit.ciudad} onChange={e => setFormEdit(p => ({ ...p, ciudad: e.target.value }))} className="input w-full" />
+              <label htmlFor="ed-editar-ciudad" className="label">Ciudad</label>
+              <input id="ed-editar-ciudad" value={formEdit.ciudad} onChange={e => setFormEdit(p => ({ ...p, ciudad: e.target.value }))} className="input w-full" />
             </div>
           </div>
           <UploadFoto
@@ -456,8 +456,9 @@ export default function EquipoDetalle() {
       {tab === 'invitar' && soyCapitan && (
         <div className="card space-y-4">
           <div>
-            <label className="label">Buscar jugador por nombre o username</label>
+            <label htmlFor="ed-buscar-jugador" className="label">Buscar jugador por nombre o username</label>
             <input
+              id="ed-buscar-jugador"
               value={busquedaUser}
               onChange={e => buscarUsuarios(e.target.value)}
               className="input w-full"

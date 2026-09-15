@@ -629,8 +629,8 @@ function FormAnuncio({ inicial, onGuardar, onCancelar, saving, error }) {
     <form onSubmit={e => { e.preventDefault(); onGuardar(form); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {[['Título', 'titulo', 'text'], ['URL Imagen / Video', 'imagen_url', 'text'], ['URL Destino', 'url_destino', 'text'], ['Fecha inicio', 'fecha_inicio', 'date'], ['Fecha fin', 'fecha_fin', 'date']].map(([lbl, key, type]) => (
         <div key={key}>
-          <label style={labelS}>{lbl}</label>
-          <input type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+          <label htmlFor={`anuncio-${key}`} style={labelS}>{lbl}</label>
+          <input id={`anuncio-${key}`} type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
             required={!['url_destino'].includes(key)} style={inputS} />
         </div>
       ))}
@@ -972,8 +972,8 @@ function GestionarSolicitud({ solicitud, onGuardar, onCerrar }) {
       <h2 style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 20 }}>Gestionar — {solicitud.empresa}</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={labelS}>Estado</label>
-          <select value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputS, marginTop: 5 }}>
+          <label htmlFor="sol-estado" style={labelS}>Estado</label>
+          <select id="sol-estado" value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputS, marginTop: 5 }}>
             <option value="pendiente">Pendiente</option>
             <option value="contactado">Contactado</option>
             <option value="activo">Activo</option>
@@ -981,12 +981,12 @@ function GestionarSolicitud({ solicitud, onGuardar, onCerrar }) {
           </select>
         </div>
         <div>
-          <label style={labelS}>Precio acordado (S/)</label>
-          <input type="number" value={precio} onChange={e => setPrecio(e.target.value)} placeholder="0.00" style={inputS} />
+          <label htmlFor="sol-precio" style={labelS}>Precio acordado (S/)</label>
+          <input id="sol-precio" type="number" value={precio} onChange={e => setPrecio(e.target.value)} placeholder="0.00" style={inputS} />
         </div>
         <div>
-          <label style={labelS}>Notas internas</label>
-          <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={4} style={{ ...inputS, resize: 'none', marginTop: 5 }} />
+          <label htmlFor="sol-notas" style={labelS}>Notas internas</label>
+          <textarea id="sol-notas" value={notas} onChange={e => setNotas(e.target.value)} rows={4} style={{ ...inputS, resize: 'none', marginTop: 5 }} />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
           <Btn onClick={onCerrar} color="#64748b">Cancelar</Btn>

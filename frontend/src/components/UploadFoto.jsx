@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import api from '../services/api';
 import { BACKEND_ORIGIN } from '../config';
 
 export default function UploadFoto({ value, onChange, label = 'Foto', rounded = false, size = 96 }) {
   const inputRef           = useRef(null);
+  const inputId             = useId();
   const [subiendo, setSubiendo] = useState(false);
   const [error,    setError]    = useState('');
   const montado = useRef(true);
@@ -35,7 +36,7 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
 
   return (
     <div>
-      {label && <label className="label">{label}</label>}
+      {label && <label htmlFor={inputId} className="label">{label}</label>}
       <div
         onClick={() => !subiendo && inputRef.current?.click()}
         className="relative cursor-pointer border-2 border-dashed border-sp-border hover:border-sp-green transition-colors overflow-hidden"
@@ -61,7 +62,7 @@ export default function UploadFoto({ value, onChange, label = 'Foto', rounded = 
         )}
       </div>
       {error && <p className="text-red-400 text-[11px] mt-1">{error}</p>}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp"
+      <input id={inputId} ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp"
         onChange={handleFile} className="hidden" />
     </div>
   );

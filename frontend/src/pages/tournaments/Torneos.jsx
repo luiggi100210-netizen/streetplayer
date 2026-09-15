@@ -182,19 +182,19 @@ function FormularioTorneo({ onCerrar, onCreado }) {
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Nombre *</label><input value={form.nombre} onChange={e => set('nombre', e.target.value)} className="input" placeholder="Copa Verano 2026" /></div>
+          <div><label htmlFor="torneo-nombre" className="label">Nombre *</label><input id="torneo-nombre" value={form.nombre} onChange={e => set('nombre', e.target.value)} className="input" placeholder="Copa Verano 2026" /></div>
           <div>
-            <label className="label">Deporte *</label>
-            <select value={form.deporte} onChange={e => set('deporte', e.target.value)} className="input">
+            <label htmlFor="torneo-deporte" className="label">Deporte *</label>
+            <select id="torneo-deporte" value={form.deporte} onChange={e => set('deporte', e.target.value)} className="input">
               {DEPORTES.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
             </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Ciudad</label><input value={form.ciudad} onChange={e => set('ciudad', e.target.value)} className="input" /></div>
+          <div><label htmlFor="torneo-ciudad" className="label">Ciudad</label><input id="torneo-ciudad" value={form.ciudad} onChange={e => set('ciudad', e.target.value)} className="input" /></div>
           <div>
-            <label className="label">Formato</label>
-            <select value={form.formato} onChange={e => set('formato', e.target.value)} className="input">
+            <label htmlFor="torneo-formato" className="label">Formato</label>
+            <select id="torneo-formato" value={form.formato} onChange={e => set('formato', e.target.value)} className="input">
               <option value="eliminacion">Eliminación directa</option>
               <option value="grupos">Fase de grupos</option>
               <option value="liga">Liga</option>
@@ -202,13 +202,13 @@ function FormularioTorneo({ onCerrar, onCreado }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Inicio *</label><input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className="input" /></div>
-          <div><label className="label">Fin</label><input type="date" value={form.fecha_fin} onChange={e => set('fecha_fin', e.target.value)} className="input" /></div>
+          <div><label htmlFor="torneo-inicio" className="label">Inicio *</label><input id="torneo-inicio" type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} className="input" /></div>
+          <div><label htmlFor="torneo-fin" className="label">Fin</label><input id="torneo-fin" type="date" value={form.fecha_fin} onChange={e => set('fecha_fin', e.target.value)} className="input" /></div>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <div><label className="label">Máx equipos</label><input type="number" min={4} value={form.max_equipos} onChange={e => set('max_equipos', parseInt(e.target.value) || 4)} className="input" /></div>
-          <div><label className="label">Inscripción (S/)</label><input type="number" min={0} value={form.precio_inscripcion} onChange={e => set('precio_inscripcion', parseFloat(e.target.value) || 0)} className="input" /></div>
-          <div><label className="label">Premio</label><input value={form.premio} onChange={e => set('premio', e.target.value)} className="input" placeholder="Copa + medallas" /></div>
+          <div><label htmlFor="torneo-max-equipos" className="label">Máx equipos</label><input id="torneo-max-equipos" type="number" min={4} value={form.max_equipos} onChange={e => set('max_equipos', parseInt(e.target.value) || 4)} className="input" /></div>
+          <div><label htmlFor="torneo-inscripcion" className="label">Inscripción (S/)</label><input id="torneo-inscripcion" type="number" min={0} value={form.precio_inscripcion} onChange={e => set('precio_inscripcion', parseFloat(e.target.value) || 0)} className="input" /></div>
+          <div><label htmlFor="torneo-premio" className="label">Premio</label><input id="torneo-premio" value={form.premio} onChange={e => set('premio', e.target.value)} className="input" placeholder="Copa + medallas" /></div>
         </div>
         {error && <p style={{ color: '#f87171', fontSize: 13 }}>{error}</p>}
         <div className="flex gap-3">
