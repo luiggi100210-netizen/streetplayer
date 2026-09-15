@@ -2,6 +2,28 @@ import { useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../../config';
 
+function Campo({ label, type, value, onChange }) {
+  return (
+    <div>
+      <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        required
+        style={{
+          display: 'block', width: '100%', marginTop: 6,
+          background: '#13131f', border: '1px solid #1e1e2e', borderRadius: 8,
+          padding: '10px 14px', color: '#fff', fontSize: 14, boxSizing: 'border-box',
+          outline: 'none',
+        }}
+      />
+    </div>
+  );
+}
+
 export default function AdminLogin({ onLogin }) {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -40,40 +62,10 @@ export default function AdminLogin({ onLogin }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-              required
-              style={{
-                display: 'block', width: '100%', marginTop: 6,
-                background: '#13131f', border: '1px solid #1e1e2e', borderRadius: 8,
-                padding: '10px 14px', color: '#fff', fontSize: 14, boxSizing: 'border-box',
-                outline: 'none',
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-              required
-              style={{
-                display: 'block', width: '100%', marginTop: 6,
-                background: '#13131f', border: '1px solid #1e1e2e', borderRadius: 8,
-                padding: '10px 14px', color: '#fff', fontSize: 14, boxSizing: 'border-box',
-                outline: 'none',
-              }}
-            />
-          </div>
+          <Campo label="Email" type="email" value={form.email}
+            onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+          <Campo label="Contraseña" type="password" value={form.password}
+            onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
 
           {error && (
             <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginTop: 4 }}>{error}</p>

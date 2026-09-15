@@ -4,6 +4,7 @@ import AdminLogin from './AdminLogin';
 import { Analytics, MapaUsuarios } from './AdminAnalytics';
 import { Configuracion, Medallas, Sanciones, Finanzas, Notificaciones } from './AdminConfig';
 import { AuditLog, Privacidad } from './AdminAuditoria';
+import { inputS, labelS } from './adminUi';
 
 import { API_BASE } from '../../config';
 
@@ -49,6 +50,16 @@ function KpiCard({ label, value, sub, color = '#00e676' }) {
 const TH = ({ children }) => <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid #1e1e2e', whiteSpace: 'nowrap' }}>{children}</th>;
 const TD = ({ children, style }) => <td style={{ padding: '10px 14px', color: '#cbd5e1', fontSize: 13, borderBottom: '1px solid #0d0d1a', verticalAlign: 'middle', ...style }}>{children}</td>;
 
+function PaginacionFooter({ page, setPage, sinMasPaginas }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+      <Btn onClick={() => setPage(p => Math.max(1, p - 1))} color="#64748b" disabled={page === 1}>← Anterior</Btn>
+      <span style={{ color: '#64748b', fontSize: 13, lineHeight: '28px' }}>Pág. {page}</span>
+      <Btn onClick={() => setPage(p => p + 1)} color="#64748b" disabled={sinMasPaginas}>Siguiente →</Btn>
+    </div>
+  );
+}
+
 function Btn({ children, onClick, color = '#7c3aed', danger, small, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
@@ -71,9 +82,6 @@ function Modal({ children, onClose, width = 560 }) {
     </div>
   );
 }
-
-const inputS = { display: 'block', width: '100%', marginTop: 5, background: '#13131f', border: '1px solid #1e1e2e', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, boxSizing: 'border-box', outline: 'none' };
-const labelS = { color: '#94a3b8', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 };
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard({ api }) {
@@ -402,11 +410,7 @@ function Usuarios({ api }) {
         </table>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-        <Btn onClick={() => setPage(p => Math.max(1, p - 1))} color="#64748b" disabled={page === 1}>← Anterior</Btn>
-        <span style={{ color: '#64748b', fontSize: 13, lineHeight: '28px' }}>Pág. {page}</span>
-        <Btn onClick={() => setPage(p => p + 1)} color="#64748b" disabled={lista.length < 30}>Siguiente →</Btn>
-      </div>
+      <PaginacionFooter page={page} setPage={setPage} sinMasPaginas={lista.length < 30} />
 
       {detalle && <ModalUsuario api={api} userId={detalle} onClose={() => setDetalle(null)} onRefresh={cargar} />}
     </div>
@@ -497,11 +501,7 @@ function Equipos({ api }) {
           </tbody>
         </table>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-        <Btn onClick={() => setPage(p => Math.max(1, p - 1))} color="#64748b" disabled={page === 1}>← Anterior</Btn>
-        <span style={{ color: '#64748b', fontSize: 13, lineHeight: '28px' }}>Pág. {page}</span>
-        <Btn onClick={() => setPage(p => p + 1)} color="#64748b" disabled={lista.length < 30}>Siguiente →</Btn>
-      </div>
+      <PaginacionFooter page={page} setPage={setPage} sinMasPaginas={lista.length < 30} />
     </div>
   );
 }
@@ -547,11 +547,7 @@ function Eventos({ api }) {
           </tbody>
         </table>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-        <Btn onClick={() => setPage(p => Math.max(1, p - 1))} color="#64748b" disabled={page === 1}>← Anterior</Btn>
-        <span style={{ color: '#64748b', fontSize: 13, lineHeight: '28px' }}>Pág. {page}</span>
-        <Btn onClick={() => setPage(p => p + 1)} color="#64748b" disabled={lista.length < 30}>Siguiente →</Btn>
-      </div>
+      <PaginacionFooter page={page} setPage={setPage} sinMasPaginas={lista.length < 30} />
     </div>
   );
 }

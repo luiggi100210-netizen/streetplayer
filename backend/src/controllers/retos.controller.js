@@ -22,6 +22,21 @@ async function notificarMiembrosEquipo(equipo_id, tipo, mensaje, ref) {
   for (const { usuario_id } of rows) await notificar(usuario_id, tipo, mensaje, ref);
 }
 
+// Busca el reto y si el usuario es capitán de alguno de los dos equipos.
+// El llamador decide los mensajes de error (404 vs 403 varían según endpoint).
+async function obtenerRetoYCapitan(retoId, usuarioId) {
+  const { rows: [reto] } = await pool.query(
+    'SELECT retador_id, retado_id FROM retos WHERE id = $1', [retoId]
+  );
+  const { rows: [miembro] } = await pool.query(
+    `SELECT em.equipo_id FROM equipo_miembros em WHERE em.usuario_id = $1 AND em.rol = 'capitan'`,
+    [usuarioId]
+  );
+  const autorizado = !!reto && !!miembro &&
+    (miembro.equipo_id === reto.retador_id || miembro.equipo_id === reto.retado_id);
+  return { reto, autorizado };
+}
+
 // GET /api/retos — retos del equipo del usuario
 const obtenerRetos = asyncHandler(async (req, res) => {
   const { rows: [miembro] } = await pool.query(
@@ -250,18 +265,10 @@ const responderReto = asyncHandler(async (req, res) => {
 const getChatReto = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const { rows: [reto] } = await pool.query(
-    'SELECT retador_id, retado_id FROM retos WHERE id = $1', [id]
-  );
-  if (!reto) return res.status(404).json({ error: 'Reto no encontrado' });
-
   // Solo capitanes de los dos equipos pueden ver el chat
-  const { rows: [miembro] } = await pool.query(
-    `SELECT em.equipo_id FROM equipo_miembros em WHERE em.usuario_id = $1 AND em.rol = 'capitan'`,
-    [req.usuario.id]
-  );
-  if (!miembro || (miembro.equipo_id !== reto.retador_id && miembro.equipo_id !== reto.retado_id))
-    return res.status(403).json({ error: 'Acceso denegado' });
+  const { reto, autorizado } = await obtenerRetoYCapitan(id, req.usuario.id);
+  if (!reto) return res.status(404).json({ error: 'Reto no encontrado' });
+  if (!autorizado) return res.status(403).json({ error: 'Acceso denegado' });
 
   const { rows } = await pool.query(
     `SELECT rm.*, u.username, u.foto_url, u.nombre
@@ -277,17 +284,9 @@ const postChatReto = asyncHandler(async (req, res) => {
   const { contenido } = req.body;
   if (!contenido?.trim()) return res.status(400).json({ error: 'Mensaje vacío' });
 
-  const { rows: [reto] } = await pool.query(
-    'SELECT retador_id, retado_id FROM retos WHERE id = $1', [id]
-  );
+  const { reto, autorizado } = await obtenerRetoYCapitan(id, req.usuario.id);
   if (!reto) return res.status(404).json({ error: 'Reto no encontrado' });
-
-  const { rows: [miembro] } = await pool.query(
-    `SELECT em.equipo_id FROM equipo_miembros em WHERE em.usuario_id = $1 AND em.rol = 'capitan'`,
-    [req.usuario.id]
-  );
-  if (!miembro || (miembro.equipo_id !== reto.retador_id && miembro.equipo_id !== reto.retado_id))
-    return res.status(403).json({ error: 'Solo los capitanes pueden chatear' });
+  if (!autorizado) return res.status(403).json({ error: 'Solo los capitanes pueden chatear' });
 
   const { rows } = await pool.query(
     `INSERT INTO reto_mensajes (reto_id, usuario_id, contenido) VALUES ($1,$2,$3)

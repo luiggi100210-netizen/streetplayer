@@ -4,6 +4,16 @@ import { T, heroGradient, grainBg } from '../styles/brand';
 import CourtLines from '../components/CourtLines';
 import { COLORES_NIVEL } from '../constants';
 
+function SectionDivider({ label, marginBottom = 52 }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom }}>
+      <div style={{ flex: 1, height: 1, background: T.border }} />
+      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.22em', color: T.emerald, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>— {label} —</span>
+      <div style={{ flex: 1, height: 1, background: T.border }} />
+    </div>
+  );
+}
+
 const PASOS = [
   { n: '01', titulo: 'Crea tu perfil', desc: 'Elige tu posición, tu deporte y conecta con jugadores cerca de ti.' },
   { n: '02', titulo: 'Únete o convoca', desc: 'Encuentra pichangas abiertas en el mapa o crea tu propio evento en segundos.' },
@@ -272,11 +282,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
           {/* Separator label */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 52 }}>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.22em', color: T.emerald, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>— Cómo funciona —</span>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-          </div>
+          <SectionDivider label="Cómo funciona" />
 
           {/* Steps grid — hairline borders */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: T.border, border: `1px solid ${T.border}` }}>
@@ -307,11 +313,7 @@ export default function Landing() {
       {/* ── MODOS DE JUEGO ───────────────────────────────── */}
       <section style={{ padding: '88px 48px', background: T.gray1, borderTop: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 52 }}>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.22em', color: T.emerald, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>— Modos de juego —</span>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-          </div>
+          <SectionDivider label="Modos de juego" />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: T.border, border: `1px solid ${T.border}` }}>
             {MODOS.map(({ emoji, titulo, color, desc, tag }) => (
@@ -345,11 +347,7 @@ export default function Landing() {
       {/* ── FEATURES ──────────────────────────────────────── */}
       <section style={{ padding: '88px 48px', background: T.black, borderTop: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 52 }}>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.22em', color: T.emerald, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>— Por qué StreetPlayer —</span>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-          </div>
+          <SectionDivider label="Por qué StreetPlayer" />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: T.border, border: `1px solid ${T.border}` }}>
             {FEATURES.map(({ icon, titulo, desc }) => (
@@ -383,11 +381,7 @@ export default function Landing() {
       {/* ── SISTEMA XP / NIVELES ──────────────────────────── */}
       <section style={{ padding: '88px 48px', background: T.gray1, borderTop: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 16 }}>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.22em', color: T.emerald, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>— Sistema de niveles —</span>
-            <div style={{ flex: 1, height: 1, background: T.border }} />
-          </div>
+          <SectionDivider label="Sistema de niveles" marginBottom={16} />
 
           <p style={{ textAlign: 'center', color: T.muted, fontSize: 13.5, marginBottom: 44 }}>
             Cada partido, gol, asistencia y calificación suma XP. Sube de nivel y domina el ranking de tu ciudad.
