@@ -8,7 +8,7 @@ async function reverseGeocode(lat, lng) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=es`;
 
   return new Promise((resolve) => {
-    https.get(url, (res) => {
+    const req = https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -26,6 +26,11 @@ async function reverseGeocode(lat, lng) {
       });
       res.on('error', () => resolve({}));
     }).on('error', () => resolve({}));
+
+    req.setTimeout(5000, () => {
+      req.destroy();
+      resolve({});
+    });
   });
 }
 

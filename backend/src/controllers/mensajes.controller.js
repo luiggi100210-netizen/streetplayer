@@ -118,6 +118,13 @@ const enviarMensaje = asyncHandler(async (req, res) => {
 // PUT /api/mensajes/:convId/leer — marcar mensajes como leídos
 const marcarLeido = asyncHandler(async (req, res) => {
   const { convId } = req.params;
+
+  const { rows: [conv] } = await pool.query(
+    'SELECT 1 FROM conversaciones WHERE id = $1 AND (usuario1_id = $2 OR usuario2_id = $2)',
+    [convId, req.usuario.id]
+  );
+  if (!conv) return res.status(403).json({ error: 'Sin acceso a esta conversación' });
+
   await pool.query(
     `UPDATE mensajes SET leido = true
      WHERE conversacion_id = $1 AND remitente_id != $2 AND leido = false`,
