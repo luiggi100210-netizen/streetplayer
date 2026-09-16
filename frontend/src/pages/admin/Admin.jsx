@@ -607,7 +607,7 @@ function Reportes({ api }) {
               <TD style={{ color: '#94a3b8', maxWidth: 200 }}><span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.descripcion || '—'}</span></TD>
               <TD><Badge estado={r.estado} /></TD>
               <TD style={{ color: '#64748b', fontSize: 11 }}>{new Date(r.fecha).toLocaleDateString('es')}</TD>
-              <TD>{r.estado === 'pendiente' && <div style={{ display: 'flex', gap: 6 }}><Btn onClick={async () => { await api.put(`/reportes/${r.id}`, { estado: 'resuelto' }); cargar(); }} color="#00e676">Resolver</Btn><Btn onClick={async () => { await api.put(`/reportes/${r.id}`, { estado: 'descartado' }); cargar(); }} color="#64748b">Descartar</Btn></div>}</TD>
+              <TD>{r.estado === 'pendiente' && <div style={{ display: 'flex', gap: 6 }}><Btn onClick={async () => { await api.put(`/reportes/${r.id}`, { estado: 'resuelto' }); cargar(); }} color="#00e676">Resolver</Btn><Btn onClick={async () => { await api.put(`/reportes/${r.id}`, { estado: 'desestimado' }); cargar(); }} color="#64748b">Descartar</Btn></div>}</TD>
             </tr>
           ))}
           {!lista.length && <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: '#64748b', fontSize: 13 }}>Sin reportes</td></tr>}

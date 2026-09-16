@@ -76,8 +76,8 @@ const listarReportes = asyncHandler(async (req, res) => {
       ur.username AS reportado_por_username,
       uu.username AS usuario_reportado_username
      FROM reportes r
-     JOIN usuarios ur ON r.reportado_por = ur.id
-     LEFT JOIN usuarios uu ON r.usuario_id = uu.id
+     LEFT JOIN usuarios ur ON r.reportador_id = ur.id
+     LEFT JOIN usuarios uu ON r.reportado_id = uu.id
      ORDER BY r.fecha DESC LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
