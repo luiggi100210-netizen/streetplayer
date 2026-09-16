@@ -75,14 +75,6 @@ export default function Registro() {
         >
           Registrarse con Google
         </OAuthButton>
-        <OAuthButton
-          provider="facebook"
-          loading={oauthCargando === 'facebook'}
-          disabled={ocupado}
-          onClick={() => handleOAuth('facebook')}
-        >
-          Registrarse con Facebook
-        </OAuthButton>
       </div>
 
       <FormDivider>o completa el formulario</FormDivider>

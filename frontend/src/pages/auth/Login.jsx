@@ -200,14 +200,6 @@ export default function Login() {
         >
           Continuar con Google
         </OAuthButton>
-        <OAuthButton
-          provider="facebook"
-          loading={oauthCargando === 'facebook'}
-          disabled={ocupado}
-          onClick={() => handleOAuth('facebook')}
-        >
-          Continuar con Facebook
-        </OAuthButton>
       </div>
 
       <FormDivider>o con email</FormDivider>
