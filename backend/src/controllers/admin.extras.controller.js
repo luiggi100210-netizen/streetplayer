@@ -44,7 +44,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
         (SELECT COUNT(*) FROM usuarios WHERE foto_url IS NOT NULL)               AS con_foto,
         (SELECT COUNT(*) FROM usuarios WHERE partidos_jugados >= 1)              AS con_partidos,
         (SELECT COUNT(DISTINCT usuario_id) FROM equipo_miembros)                 AS en_equipo,
-        (SELECT COUNT(DISTINCT usuario_id) FROM inscripciones)                   AS en_evento,
+        (SELECT COUNT(DISTINCT usuario_id) FROM evento_participantes)            AS en_evento,
         (SELECT COUNT(DISTINCT usuario_id) FROM equipo_miembros WHERE rol='capitan') AS capitanes
     `),
     // Actividad por hora del día (usando fecha_registro como proxy)
@@ -89,9 +89,9 @@ const getFinanzas = asyncHandler(async (req, res) => {
   const [eventosRes, publicidadRes, tendenciaRes] = await Promise.all([
     pool.query(`
       SELECT
-        COUNT(*) FILTER (WHERE precio_entrada > 0) AS eventos_pago,
-        COUNT(*) FILTER (WHERE precio_entrada = 0 OR precio_entrada IS NULL) AS eventos_gratis,
-        COALESCE(SUM(e.precio_entrada * (SELECT COUNT(*) FROM inscripciones WHERE evento_id = e.id)), 0) AS ingresos_brutos_eventos
+        COUNT(*) FILTER (WHERE precio > 0) AS eventos_pago,
+        COUNT(*) FILTER (WHERE precio = 0 OR precio IS NULL) AS eventos_gratis,
+        COALESCE(SUM(e.precio * (SELECT COUNT(*) FROM evento_participantes WHERE evento_id = e.id)), 0) AS ingresos_brutos_eventos
       FROM eventos e WHERE estado != 'cancelado'
     `),
     pool.query(`
@@ -125,12 +125,12 @@ const listarSanciones = asyncHandler(async (req, res) => {
   const { page = 1 } = req.query;
   const limit = 100, offset = (page - 1) * limit;
   const { rows } = await pool.query(`
-    SELECT s.*, u.username, u.email, u.foto_url, u.estado AS estado_usuario,
+    SELECT s.*, s.activa AS activo, s.fecha AS fecha_inicio, u.username, u.email, u.foto_url, u.estado AS estado_usuario,
            a.username AS admin_username
     FROM sanciones s
     JOIN usuarios u ON u.id = s.usuario_id
     LEFT JOIN admins a ON a.id = s.admin_id
-    ORDER BY s.fecha_inicio DESC LIMIT $1 OFFSET $2
+    ORDER BY s.fecha DESC LIMIT $1 OFFSET $2
   `, [limit, offset]);
   res.json(rows);
 });
@@ -140,7 +140,7 @@ const levantarSancion = asyncHandler(async (req, res) => {
   const { rows: [s] } = await pool.query('SELECT * FROM sanciones WHERE id = $1', [id]);
   if (!s) return res.status(404).json({ error: 'Sanción no encontrada' });
 
-  await pool.query('UPDATE sanciones SET activo = false, fecha_fin = NOW() WHERE id = $1', [id]);
+  await pool.query('UPDATE sanciones SET activa = false, fecha_fin = NOW() WHERE id = $1', [id]);
   await pool.query(`UPDATE usuarios SET estado = 'activo' WHERE id = $1`, [s.usuario_id]);
   await logAdmin(req, 'levantar_sancion', 'sancion', id, { usuario_id: s.usuario_id, tipo: s.tipo });
   res.json({ mensaje: 'Sanción levantada' });
@@ -152,7 +152,7 @@ const listarMedallasAdmin = asyncHandler(async (req, res) => {
   const limit = 50, offset = (page - 1) * limit;
   const { rows } = await pool.query(`
     SELECT m.*,
-           (SELECT COUNT(*) FROM medallas_usuario WHERE medalla_id = m.id) AS total_otorgadas
+           (SELECT COUNT(*) FROM medallas_usuario WHERE medalla_id = m.id::text) AS total_otorgadas
     FROM medallas m ORDER BY m.tipo ASC, m.nombre ASC LIMIT $1 OFFSET $2
   `, [limit, offset]);
   res.json(rows);
@@ -275,13 +275,14 @@ const exportarDatosUsuario = asyncHandler(async (req, res) => {
 
   const [usuario, partidos, eventos, equipo, medallas, publicaciones, notifs, xpLog] = await Promise.all([
     pool.query('SELECT id,username,nombre,email,ciudad,departamento,bio,posicion,deportes,nivel_xp,partidos_jugados,goles_totales,fecha_registro,verificado FROM usuarios WHERE id=$1', [userId]),
-    pool.query('SELECT * FROM partidos WHERE (equipo_local_id IN (SELECT equipo_id FROM equipo_miembros WHERE usuario_id=$1) OR equipo_visitante_id IN (SELECT equipo_id FROM equipo_miembros WHERE usuario_id=$1)) LIMIT 50', [userId]),
-    pool.query('SELECT ev.titulo, ev.fecha_evento, i.estado, i.fecha_inscripcion FROM inscripciones i JOIN eventos ev ON ev.id=i.evento_id WHERE i.usuario_id=$1 ORDER BY i.fecha_inscripcion DESC', [userId]),
+    pool.query('SELECT * FROM partidos WHERE (equipo_local_id IN (SELECT equipo_id FROM equipo_miembros WHERE usuario_id=$1) OR equipo_visita_id IN (SELECT equipo_id FROM equipo_miembros WHERE usuario_id=$1)) LIMIT 50', [userId]),
+    pool.query('SELECT ev.titulo, ev.fecha_evento, ep.estado, ep.fecha AS fecha_inscripcion FROM evento_participantes ep JOIN eventos ev ON ev.id=ep.evento_id WHERE ep.usuario_id=$1 ORDER BY ep.fecha DESC', [userId]),
     pool.query('SELECT e.nombre, e.deporte, em.rol, em.fecha FROM equipo_miembros em JOIN equipos e ON e.id=em.equipo_id WHERE em.usuario_id=$1', [userId]),
-    pool.query('SELECT m.nombre, m.icono, m.tipo, mu.fecha_obtenida FROM medallas_usuario mu JOIN medallas m ON m.id=mu.medalla_id WHERE mu.usuario_id=$1', [userId]),
-    pool.query('SELECT contenido, tipo, fecha_creacion FROM publicaciones WHERE autor_id=$1 ORDER BY fecha_creacion DESC LIMIT 50', [userId]),
+    pool.query(`SELECT COALESCE(m.nombre, mu.medalla_id) AS nombre, COALESCE(m.icono, '🏅') AS icono, m.tipo, mu.desbloqueada_en AS fecha_obtenida
+                FROM medallas_usuario mu LEFT JOIN medallas m ON m.id::text = mu.medalla_id WHERE mu.usuario_id=$1`, [userId]),
+    pool.query('SELECT contenido, deporte, fecha FROM publicaciones WHERE usuario_id=$1 ORDER BY fecha DESC LIMIT 50', [userId]),
     pool.query('SELECT tipo, mensaje, leida, fecha FROM notificaciones WHERE usuario_id=$1 ORDER BY fecha DESC LIMIT 50', [userId]),
-    pool.query('SELECT accion, puntos, descripcion, fecha FROM xp_log WHERE usuario_id=$1 ORDER BY fecha DESC LIMIT 50', [userId]),
+    pool.query('SELECT motivo, cantidad, fecha FROM xp_log WHERE usuario_id=$1 ORDER BY fecha DESC LIMIT 50', [userId]),
   ]);
 
   if (!usuario.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -312,7 +313,7 @@ const eliminarCuentaUsuario = asyncHandler(async (req, res) => {
     UPDATE usuarios SET
       estado = 'baneado',
       nombre = 'Usuario eliminado',
-      bio = NULL, foto_url = NULL, telefono = NULL,
+      bio = NULL, foto_url = NULL,
       latitud = NULL, longitud = NULL,
       email = CONCAT('deleted_', id, '@deleted.local')
     WHERE id = $1`, [userId]

@@ -14,7 +14,7 @@ const dashboard = asyncHandler(async (req, res) => {
     pool.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE estado='activo') AS activos,
                 COUNT(*) FILTER (WHERE estado='suspendido') AS suspendidos FROM usuarios`),
     pool.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE estado='abierto') AS abiertos FROM eventos`),
-    pool.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE aprobado=false) AS pendientes FROM torneos`),
+    pool.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE estado='pendiente') AS pendientes FROM torneos`),
     pool.query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE estado='pendiente') AS pendientes FROM reportes`),
     pool.query(`SELECT DATE(fecha_registro) AS dia, COUNT(*) AS total FROM usuarios
                 WHERE fecha_registro >= NOW() - INTERVAL '7 days'
@@ -33,8 +33,9 @@ const dashboard = asyncHandler(async (req, res) => {
 const listarUsuarios = asyncHandler(async (req, res) => {
   const { buscar, estado, page = 1 } = req.query;
   const limit = 30, offset = (page - 1) * limit;
-  let query = `SELECT u.id, u.username, u.email, u.nombre, u.ciudad, u.nivel, u.estado, u.verificado,
-                      u.partidos_jugados, u.fecha_registro, r.puntos
+  let query = `SELECT u.id, u.username, u.email, u.nombre, u.ciudad, u.posicion, u.rol,
+                      u.xp AS nivel_xp, u.estado, u.verificado,
+                      u.partidos_jugados, u.goles_totales, u.foto_url, u.fecha_registro, r.puntos
                FROM usuarios u LEFT JOIN ranking r ON r.usuario_id = u.id WHERE 1=1`;
   const params = [];
   let idx = 1;
@@ -98,9 +99,7 @@ const listarTorneosAdmin = asyncHandler(async (req, res) => {
   const params = [];
   let idx = 1;
 
-  if (estado === 'pendiente') {
-    query += ` AND t.aprobado = false`;
-  } else if (estado) {
+  if (estado) {
     query += ` AND t.estado = $${idx++}`;
     params.push(estado);
   }
@@ -112,7 +111,7 @@ const listarTorneosAdmin = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/torneos/:id/aprobar
 const aprobarTorneo = asyncHandler(async (req, res) => {
-  await pool.query('UPDATE torneos SET aprobado = true, estado = $1 WHERE id = $2', ['aprobado', req.params.id]);
+  await pool.query('UPDATE torneos SET estado = $1, aprobado_por = $2 WHERE id = $3', ['aprobado', req.admin.id, req.params.id]);
   await logAdmin(req, 'aprobar_torneo', 'torneo', req.params.id);
   res.json({ mensaje: 'Torneo aprobado' });
 });
@@ -167,14 +166,18 @@ const detalleUsuario = asyncHandler(async (req, res) => {
        WHERE em.usuario_id = $1 AND e.estado = 'activo' LIMIT 1`, [id]
     ),
     pool.query(
-      `SELECT m.nombre, m.icono, mu.fecha_obtenida
-       FROM medallas_usuario mu JOIN medallas m ON m.id = mu.medalla_id
-       WHERE mu.usuario_id = $1 ORDER BY mu.fecha_obtenida DESC LIMIT 10`, [id]
+      // LEFT JOIN + fallback: medalla_id guarda tanto los IDs cortos
+      // hardcodeados del sistema automatico (medallas.service.js, sin fila
+      // en el catalogo "medallas") como UUIDs de medallas creadas por el
+      // admin — un INNER JOIN dejaba las automaticas fuera de la lista.
+      `SELECT COALESCE(m.nombre, mu.medalla_id) AS nombre, COALESCE(m.icono, '🏅') AS icono, mu.desbloqueada_en AS fecha_obtenida
+       FROM medallas_usuario mu LEFT JOIN medallas m ON m.id::text = mu.medalla_id
+       WHERE mu.usuario_id = $1 ORDER BY mu.desbloqueada_en DESC LIMIT 10`, [id]
     ),
     pool.query(
-      `SELECT ev.titulo, ev.deporte, ev.fecha_evento, i.estado AS inscripcion_estado
-       FROM inscripciones i JOIN eventos ev ON ev.id = i.evento_id
-       WHERE i.usuario_id = $1 ORDER BY ev.fecha_evento DESC LIMIT 5`, [id]
+      `SELECT ev.titulo, ev.deporte, ev.fecha_evento, ep.estado AS inscripcion_estado
+       FROM evento_participantes ep JOIN eventos ev ON ev.id = ep.evento_id
+       WHERE ep.usuario_id = $1 ORDER BY ev.fecha_evento DESC LIMIT 5`, [id]
     ),
   ]);
   if (!uRes.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -296,10 +299,10 @@ const listarEventosAdmin = asyncHandler(async (req, res) => {
   const { estado, page = 1 } = req.query;
   const limit = 30, offset = (page - 1) * limit;
   let query = `
-    SELECT ev.id, ev.titulo, ev.deporte, ev.ciudad, ev.estado, ev.imagen_url,
-           ev.fecha_evento, ev.fecha_creacion, ev.precio_entrada,
+    SELECT ev.id, ev.titulo, ev.deporte, ev.ciudad, ev.estado, ev.foto_url AS imagen_url,
+           ev.fecha_evento, ev.fecha_creacion, ev.precio AS precio_entrada,
            u.username AS creador_username, u.foto_url AS creador_foto,
-           (SELECT COUNT(*) FROM inscripciones WHERE evento_id = ev.id) AS total_inscritos
+           (SELECT COUNT(*) FROM evento_participantes WHERE evento_id = ev.id) AS total_inscritos
     FROM eventos ev JOIN usuarios u ON u.id = ev.creador_id WHERE 1=1`;
   const params = [];
   let idx = 1;
@@ -319,7 +322,7 @@ const eliminarFotoUsuario = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/torneos/:id/rechazar
 const rechazarTorneo = asyncHandler(async (req, res) => {
-  await pool.query('UPDATE torneos SET aprobado = false, estado = $1 WHERE id = $2', ['cancelado', req.params.id]);
+  await pool.query('UPDATE torneos SET estado = $1 WHERE id = $2', ['cancelado', req.params.id]);
   await logAdmin(req, 'rechazar_torneo', 'torneo', req.params.id);
   res.json({ mensaje: 'Torneo rechazado' });
 });
@@ -327,12 +330,12 @@ const rechazarTorneo = asyncHandler(async (req, res) => {
 // GET /api/admin/stats — stats ampliadas
 const statsAmpliadas = asyncHandler(async (req, res) => {
   const [topXp, topEquipos, actividadHoy] = await Promise.all([
-    pool.query(`SELECT u.username, u.foto_url, u.nivel_xp, u.ciudad FROM usuarios u ORDER BY u.nivel_xp DESC LIMIT 5`),
+    pool.query(`SELECT u.username, u.foto_url, u.xp AS nivel_xp, u.ciudad FROM usuarios u ORDER BY u.xp DESC LIMIT 5`),
     pool.query(`SELECT e.nombre, e.escudo_url, e.wins, (SELECT COUNT(*) FROM equipo_miembros WHERE equipo_id=e.id) AS miembros FROM equipos e WHERE e.estado='activo' ORDER BY e.wins DESC LIMIT 5`),
     pool.query(`SELECT
       (SELECT COUNT(*) FROM usuarios WHERE fecha_registro::date = CURRENT_DATE) AS nuevos_hoy,
       (SELECT COUNT(*) FROM eventos WHERE fecha_creacion::date = CURRENT_DATE) AS eventos_hoy,
-      (SELECT COUNT(*) FROM retos WHERE created_at::date = CURRENT_DATE) AS retos_hoy`),
+      (SELECT COUNT(*) FROM retos WHERE fecha::date = CURRENT_DATE) AS retos_hoy`),
   ]);
   res.json({ top_xp: topXp.rows, top_equipos: topEquipos.rows, actividad_hoy: actividadHoy.rows[0] });
 });

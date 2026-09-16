@@ -208,6 +208,21 @@ CREATE TABLE IF NOT EXISTS equipo_miembros (
 );
 
 -- ============================================================
+-- ADMIN
+-- ============================================================
+-- Debe ir antes de TORNEOS: torneos.aprobado_por referencia admins(id).
+CREATE TABLE IF NOT EXISTS admins (
+  id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+  username      VARCHAR(50)  UNIQUE NOT NULL,
+  email         VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  nombre        VARCHAR(80),
+  rol           VARCHAR(20)  DEFAULT 'moderador' CHECK (rol IN ('superadmin','moderador')),
+  activo        BOOLEAN      DEFAULT true,
+  fecha_creacion TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- TORNEOS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS torneos (
@@ -348,20 +363,6 @@ CREATE TABLE IF NOT EXISTS anuncios (
   clics         INTEGER     DEFAULT 0,
   fecha_inicio  DATE,
   fecha_fin     DATE,
-  fecha_creacion TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ============================================================
--- ADMIN
--- ============================================================
-CREATE TABLE IF NOT EXISTS admins (
-  id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-  username      VARCHAR(50)  UNIQUE NOT NULL,
-  email         VARCHAR(100) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  nombre        VARCHAR(80),
-  rol           VARCHAR(20)  DEFAULT 'moderador' CHECK (rol IN ('superadmin','moderador')),
-  activo        BOOLEAN      DEFAULT true,
   fecha_creacion TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -276,7 +276,7 @@ function ModalUsuario({ api, userId, onClose, onRefresh }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 ['Posición', data.posicion],
-                ['Nivel', data.nivel],
+                ['Nivel', data.nivel_xp],
                 ['Deportes', data.deportes?.join(', ')],
                 ['Teléfono', data.telefono],
                 ['GPS', data.latitud ? `${(+data.latitud).toFixed(4)}, ${(+data.longitud).toFixed(4)}` : null],
@@ -484,11 +484,11 @@ function Torneos({ api }) {
                 <TD style={{ color: '#a78bfa', textTransform: 'capitalize' }}>{t.deporte}</TD>
                 <TD style={{ color: '#94a3b8' }}>{t.ciudad}</TD>
                 <TD style={{ color: '#64748b', fontSize: 11 }}>{t.fecha_inicio ? new Date(t.fecha_inicio).toLocaleDateString('es') : '—'}</TD>
-                <TD><Badge estado={t.aprobado ? (t.estado || 'aprobado') : 'pendiente'} /></TD>
+                <TD><Badge estado={t.estado} /></TD>
                 <TD>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {!t.aprobado && <Btn onClick={async () => { await api.put(`/torneos/${t.id}/aprobar`); cargar(); }} color="#00e676">Aprobar</Btn>}
-                    {t.aprobado && t.estado !== 'cancelado' && <Btn onClick={async () => { await api.put(`/torneos/${t.id}/rechazar`); cargar(); }} danger>Rechazar</Btn>}
+                    {t.estado === 'pendiente' && <Btn onClick={async () => { await api.put(`/torneos/${t.id}/aprobar`); cargar(); }} color="#00e676">Aprobar</Btn>}
+                    {t.estado === 'pendiente' && <Btn onClick={async () => { await api.put(`/torneos/${t.id}/rechazar`); cargar(); }} danger>Rechazar</Btn>}
                   </div>
                 </TD>
               </tr>

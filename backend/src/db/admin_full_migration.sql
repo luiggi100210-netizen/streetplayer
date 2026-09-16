@@ -50,3 +50,8 @@ CREATE TABLE IF NOT EXISTS solicitudes_privacidad (
 
 -- Último acceso (para métricas de retención)
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMPTZ;
+
+-- Sanciones — columnas que el admin panel (listarSanciones/levantarSancion/
+-- cambiarEstadoUsuario) espera pero nunca se crearon en schema.sql.
+ALTER TABLE sanciones ADD COLUMN IF NOT EXISTS tipo VARCHAR(20);
+ALTER TABLE sanciones ADD COLUMN IF NOT EXISTS fecha_fin TIMESTAMPTZ;
