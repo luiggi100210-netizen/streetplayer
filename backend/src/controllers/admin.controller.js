@@ -127,26 +127,31 @@ const listarAnuncios = asyncHandler(async (req, res) => {
   res.json(rows);
 });
 
-// GET /api/anuncios — anuncios activos para usuarios autenticados
+// GET /api/anuncios — anuncios activos para usuarios autenticados, filtrados
+// por ciudad/pais del usuario (anuncio.ciudad/pais NULL = todas/todos).
 const anunciosActivos = asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT id, titulo, imagen_url, url_destino
-     FROM anuncios
-     WHERE activo = true
-       AND fecha_inicio <= CURRENT_DATE
-       AND fecha_fin    >= CURRENT_DATE
-     ORDER BY RANDOM() LIMIT 3`
+    `SELECT a.id, a.titulo, a.imagen_url, a.url_destino
+     FROM anuncios a, usuarios u
+     WHERE u.id = $1
+       AND a.activo = true
+       AND a.fecha_inicio <= CURRENT_DATE
+       AND a.fecha_fin    >= CURRENT_DATE
+       AND (a.pais   IS NULL OR a.pais   = u.pais)
+       AND (a.ciudad IS NULL OR a.ciudad = u.ciudad)
+     ORDER BY RANDOM() LIMIT 3`,
+    [req.usuario.id]
   );
   res.json(rows);
 });
 
 // POST /api/admin/anuncios
 const crearAnuncio = asyncHandler(async (req, res) => {
-  const { titulo, imagen_url, url_destino, fecha_inicio, fecha_fin } = req.body;
+  const { titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, ciudad, pais } = req.body;
   const { rows } = await pool.query(
-    `INSERT INTO anuncios (titulo, imagen_url, url_destino, fecha_inicio, fecha_fin)
-     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-    [titulo, imagen_url, url_destino, fecha_inicio, fecha_fin]
+    `INSERT INTO anuncios (titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, ciudad, pais)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, ciudad || null, pais || null]
   );
   res.status(201).json(rows[0]);
 });
@@ -243,16 +248,18 @@ const tarifasPublicas = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/anuncios/:id
 const editarAnuncio = asyncHandler(async (req, res) => {
-  const { titulo, imagen_url, url_destino, fecha_inicio, fecha_fin } = req.body;
+  const { titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, ciudad, pais } = req.body;
   const { rows } = await pool.query(
     `UPDATE anuncios SET
        titulo      = COALESCE($1, titulo),
        imagen_url  = COALESCE($2, imagen_url),
        url_destino = COALESCE($3, url_destino),
        fecha_inicio = COALESCE($4, fecha_inicio),
-       fecha_fin    = COALESCE($5, fecha_fin)
-     WHERE id = $6 RETURNING *`,
-    [titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, req.params.id]
+       fecha_fin    = COALESCE($5, fecha_fin),
+       ciudad      = $6,
+       pais        = $7
+     WHERE id = $8 RETURNING *`,
+    [titulo, imagen_url, url_destino, fecha_inicio, fecha_fin, ciudad || null, pais || null, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: 'Anuncio no encontrado' });
   res.json(rows[0]);

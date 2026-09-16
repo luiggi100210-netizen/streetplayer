@@ -22,7 +22,7 @@ router.post('/',
     body('nombre').trim().notEmpty().withMessage('Nombre requerido').isLength({ max: 60 }),
     body('deporte').optional().isString().trim(),
     body('ciudad').optional().isString().trim(),
-    body('escudo_url').optional().isURL(),
+    body('escudo_url').optional({ checkFalsy: true }).isURL(),
   ],
   validate, crearEquipo
 );
@@ -34,7 +34,7 @@ router.put('/:id',
     body('nombre').optional().trim().notEmpty().isLength({ max: 60 }),
     body('ciudad').optional().isString().trim(),
     body('deporte').optional().isString().trim(),
-    body('escudo_url').optional().isURL(),
+    body('escudo_url').optional({ checkFalsy: true }).isURL(),
   ],
   validate, actualizarEquipo
 );

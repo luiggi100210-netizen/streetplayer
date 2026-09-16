@@ -22,9 +22,11 @@ const validarAnuncio = [
   body('titulo').trim().notEmpty().withMessage('titulo requerido')
     .isLength({ max: 100 }).withMessage('titulo: máximo 100 caracteres'),
   body('imagen_url').isURL().withMessage('imagen_url debe ser una URL válida'),
-  body('url_destino').optional().isURL().withMessage('url_destino debe ser una URL válida'),
+  body('url_destino').optional({ checkFalsy: true }).isURL().withMessage('url_destino debe ser una URL válida'),
   body('fecha_inicio').isISO8601().withMessage('fecha_inicio debe ser una fecha válida'),
   body('fecha_fin').isISO8601().withMessage('fecha_fin debe ser una fecha válida'),
+  body('ciudad').optional({ checkFalsy: true }).trim().isLength({ max: 80 }).withMessage('ciudad: máximo 80 caracteres'),
+  body('pais').optional({ checkFalsy: true }).trim().isLength({ max: 50 }).withMessage('pais: máximo 50 caracteres'),
 ];
 
 router.get('/dashboard',                   verificarAdmin, a.dashboard);

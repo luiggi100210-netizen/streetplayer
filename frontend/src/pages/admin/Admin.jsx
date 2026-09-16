@@ -618,7 +618,7 @@ function Reportes({ api }) {
 }
 
 // ─── Anuncios ─────────────────────────────────────────────────────────────────
-const EMPTY_FORM = { titulo: '', imagen_url: '', url_destino: '', fecha_inicio: '', fecha_fin: '' };
+const EMPTY_FORM = { titulo: '', imagen_url: '', url_destino: '', fecha_inicio: '', fecha_fin: '', ciudad: '', pais: '' };
 
 function FormAnuncio({ inicial, onGuardar, onCancelar, saving, error }) {
   const [form, setForm] = useState(inicial || EMPTY_FORM);
@@ -627,11 +627,11 @@ function FormAnuncio({ inicial, onGuardar, onCancelar, saving, error }) {
 
   return (
     <form onSubmit={e => { e.preventDefault(); onGuardar(form); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {[['Título', 'titulo', 'text'], ['URL Imagen / Video', 'imagen_url', 'text'], ['URL Destino', 'url_destino', 'text'], ['Fecha inicio', 'fecha_inicio', 'date'], ['Fecha fin', 'fecha_fin', 'date']].map(([lbl, key, type]) => (
+      {[['Título', 'titulo', 'text'], ['URL Imagen / Video', 'imagen_url', 'text'], ['URL Destino', 'url_destino', 'text'], ['Fecha inicio', 'fecha_inicio', 'date'], ['Fecha fin', 'fecha_fin', 'date'], ['Ciudad (vacío = todas)', 'ciudad', 'text'], ['País (vacío = todos)', 'pais', 'text']].map(([lbl, key, type]) => (
         <div key={key}>
           <label htmlFor={`anuncio-${key}`} style={labelS}>{lbl}</label>
-          <input id={`anuncio-${key}`} type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
-            required={!['url_destino'].includes(key)} style={inputS} />
+          <input id={`anuncio-${key}`} type={type} value={form[key] || ''} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+            required={!['url_destino', 'ciudad', 'pais'].includes(key)} style={inputS} />
         </div>
       ))}
       {form.imagen_url && (
@@ -733,6 +733,7 @@ function Anuncios({ api }) {
                     <p style={{ color: '#64748b', fontSize: 11, marginBottom: 8 }}>
                       {new Date(a.fecha_inicio).toLocaleDateString('es')} — {new Date(a.fecha_fin).toLocaleDateString('es')}
                       {vencido && <span style={{ color: '#f87171', marginLeft: 6 }}>• Vencido</span>}
+                      {' • '}{[a.ciudad, a.pais].filter(Boolean).join(', ') || 'Todas las ciudades / países'}
                     </p>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <Btn onClick={() => toggle(a.id)} color={a.activo ? '#fbbf24' : '#00e676'} small>
@@ -802,7 +803,7 @@ function Publicidad({ api }) {
   const iniciarPublicar = (s) => {
     const hoy = new Date().toISOString().slice(0, 10);
     const fin = new Date(Date.now() + (s.duracion_dias || 7) * 86400000).toISOString().slice(0, 10);
-    setPublicarModal({ titulo: s.empresa, imagen_url: '', url_destino: '', fecha_inicio: hoy, fecha_fin: fin });
+    setPublicarModal({ titulo: s.empresa, imagen_url: '', url_destino: '', fecha_inicio: hoy, fecha_fin: fin, ciudad: '', pais: '' });
   };
 
   const publicarAnuncio = async (form) => {

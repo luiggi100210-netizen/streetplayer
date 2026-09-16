@@ -19,7 +19,7 @@ const validarCrear = [
   body('precio').optional().isFloat({ min: 0 }).withMessage('precio debe ser mayor o igual a 0'),
   body('duracion_min').optional().isInt({ min: 15, max: 300 }).withMessage('duracion_min: entre 15 y 300 minutos'),
   body('es_privado').optional().isBoolean().withMessage('es_privado debe ser true o false'),
-  body('foto_url').optional().isURL().withMessage('foto_url debe ser una URL válida'),
+  body('foto_url').optional({ checkFalsy: true }).isURL().withMessage('foto_url debe ser una URL válida'),
   body('latitud').optional().isFloat({ min: -90, max: 90 }).withMessage('latitud inválida'),
   body('longitud').optional().isFloat({ min: -180, max: 180 }).withMessage('longitud inválida'),
 ];

@@ -55,3 +55,6 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMPTZ;
 -- cambiarEstadoUsuario) espera pero nunca se crearon en schema.sql.
 ALTER TABLE sanciones ADD COLUMN IF NOT EXISTS tipo VARCHAR(20);
 ALTER TABLE sanciones ADD COLUMN IF NOT EXISTS fecha_fin TIMESTAMPTZ;
+
+-- Segmentación de anuncios por país (ciudad ya existía pero sin usar).
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS pais VARCHAR(50);
