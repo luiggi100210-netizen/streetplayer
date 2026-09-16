@@ -132,23 +132,21 @@ export default function Layout() {
             <span className="text-white">STREET</span><span className="text-sp-green">PLAYER</span>
           </Link>
 
-          {/* Nav de escritorio: solo íconos entre 768-1023px (no entra el texto),
-              texto completo desde 1024px — antes mostraba todo el texto desde 768px
-              y se salía de la pantalla generando scroll horizontal en ese rango. */}
+          {/* Navegación compacta con iconos en todos los anchos de escritorio. */}
           <nav className="hidden md:flex items-center gap-1 min-w-0">
             {NAV.map(({ to, label, icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 title={label}
+                aria-label={label}
                 className={({ isActive }) =>
-                  `relative flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:px-3 lg:py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
+                  `relative flex items-center justify-center shrink-0 rounded-lg px-2.5 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
                 }
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
                 </svg>
-                <span className="hidden lg:inline">{label}</span>
                 {to === '/mensajes' && msgsNoLeidos > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-sp-green text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                     {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
@@ -159,18 +157,18 @@ export default function Layout() {
             <NavLink
               to="/mi-perfil"
               title="Mi Perfil"
+              aria-label="Mi Perfil"
               className={({ isActive }) =>
-                `flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:px-3 lg:py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
+                `flex items-center justify-center shrink-0 rounded-lg px-2.5 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
               }
             >
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span className="hidden lg:inline">Mi Perfil</span>
             </NavLink>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Calificaciones pendientes */}
             {pendientes > 0 && (
               <NavLink to="/calificaciones" className="relative">
@@ -237,20 +235,21 @@ export default function Layout() {
               )}
             </div>
 
-            {/* Crear evento — solo ícono entre 768-1023px, texto completo desde 1024px */}
+            {/* Crear evento conserva el botón cuadrado también en pantallas grandes. */}
             <Link
               to="/eventos/nuevo"
               title="Crear evento"
-              className="hidden md:flex items-center justify-center gap-1.5 bg-sp-green hover:bg-sp-green-dark text-white font-bold rounded-lg transition-colors uppercase tracking-wide w-10 h-10 lg:w-auto lg:h-auto lg:px-3 lg:py-2.5 text-sm"
+              aria-label="Crear evento"
+              className="hidden md:flex items-center justify-center shrink-0 bg-sp-green hover:bg-sp-green-dark text-white font-bold rounded-lg transition-colors w-10 h-10 text-sm"
             >
-              <span className="lg:hidden text-lg leading-none">+</span>
-              <span className="hidden lg:inline">+ Evento</span>
+              <span aria-hidden="true" className="text-lg leading-none">+</span>
             </Link>
 
             {/* Avatar + menu */}
             <div className="relative">
               <button
                 onClick={() => { setMenuAbierto(p => !p); setNotifAbierto(false); }}
+                aria-label="Menú de usuario"
                 className="flex items-center gap-2"
               >
                 {usuario?.foto_url ? (
@@ -260,9 +259,6 @@ export default function Layout() {
                     {usuario?.username?.[0]?.toUpperCase()}
                   </div>
                 )}
-                <span className="hidden lg:block text-xs font-bold uppercase tracking-wider" style={{ color: COLORES_NIVEL[usuario?.nivel_xp] ?? '#888' }}>
-                  {usuario?.nivel_xp ?? 'rookie'}
-                </span>
               </button>
 
               {menuAbierto && (
@@ -272,6 +268,9 @@ export default function Layout() {
                     <div className="px-4 py-3 border-b border-sp-border">
                       <p className="text-sm font-semibold text-white truncate">{usuario?.nombre || usuario?.username}</p>
                       <p className="text-xs text-sp-muted">@{usuario?.username}</p>
+                      <p className="text-xs font-bold uppercase tracking-wider mt-1" style={{ color: COLORES_NIVEL[usuario?.nivel_xp] ?? '#888' }}>
+                        {usuario?.nivel_xp ?? 'rookie'}
+                      </p>
                     </div>
                     <Link to="/mi-perfil" onClick={() => setMenuAbierto(false)} className="flex items-center gap-2 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white">
                       Mi perfil
