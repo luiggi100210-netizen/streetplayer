@@ -59,6 +59,21 @@ async function checkMuralla(id) {
 // campeon: se desbloquea desde el controller de torneos cuando un equipo gana
 // se otorga manualmente vía otorgarMedalla('campeon', usuarioId)
 
+// Nombres/iconos de las medallas automáticas — no tienen fila en la tabla
+// "medallas" (esa es solo para medallas creadas a mano desde el admin), asi
+// que hace falta este mapeo para poder notificar con un nombre legible
+// cuando se desbloquean. Debe reflejar el array MEDALLAS del frontend
+// (pages/profile/Perfil.jsx).
+const NOMBRES_MEDALLAS = {
+  goleador:   { nombre: 'Goleador',    icono: '🎯' },
+  relampago:  { nombre: 'Relámpago',   icono: '⚡' },
+  capitan:    { nombre: 'Capitán',     icono: '👑' },
+  muralla:    { nombre: 'Muralla',     icono: '🧤' },
+  teamplayer: { nombre: 'Team Player', icono: '🤝' },
+  infalible:  { nombre: 'Infalible',   icono: '💀' },
+  leyenda:    { nombre: 'Leyenda',     icono: '🌟' },
+};
+
 const CHECKS = {
   goleador:   checkGoleador,
   relampago:  checkRelampago,
@@ -69,22 +84,28 @@ const CHECKS = {
   muralla:    checkMuralla,
 };
 
-// Verifica todas las medallas automáticas y otorga las nuevas
+// Verifica todas las medallas automáticas, otorga las nuevas y devuelve
+// cuáles se acaban de desbloquear (para poder notificarlas al usuario).
 async function verificarMedallas(usuarioId) {
   const { rows: actuales } = await pool.query(
     'SELECT medalla_id FROM medallas_usuario WHERE usuario_id = $1', [usuarioId]
   );
   const tiene = new Set(actuales.map(r => r.medalla_id));
+  const nuevas = [];
 
   for (const [medallaId, check] of Object.entries(CHECKS)) {
     if (tiene.has(medallaId)) continue;
     if (await check(usuarioId)) {
-      await pool.query(
+      const { rowCount } = await pool.query(
         'INSERT INTO medallas_usuario (usuario_id, medalla_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
         [usuarioId, medallaId]
       );
+      if (rowCount > 0) {
+        nuevas.push({ medalla_id: medallaId, ...(NOMBRES_MEDALLAS[medallaId] || { nombre: medallaId, icono: '🏅' }) });
+      }
     }
   }
+  return nuevas;
 }
 
 // Otorgar medalla específica (ej: campeon, desde torneos)

@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { verificarMedallas } = require('./medallas.service');
+const { notificar } = require('./notificaciones.service');
 
 const XP_TABLA = {
   asistir_pichanga:     10,
@@ -70,6 +71,9 @@ async function darXP(usuarioId, motivo, referenciaId = null, client = null) {
   try {
     if (txPropia) await db.query('BEGIN');
 
+    const { rows: prevRows } = await db.query('SELECT nivel_xp FROM usuarios WHERE id = $1', [usuarioId]);
+    const nivelAnterior = prevRows[0]?.nivel_xp;
+
     await db.query(
       'INSERT INTO xp_log (usuario_id, cantidad, motivo, referencia_id) VALUES ($1,$2,$3,$4)',
       [usuarioId, cantidad, motivo, referenciaId]
@@ -89,8 +93,21 @@ async function darXP(usuarioId, motivo, referenciaId = null, client = null) {
     );
 
     if (txPropia) await db.query('COMMIT');
-    // fire-and-forget — no bloquea la respuesta
-    verificarMedallas(usuarioId).catch(() => {});
+
+    // fire-and-forget — no bloquea la respuesta. Subir de nivel o desbloquear
+    // una medalla antes no avisaba nada al usuario (quedaba en silencio hasta
+    // que por casualidad revisara su perfil); ahora dispara una notificación
+    // en tiempo real (el frontend ya escucha el socket 'notificacion').
+    if (nivel !== nivelAnterior) {
+      notificar(usuarioId, 'xp', `🔥 ¡Subiste a nivel ${nivel.toUpperCase()}!`).catch(() => {});
+    }
+    verificarMedallas(usuarioId)
+      .then(nuevas => {
+        for (const m of nuevas) {
+          notificar(usuarioId, 'medalla', `${m.icono} ¡Nueva medalla desbloqueada: ${m.nombre}!`).catch(() => {});
+        }
+      })
+      .catch(() => {});
     return { xp: nuevoXp, nivel };
   } catch (err) {
     if (txPropia) await db.query('ROLLBACK');

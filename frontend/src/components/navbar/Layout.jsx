@@ -9,8 +9,36 @@ import { COLORES_NIVEL } from '../../constants';
 
 const TIPO_NOTIF_ICON = {
   seguidor: '👤', evento: '⚽', calificacion: '⭐', xp: '🔥',
-  torneo: '🏆', sancion: '⚠️', sistema: '📣',
+  torneo: '🏆', sancion: '⚠️', sistema: '📣', medalla: '🏅',
 };
+
+// Subir de nivel o desbloquear una medalla pasaba en silencio — el usuario
+// recién se enteraba si por casualidad abría la campana de notificaciones.
+// Este popup lee el emoji que el backend ya manda al inicio del mensaje
+// (ver services/xp.service.js) y lo muestra como un momento propio, no
+// como una fila más de la lista.
+function Celebracion({ notif, onClose }) {
+  if (!notif) return null;
+  const esMedalla = notif.tipo === 'medalla';
+  const match = notif.mensaje.match(/^(\S+)\s*(.*)$/);
+  const [, emoji, texto] = match || [null, TIPO_NOTIF_ICON[notif.tipo], notif.mensaje];
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 px-4 pointer-events-none">
+      <button
+        onClick={onClose}
+        className="pointer-events-auto flex items-center gap-3 pl-4 pr-5 py-3.5 rounded-2xl shadow-2xl animate-celebracion text-left"
+        style={{
+          background: esMedalla ? 'linear-gradient(135deg, #1a1206 0%, #241505 100%)' : 'linear-gradient(135deg, #0d1f16 0%, #0a2a1c 100%)',
+          border: `1px solid ${esMedalla ? 'rgba(251,191,36,0.4)' : 'rgba(29,158,117,0.4)'}`,
+        }}
+      >
+        <span className="text-3xl leading-none shrink-0">{emoji}</span>
+        <span className="font-impact text-white text-sm uppercase tracking-wide leading-tight">{texto}</span>
+      </button>
+    </div>
+  );
+}
 
 const NAV = [
   { to: '/home',     label: 'Inicio',    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -30,6 +58,7 @@ export default function Layout() {
   const [msgsNoLeidos, setMsgsNoLeidos] = useState(0);
   const [menuAbierto, setMenuAbierto]   = useState(false);
   const [notifAbierto, setNotifAbierto] = useState(false);
+  const [celebracion, setCelebracion]   = useState(null);
 
   const noLeidas = notifs.filter(n => !n.leida).length;
 
@@ -58,7 +87,10 @@ export default function Layout() {
     if (!socket) return;
 
     const onMensaje      = () => setMsgsNoLeidos(n => n + 1);
-    const onNotificacion = (notif) => setNotifs(prev => [notif, ...prev]);
+    const onNotificacion = (notif) => {
+      setNotifs(prev => [notif, ...prev]);
+      if (notif.tipo === 'xp' || notif.tipo === 'medalla') setCelebracion(notif);
+    };
 
     socket.on('nuevo_mensaje',  onMensaje);
     socket.on('notificacion',   onNotificacion);
@@ -68,6 +100,12 @@ export default function Layout() {
       socket.off('notificacion',   onNotificacion);
     };
   }, []);
+
+  useEffect(() => {
+    if (!celebracion) return;
+    const t = setTimeout(() => setCelebracion(null), 4500);
+    return () => clearTimeout(t);
+  }, [celebracion]);
 
   const marcarLeidas = async () => {
     if (noLeidas === 0) return;
@@ -87,6 +125,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-sp-bg flex flex-col">
+      <Celebracion notif={celebracion} onClose={() => setCelebracion(null)} />
       <header className="sticky top-0 z-40 bg-sp-bg/95 backdrop-blur border-b border-sp-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <Link to="/" className="font-impact text-lg tracking-wider shrink-0">

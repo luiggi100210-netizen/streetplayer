@@ -1,5 +1,6 @@
 const pool         = require('../config/database');
 const asyncHandler = require('../middleware/asyncHandler');
+const { notificar } = require('../services/notificaciones.service');
 
 // Helper: registrar acción admin en audit log
 const logAdmin = async (req, accion, entidad = null, entidad_id = null, detalles = null) => {
@@ -180,6 +181,11 @@ const otorgarMedalla = asyncHandler(async (req, res) => {
   await pool.query(
     'INSERT INTO medallas_usuario (medalla_id, usuario_id) VALUES ($1,$2)', [id, usuario_id]
   );
+  const { rows: medallaRows } = await pool.query('SELECT nombre, icono FROM medallas WHERE id = $1', [id]);
+  if (medallaRows[0]) {
+    const { nombre, icono } = medallaRows[0];
+    notificar(usuario_id, 'medalla', `${icono || '🏅'} ¡Nueva medalla desbloqueada: ${nombre}!`).catch(() => {});
+  }
   await logAdmin(req, 'otorgar_medalla', 'medalla', id, { usuario_id });
   res.json({ mensaje: 'Medalla otorgada' });
 });
