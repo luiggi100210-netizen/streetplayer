@@ -16,10 +16,10 @@ const NAV = [
   { to: '/home',     label: 'Inicio',    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { to: '/eventos',  label: 'Eventos',   icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
   { to: '/ranking',  label: 'Ranking',   icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-  { to: '/torneos',  label: 'Torneos',   icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
+  { to: '/torneos',  label: 'Torneos',   shortLabel: 'Torneo',  icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
   { to: '/equipos',  label: 'Equipos',   icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
   { to: '/buscar',   label: 'Buscar',    icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
-  { to: '/mensajes', label: 'Mensajes',  icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
+  { to: '/mensajes', label: 'Mensajes',  shortLabel: 'Msjs',    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
 ];
 
 export default function Layout() {
@@ -93,16 +93,23 @@ export default function Layout() {
             <span className="text-white">STREET</span><span className="text-sp-green">PLAYER</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV.map(({ to, label }) => (
+          {/* Nav de escritorio: solo íconos entre 768-1023px (no entra el texto),
+              texto completo desde 1024px — antes mostraba todo el texto desde 768px
+              y se salía de la pantalla generando scroll horizontal en ese rango. */}
+          <nav className="hidden md:flex items-center gap-1 min-w-0">
+            {NAV.map(({ to, label, icon }) => (
               <NavLink
                 key={to}
                 to={to}
+                title={label}
                 className={({ isActive }) =>
-                  `relative px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
+                  `relative flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:px-3 lg:py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
                 }
               >
-                {label}
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                </svg>
+                <span className="hidden lg:inline">{label}</span>
                 {to === '/mensajes' && msgsNoLeidos > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-sp-green text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                     {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
@@ -112,11 +119,15 @@ export default function Layout() {
             ))}
             <NavLink
               to="/mi-perfil"
+              title="Mi Perfil"
               className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
+                `flex items-center gap-1.5 rounded-lg px-2.5 py-2 lg:px-3 lg:py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${isActive ? 'bg-sp-green text-white' : 'text-sp-muted hover:text-white'}`
               }
             >
-              Mi Perfil
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="hidden lg:inline">Mi Perfil</span>
             </NavLink>
           </nav>
 
@@ -187,9 +198,14 @@ export default function Layout() {
               )}
             </div>
 
-            {/* Crear evento */}
-            <Link to="/eventos/nuevo" className="hidden md:block btn-primary text-xs py-2 px-3">
-              + EVENTO
+            {/* Crear evento — solo ícono entre 768-1023px, texto completo desde 1024px */}
+            <Link
+              to="/eventos/nuevo"
+              title="Crear evento"
+              className="hidden md:flex items-center justify-center gap-1.5 bg-sp-green hover:bg-sp-green-dark text-white font-bold rounded-lg transition-colors uppercase tracking-wide w-10 h-10 lg:w-auto lg:h-auto lg:px-3 lg:py-2.5 text-sm"
+            >
+              <span className="lg:hidden text-lg leading-none">+</span>
+              <span className="hidden lg:inline">+ Evento</span>
             </Link>
 
             {/* Avatar + menu */}
@@ -205,7 +221,7 @@ export default function Layout() {
                     {usuario?.username?.[0]?.toUpperCase()}
                   </div>
                 )}
-                <span className="hidden md:block text-xs font-bold uppercase tracking-wider" style={{ color: COLORES_NIVEL[usuario?.nivel_xp] ?? '#888' }}>
+                <span className="hidden lg:block text-xs font-bold uppercase tracking-wider" style={{ color: COLORES_NIVEL[usuario?.nivel_xp] ?? '#888' }}>
                   {usuario?.nivel_xp ?? 'rookie'}
                 </span>
               </button>
@@ -251,10 +267,12 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Bottom nav móvil */}
+      {/* Bottom nav móvil — grid-cols debe calzar con la cantidad real de links
+          (7 de NAV + Mi Perfil = 8); antes decía grid-cols-9 y dejaba una
+          columna vacía sobrando al final. */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-sp-card border-t border-sp-border z-40">
-        <div className="grid grid-cols-9 h-14">
-          {NAV.map(({ to, label, icon }) => (
+        <div className="grid grid-cols-8 h-14">
+          {NAV.map(({ to, label, shortLabel, icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -265,7 +283,7 @@ export default function Layout() {
               <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
               </svg>
-              <span className="w-full text-center truncate text-[8px] leading-none font-bold uppercase">{label}</span>
+              <span className="w-full text-center truncate text-[8px] leading-none font-bold uppercase">{shortLabel || label}</span>
               {to === '/mensajes' && msgsNoLeidos > 0 && (
                 <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-sp-green text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                   {msgsNoLeidos > 9 ? '9+' : msgsNoLeidos}
