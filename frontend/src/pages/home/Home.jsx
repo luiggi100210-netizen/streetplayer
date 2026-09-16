@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Avatar from '../../components/Avatar';
 import UploadFoto from '../../components/UploadFoto';
-import { COLORES_NIVEL } from '../../constants';
+import { COLORES_NIVEL, COLORES_MODO, PODIO } from '../../constants';
 
 const ESTADO_RETO = {
   pendiente: { color: '#fbbf24', label: 'Pendiente' },
@@ -377,8 +377,10 @@ function Sidebar({ usuario, ranking }) {
   const colorNivel = COLORES_NIVEL[usuario?.nivel_xp] || '#888';
   return (
     <div className="space-y-4">
-      {/* Mi perfil mini */}
-      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, overflow: 'hidden' }}>
+      {/* Mi perfil mini — elevada por sobre el resto de tarjetas del sidebar:
+          es la unica que representa al propio usuario, antes pesaba visualmente
+          igual que "Accesos rápidos". */}
+      <div className="card-elevated" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ height: 3, background: colorNivel }} />
         <div style={{ padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -424,18 +426,25 @@ function Sidebar({ usuario, ranking }) {
           </div>
           <div className="space-y-2">
             {ranking.slice(0, 5).map((item, i) => {
-              const posColor = i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#d97706' : 'rgba(255,255,255,0.25)';
+              const podio = PODIO[i + 1];
+              const posColor = podio?.color || 'rgba(255,255,255,0.25)';
+              const soyYo = item.usuario_id === usuario?.id;
               return (
                 <Link key={item.usuario_id} to={`/perfil/${item.usuario_id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', padding: '4px 0' }}>
-                  <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 13, color: posColor, width: 20, textAlign: 'center', flexShrink: 0 }}>
-                    {i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none',
+                    padding: podio ? '6px 8px' : '4px 8px', margin: '0 -8px', borderRadius: 8,
+                    background: podio ? podio.glow : soyYo ? 'rgba(29,158,117,0.1)' : 'transparent',
+                    border: soyYo ? '1px solid rgba(29,158,117,0.35)' : '1px solid transparent',
+                  }}>
+                  <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: podio ? 15 : 13, color: posColor, width: 20, textAlign: 'center', flexShrink: 0 }}>
+                    {podio ? podio.medalla : `#${i+1}`}
                   </span>
-                  <Avatar foto={item.foto_url} username={item.username} size={26} color={COLORES_NIVEL[item.nivel_xp] || '#888'} />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.username}
+                  <Avatar foto={item.foto_url} username={item.username} size={podio ? 30 : 26} color={COLORES_NIVEL[item.nivel_xp] || '#888'} />
+                  <span style={{ fontSize: 12, color: soyYo ? '#fff' : 'rgba(255,255,255,0.7)', fontWeight: soyYo ? 700 : 400, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.username}{soyYo && ' (tú)'}
                   </span>
-                  <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 13, color: posColor }}>{item.puntos}</span>
+                  <span style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: podio ? 15 : 13, color: posColor }}>{item.puntos}</span>
                 </Link>
               );
             })}
@@ -514,10 +523,10 @@ export default function Home() {
   useEffect(() => { cargar(); }, []);
 
   const TABS = [
-    { key: 'feed',    label: '📰 Feed' },
-    { key: 'retos',   label: '⚔️ Retos' },
-    { key: 'eventos', label: '⚽ Eventos' },
-    { key: 'torneos', label: '🏆 Torneos' },
+    { key: 'feed',    label: '📰 Feed',    color: COLORES_MODO.pichanga },
+    { key: 'retos',   label: '⚔️ Retos',   color: COLORES_MODO.reto },
+    { key: 'eventos', label: '⚽ Eventos', color: COLORES_MODO.pichanga },
+    { key: 'torneos', label: '🏆 Torneos', color: COLORES_MODO.torneo },
   ];
 
   return (
@@ -553,11 +562,11 @@ export default function Home() {
             display: 'flex', gap: 4, background: '#111',
             border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 4,
           }}>
-            {TABS.map(({ key, label }) => (
+            {TABS.map(({ key, label, color }) => (
               <button key={key} onClick={() => setTab(key)} style={{
                 flex: 1, padding: '9px 8px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', transition: 'all .2s',
-                background: tab === key ? '#1D9E75' : 'transparent',
+                background: tab === key ? color : 'transparent',
                 color: tab === key ? '#fff' : 'rgba(255,255,255,0.4)',
               }}>{label}</button>
             ))}
@@ -576,11 +585,36 @@ export default function Home() {
                   ))}
                 </div>
               ) : feed.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '48px 24px', background: '#111', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <p style={{ fontSize: 40, marginBottom: 10 }}>🏃</p>
-                  <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 18, color: '#fff', marginBottom: 6 }}>FEED VACÍO</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Sigue a otros jugadores o publica algo.</p>
-                  <Link to="/buscar" className="btn-primary text-sm">Buscar jugadores</Link>
+                <div>
+                  <div style={{ textAlign: 'center', padding: '40px 24px 32px', background: '#111', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <p style={{ fontSize: 40, marginBottom: 10 }}>🏃</p>
+                    <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 18, color: '#fff', marginBottom: 6 }}>FEED VACÍO</p>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Sigue a otros jugadores o publica algo.</p>
+                    <Link to="/buscar" className="btn-primary text-sm">Buscar jugadores</Link>
+                  </div>
+                  {/* Mientras el feed esté vacío, no dejar el resto del espacio en
+                      negro sin usar — sugerir eventos abiertos reales (ya cargados
+                      para la pestaña Eventos) como punto de entrada alternativo. */}
+                  {eventos.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 14, color: '#fff', letterSpacing: '0.04em', marginBottom: 10 }}>
+                        ⚽ PICHANGAS ABIERTAS CERCA DE TI
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {eventos.slice(0, 4).map(ev => (
+                          <Link key={ev.id} to={`/eventos/${ev.id}`} style={{ textDecoration: 'none' }}>
+                            <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 14, transition: 'border-color .2s' }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(29,158,117,0.4)'}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
+                            >
+                              <p style={{ fontFamily: 'Anton, Impact, sans-serif', fontSize: 14, color: '#fff', letterSpacing: '0.02em', marginBottom: 4 }}>{ev.titulo}</p>
+                              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>📍 {ev.ciudad}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">

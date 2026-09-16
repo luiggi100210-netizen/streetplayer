@@ -5,6 +5,24 @@
 @layer base {
   body {
     @apply bg-sp-bg text-white font-sans antialiased;
+    position: relative;
+  }
+  /* Grano sutil de marca (el mismo de Landing/Login/Registro, ver
+     styles/brand.js grainBg) — antes solo vivia en esas 3 paginas y el
+     resto de la app se sentia como un producto genérico aparte. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.045'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+  #root {
+    position: relative;
+    z-index: 1;
   }
   h1, h2 {
     font-family: Impact, 'Arial Black', sans-serif;
@@ -17,6 +35,20 @@
   /* Tarjeta base */
   .card {
     @apply bg-sp-card border border-sp-border rounded-xl p-4;
+  }
+  /* Tarjeta destacada — todo en la app pesaba visualmente igual (mismo
+     gris, mismo borde, sin sombra). Se usa para lo que el usuario debe
+     notar primero: su propia tarjeta de perfil, un post recién publicado. */
+  .card-elevated {
+    @apply bg-sp-card border border-sp-green/25 rounded-xl p-4;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px rgba(29,158,117,0.06) inset;
+  }
+  /* Número "hero" — mismo tratamiento tipográfico que "12K+ JUGADORES"
+     del landing, para que las estadísticas clave (XP, goles, partidos)
+     tengan el mismo peso visual que en la página de marketing. */
+  .stat-number {
+    font-family: Impact, 'Arial Black', sans-serif;
+    letter-spacing: 0.01em;
   }
 
   /* Botones */
