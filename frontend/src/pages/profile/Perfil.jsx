@@ -538,7 +538,7 @@ export default function Perfil() {
                   <label htmlFor="perfil-formato" className="label">Formato</label>
                   <select id="perfil-formato" value={form.formato_preferido} onChange={e => setForm(p => ({ ...p, formato_preferido: e.target.value }))} className="input">
                     <option value="">-</option>
-                    {[5,7,8,9,10,11].map(n => <option key={n} value={n}>{n}v{n}</option>)}
+                    {[5,6,7,8,9,10,11].map(n => <option key={n} value={n}>{n}v{n}</option>)}
                   </select>
                 </div>
               </div>
