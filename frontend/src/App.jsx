@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import api from './services/api';
 import { getToken, getRefresh } from './services/authStorage';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -24,7 +24,10 @@ import Equipos        from './pages/teams/Equipos';
 import EquipoDetalle  from './pages/teams/EquipoDetalle';
 import Retos          from './pages/teams/Retos';
 import Mensajes       from './pages/messages/Mensajes';
-import Admin          from './pages/admin/Admin';
+
+// El panel admin (1000+ líneas) nunca lo ve un usuario normal — separado en
+// su propio chunk para que no infle el bundle que descarga todo el mundo.
+const Admin = lazy(() => import('./pages/admin/Admin'));
 
 function Splash() {
   return (
@@ -100,8 +103,8 @@ function AppRoutes() {
         <Route path="mensajes"       element={<Mensajes />} />
       </Route>
 
-      {/* Panel admin — ruta standalone sin Layout */}
-      <Route path="/admin" element={<Admin />} />
+      {/* Panel admin — ruta standalone sin Layout, cargada en su propio chunk */}
+      <Route path="/admin" element={<Suspense fallback={<Splash />}><Admin /></Suspense>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
