@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, BrowserRouter, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import api from './services/api';
 import { getToken, getRefresh } from './services/authStorage';
@@ -42,8 +42,12 @@ function Splash() {
 
 function PrivateRoute({ children }) {
   const { usuario, cargando } = useAuth();
+  const location = useLocation();
   if (cargando) return <Splash />;
-  return usuario ? children : <Navigate to="/login" replace />;
+  // Antes se perdía la ruta original al mandar a /login (p.ej. un link de
+  // invitación a un evento compartido por WhatsApp) — el usuario iniciaba
+  // sesión y terminaba en /home en vez de en la página a la que lo invitaron.
+  return usuario ? children : <Navigate to="/login" state={{ from: location }} replace />;
 }
 
 function MiPerfil() {

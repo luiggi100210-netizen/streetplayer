@@ -14,7 +14,10 @@ function generarCodigoInvitacion() {
   return crypto.randomBytes(5).toString('hex').toUpperCase();
 }
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://streetplayer.pe';
+// 'streetplayer.pe' nunca se registró (no resuelve DNS) — si FRONTEND_URL no
+// está configurado en el entorno, el link de invitación por WhatsApp quedaba
+// completamente muerto. El fallback ahora apunta al dominio real desplegado.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://streetplayer-psi.vercel.app';
 
 function generarLinkWhatsApp(evento) {
   const url = `${FRONTEND_URL}/eventos/${evento.id}`;

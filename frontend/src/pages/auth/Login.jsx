@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { getLastUser, clearAll } from '../../services/authStorage';
@@ -30,6 +30,12 @@ function AvatarRecordado({ user }) {
 export default function Login() {
   const { login }  = useAuth();
   const navigate   = useNavigate();
+  const location   = useLocation();
+  // Si vinimos de un PrivateRoute (p.ej. un link de evento compartido),
+  // volvemos ahí después de iniciar sesión en vez de mandar siempre a /home.
+  const destino    = location.state?.from
+    ? location.state.from.pathname + location.state.from.search
+    : '/home';
 
   // Último usuario guardado localmente
   const lastUser   = getLastUser();
@@ -57,7 +63,7 @@ export default function Login() {
         : await signInWithFacebook(opciones);
       const { data } = await api.post('/auth/firebase', { idToken });
       login(data.token, data.refreshToken, { ...data.usuario, provider });
-      navigate('/home');
+      navigate(destino);
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') return;
       if (err.code === 'auth/timeout') {
@@ -74,7 +80,7 @@ export default function Login() {
     try {
       const { data } = await api.post('/auth/login', form);
       login(data.token, data.refreshToken, { ...data.usuario, provider: 'email' });
-      navigate('/home');
+      navigate(destino);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     } finally { setCargando(false); }
@@ -90,7 +96,7 @@ export default function Login() {
         password: form.password,
       });
       login(data.token, data.refreshToken, { ...data.usuario, provider: 'email' });
-      navigate('/home');
+      navigate(destino);
     } catch (err) {
       setError(err.response?.data?.error || 'Contraseña incorrecta');
     } finally { setCargando(false); }
@@ -229,7 +235,7 @@ export default function Login() {
 
       <p className="text-center text-sm text-white/40 mt-7">
         ¿No tienes cuenta?{' '}
-        <Link to="/registro" className="text-sp-green hover:underline font-medium">Únete ahora</Link>
+        <Link to="/registro" state={location.state} className="text-sp-green hover:underline font-medium">Únete ahora</Link>
       </p>
     </AuthShell>
   );

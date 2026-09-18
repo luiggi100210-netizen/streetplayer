@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGeolocation } from '../../hooks/useGeolocation'
 import api from '../../services/api'
@@ -13,6 +13,12 @@ const DEPORTES_DISPONIBLES = ['fútbol','básquet','voley','tenis','natación','
 export default function Registro() {
   const { login } = useAuth()
   const navigate  = useNavigate()
+  const location  = useLocation()
+  // Mismo destino preservado que en Login.jsx — un link de evento compartido
+  // que pasa por /registro (usuario sin cuenta) también debe volver ahí.
+  const destino   = location.state?.from
+    ? location.state.from.pathname + location.state.from.search
+    : '/home'
   const { coords, loading: geoLoading, solicitar: solicitarGeo } = useGeolocation()
   const [form, setForm]   = useState({ username:'', email:'', password:'', nombre:'', ciudad:'', deportes:[] })
   const [error, setError] = useState('')
@@ -27,7 +33,7 @@ export default function Registro() {
         : await signInWithFacebook()
       const { data } = await api.post('/auth/firebase', { idToken })
       login(data.token, data.refreshToken, { ...data.usuario, provider })
-      navigate('/home')
+      navigate(destino)
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') return
       setError(err.response?.data?.error || 'Error al continuar con ' + provider)
@@ -49,7 +55,7 @@ export default function Registro() {
       const payload = { ...form, ...(coords && !form.ciudad ? { lat: coords.lat, lng: coords.lng } : {}) }
       const { data } = await api.post('/auth/registro', payload)
       login(data.token, data.refreshToken, data.usuario)
-      navigate('/home')
+      navigate(destino)
     } catch (err) {
       setError(err.response?.data?.error || 'Error al registrarse')
     } finally { setCargando(false) }
@@ -141,7 +147,7 @@ export default function Registro() {
       </form>
 
       <p className="text-center text-sm text-white/40 mt-7">
-        ¿Ya tienes cuenta? <Link to="/login" className="text-sp-green hover:underline font-medium">Iniciar sesión</Link>
+        ¿Ya tienes cuenta? <Link to="/login" state={location.state} className="text-sp-green hover:underline font-medium">Iniciar sesión</Link>
       </p>
     </AuthShell>
   )
