@@ -294,6 +294,49 @@ function SeccionEquipos({ equipos, torneo, miEquipoId, onPostular, onRetirar, ac
   );
 }
 
+// ─── Tabla de posiciones (formato grupos/liga) ────────────────────────────────
+
+function SeccionPosiciones({ posiciones }) {
+  if (!posiciones?.length) return null;
+  return (
+    <div className="card" style={{ overflowX: 'auto' }}>
+      <h2 className="font-impact text-base uppercase tracking-wide mb-3">Tabla de posiciones</h2>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <thead>
+          <tr style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.06em' }}>
+            <th style={{ textAlign: 'left', padding: '4px 6px' }}>#</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px' }}>Equipo</th>
+            <th style={{ padding: '4px 6px' }}>PJ</th>
+            <th style={{ padding: '4px 6px' }}>PG</th>
+            <th style={{ padding: '4px 6px' }}>PE</th>
+            <th style={{ padding: '4px 6px' }}>PP</th>
+            <th style={{ padding: '4px 6px' }}>DG</th>
+            <th style={{ padding: '4px 6px', color: '#1D9E75' }}>PTS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {posiciones.map((p, i) => (
+            <tr key={p.equipo_id} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', color: i < 2 ? '#fff' : 'rgba(255,255,255,0.6)' }}>
+              <td style={{ padding: '6px' }}>{i + 1}</td>
+              <td style={{ padding: '6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {i === 0 && '🥇'}{i === 1 && '🥈'}
+                {p.escudo_url ? <img src={p.escudo_url} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} /> : null}
+                {p.nombre}
+              </td>
+              <td style={{ padding: '6px', textAlign: 'center' }}>{p.pj}</td>
+              <td style={{ padding: '6px', textAlign: 'center' }}>{p.pg}</td>
+              <td style={{ padding: '6px', textAlign: 'center' }}>{p.pe}</td>
+              <td style={{ padding: '6px', textAlign: 'center' }}>{p.pp}</td>
+              <td style={{ padding: '6px', textAlign: 'center' }}>{p.dg > 0 ? '+' + p.dg : p.dg}</td>
+              <td style={{ padding: '6px', textAlign: 'center', color: '#1D9E75', fontWeight: 700 }}>{p.puntos}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Premios ──────────────────────────────────────────────────────────────────
 
 function SeccionPremios({ premios }) {
@@ -433,7 +476,10 @@ export default function TorneoDetalle() {
 
       {/* Grid principal */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 280px', gap: 16, alignItems: 'start' }}>
-        <SeccionFixture partidos={torneo.partidos} esOrg={esOrg} torneo_id={id} onUpdate={cargar} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SeccionPosiciones posiciones={torneo.posiciones} />
+          <SeccionFixture partidos={torneo.partidos} esOrg={esOrg} torneo_id={id} onUpdate={cargar} />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <SeccionEquipos equipos={torneo.equipos || []} torneo={torneo} miEquipoId={miEquipoId} onPostular={postular} onRetirar={retirar} accion={accion} />
           <SeccionPremios premios={torneo.premios} />

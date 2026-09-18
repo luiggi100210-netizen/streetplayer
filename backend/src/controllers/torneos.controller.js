@@ -22,6 +22,36 @@ async function notificarEquipo(equipo_id, tipo, mensaje, ref) {
   for (const { usuario_id } of rows) await notificar(usuario_id, tipo, mensaje, ref);
 }
 
+// Tabla de posiciones para formato 'grupos'/'liga' — antes no existia
+// ningun calculo de puntos, asi que esos torneos terminaban sin campeon.
+// db puede ser el pool o un client de transaccion (misma interfaz .query()).
+async function calcularPosiciones(db, torneo_id) {
+  const { rows } = await db.query(
+    `WITH stats AS (
+       SELECT eq.id AS equipo_id, eq.nombre, eq.escudo_url,
+         COUNT(p.id)::int AS pj,
+         COUNT(*) FILTER (WHERE (p.equipo_local_id = eq.id AND p.goles_local > p.goles_visita)
+                             OR (p.equipo_visita_id = eq.id AND p.goles_visita > p.goles_local))::int AS pg,
+         COUNT(*) FILTER (WHERE p.goles_local = p.goles_visita)::int AS pe,
+         COUNT(*) FILTER (WHERE (p.equipo_local_id = eq.id AND p.goles_local < p.goles_visita)
+                             OR (p.equipo_visita_id = eq.id AND p.goles_visita < p.goles_local))::int AS pp,
+         COALESCE(SUM(CASE WHEN p.equipo_local_id = eq.id THEN p.goles_local ELSE p.goles_visita END), 0)::int AS gf,
+         COALESCE(SUM(CASE WHEN p.equipo_local_id = eq.id THEN p.goles_visita ELSE p.goles_local END), 0)::int AS gc
+       FROM torneo_equipos te
+       JOIN equipos eq ON eq.id = te.equipo_id
+       LEFT JOIN partidos p ON (p.equipo_local_id = eq.id OR p.equipo_visita_id = eq.id)
+         AND p.torneo_id = te.torneo_id AND p.estado = 'finalizado'
+       WHERE te.torneo_id = $1 AND te.estado IN ('confirmado', 'campeon')
+       GROUP BY eq.id, eq.nombre, eq.escudo_url
+     )
+     SELECT *, (pg * 3 + pe) AS puntos, (gf - gc) AS dg
+     FROM stats
+     ORDER BY puntos DESC, dg DESC, gf DESC`,
+    [torneo_id]
+  );
+  return rows;
+}
+
 async function otorgarMedalla(client, usuario_id, torneo_id, tipo, xp, msg) {
   await client.query(
     'INSERT INTO torneo_medallas (usuario_id, torneo_id, tipo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
@@ -85,7 +115,9 @@ const obtenerTorneo = asyncHandler(async (req, res) => {
     pool.query('SELECT puesto, descripcion FROM torneo_premios WHERE torneo_id=$1 ORDER BY puesto ASC', [id]),
   ]);
 
-  res.json({ ...rows[0], equipos: eqRes.rows, partidos: pRes.rows, premios: prRes.rows });
+  const posiciones = rows[0].formato !== 'eliminacion' ? await calcularPosiciones(pool, id) : null;
+
+  res.json({ ...rows[0], equipos: eqRes.rows, partidos: pRes.rows, premios: prRes.rows, posiciones });
 });
 
 // POST /api/torneos
@@ -306,8 +338,11 @@ const registrarResultado = asyncHandler(async (req, res) => {
     );
 
     if (pendRonda.length === 0 && partido.formato === 'eliminacion') {
+      // ORDER BY explicito: sin esto el orden de las filas no esta garantizado
+      // por SQL, y el emparejamiento de la siguiente ronda (ganadores[i*2] vs
+      // ganadores[i*2+1]) depende de que el orden sea estable.
       const { rows: rondasRows } = await client.query(
-        `SELECT equipo_local_id, equipo_visita_id, goles_local, goles_visita FROM partidos WHERE torneo_id=$1 AND numero_ronda=$2`,
+        `SELECT equipo_local_id, equipo_visita_id, goles_local, goles_visita FROM partidos WHERE torneo_id=$1 AND numero_ronda=$2 ORDER BY fecha ASC, id ASC`,
         [torneo_id, partido.numero_ronda]
       );
       const ganadores = rondasRows.map(p => (p.goles_local >= p.goles_visita) ? p.equipo_local_id : p.equipo_visita_id);
@@ -357,12 +392,33 @@ const registrarResultado = asyncHandler(async (req, res) => {
       const { rows: pendTot } = await client.query(`SELECT id FROM partidos WHERE torneo_id=$1 AND estado!='finalizado'`, [torneo_id]);
       if (pendTot.length === 0) {
         await client.query(`UPDATE torneos SET estado='finalizado' WHERE id=$1`, [torneo_id]);
-        const { rows: todos } = await client.query(`SELECT equipo_id FROM torneo_equipos WHERE torneo_id=$1 AND estado='confirmado'`, [torneo_id]);
-        for (const { equipo_id } of todos) {
-          const { rows: members } = await client.query('SELECT usuario_id FROM equipo_miembros WHERE equipo_id=$1', [equipo_id]);
+
+        // Antes, terminar un torneo de grupos/liga solo repartia medallas de
+        // "participante" a todos por igual — nunca se calculaba una tabla de
+        // posiciones ni se decidia un campeon. Se arma la tabla (puntos,
+        // diferencia de gol, goles a favor) y se premia igual que en
+        // eliminacion: campeon, subcampeon y participante para el resto.
+        const posiciones = await calcularPosiciones(client, torneo_id);
+        const campeon_id    = posiciones[0]?.equipo_id;
+        const subcampeon_id = posiciones[1]?.equipo_id;
+
+        for (const pos of posiciones) {
+          const { rows: members } = await client.query('SELECT usuario_id FROM equipo_miembros WHERE equipo_id=$1', [pos.equipo_id]);
+          const esCampeon    = pos.equipo_id === campeon_id;
+          const esSubcampeon = pos.equipo_id === subcampeon_id;
+          const tipo = esCampeon ? 'campeon' : esSubcampeon ? 'subcampeon' : 'participante';
+          const xp   = esCampeon ? 100 : esSubcampeon ? 50 : 10;
+          const msg  = esCampeon
+            ? 'Campeon del torneo "' + partido.torneo_nombre + '"! +100 XP'
+            : esSubcampeon
+              ? 'Subcampeon del torneo "' + partido.torneo_nombre + '". +50 XP'
+              : 'Participaste en el torneo "' + partido.torneo_nombre + '". +10 XP';
           for (const { usuario_id } of members) {
-            await otorgarMedalla(client, usuario_id, torneo_id, 'participante', 10, 'Participaste en el torneo "' + partido.torneo_nombre + '". +10 XP');
+            await otorgarMedalla(client, usuario_id, torneo_id, tipo, xp, msg);
           }
+        }
+        if (campeon_id) {
+          await client.query(`UPDATE torneo_equipos SET estado='campeon' WHERE torneo_id=$1 AND equipo_id=$2`, [torneo_id, campeon_id]);
         }
       }
     }
