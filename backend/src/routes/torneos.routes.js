@@ -20,7 +20,7 @@ const validarCrear = [
   body('fecha_fin').optional().isISO8601().withMessage('fecha_fin debe ser una fecha válida'),
   body('max_equipos').optional().isInt({ min: 2, max: 64 }).withMessage('max_equipos: entre 2 y 64'),
   body('precio_inscripcion').optional().isFloat({ min: 0 }).withMessage('precio_inscripcion debe ser mayor o igual a 0'),
-  body('foto_url').optional({ checkFalsy: true }).isURL().withMessage('foto_url debe ser una URL válida'),
+  body('foto_url').notEmpty().withMessage('La foto del torneo es obligatoria').isURL().withMessage('foto_url debe ser una URL válida'),
   body('latitud').optional().isFloat({ min: -90, max: 90 }).withMessage('latitud inválida'),
   body('longitud').optional().isFloat({ min: -180, max: 180 }).withMessage('longitud inválida'),
 ];

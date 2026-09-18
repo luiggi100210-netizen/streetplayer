@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { formatFechaCorta as formatFecha } from '../../utils/date';
 import { ErrorText, SkeletonGrid } from '../../components/ListStates';
 import { construirParamsFiltros } from '../../utils/filtros';
+import UploadFoto from '../../components/UploadFoto';
 
 const DEPORTES = ['futbol', 'basquet', 'tenis', 'padel', 'voley', 'running'];
 const DEPORTES_EMOJI = { futbol: '⚽', basquet: '🏀', tenis: '🎾', padel: '🏸', voley: '🏐', running: '🏃' };
@@ -146,7 +147,7 @@ function FormularioTorneo({ onCerrar, onCreado }) {
   const [form, setForm] = useState({
     nombre: '', descripcion: '', deporte: 'futbol', ciudad: '',
     fecha_inicio: '', fecha_fin: '', max_equipos: 8,
-    premio: '', precio_inscripcion: 0, formato: 'eliminacion',
+    premio: '', precio_inscripcion: 0, formato: 'eliminacion', foto_url: '',
   });
   const [cargando, setCargando] = useState(false);
   const [error,    setError]    = useState('');
@@ -156,6 +157,10 @@ function FormularioTorneo({ onCerrar, onCreado }) {
     e.preventDefault();
     if (!form.nombre || !form.deporte || !form.fecha_inicio) {
       setError('Nombre, deporte y fecha de inicio son requeridos');
+      return;
+    }
+    if (!form.foto_url) {
+      setError('Sube una foto del torneo');
       return;
     }
     setCargando(true);
@@ -181,6 +186,7 @@ function FormularioTorneo({ onCerrar, onCreado }) {
         Tu propuesta será revisada por el equipo antes de publicarse.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <UploadFoto label="Foto del torneo *" value={form.foto_url} onChange={url => set('foto_url', url)} size={120} />
         <div className="grid grid-cols-2 gap-3">
           <div><label htmlFor="torneo-nombre" className="label">Nombre *</label><input id="torneo-nombre" value={form.nombre} onChange={e => set('nombre', e.target.value)} className="input" placeholder="Copa Verano 2026" /></div>
           <div>
