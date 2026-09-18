@@ -551,7 +551,7 @@ export default function Retos() {
           <div style={{ fontSize: 52, marginBottom: 16 }}>⚔️</div>
           <h2 style={{ fontFamily: 'Anton,Impact,sans-serif', fontSize: 22, color: '#fff', letterSpacing: '0.04em', marginBottom: 8 }}>DESBLOQUEA LOS RETOS</h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20 }}>
-            Necesitas jugar <strong style={{ color: '#fff' }}>5 partidos</strong> para poder crear tu equipo y retar a otros.
+            Necesitas jugar <strong style={{ color: '#fff' }}>{unlock.requerido} partido{unlock.requerido === 1 ? '' : 's'}</strong> para poder crear tu equipo y retar a otros.
           </p>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>

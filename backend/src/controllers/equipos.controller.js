@@ -2,6 +2,18 @@ const pool          = require('../config/database');
 const asyncHandler  = require('../middleware/asyncHandler');
 const { notificar } = require('../services/notificaciones.service');
 
+// El minimo de partidos jugados para crear equipo estaba hardcodeado en 5,
+// aunque el admin panel (Configuracion) ya tiene un campo "Partidos minimos
+// para crear equipo" que aparentaba controlarlo — cambiarlo ahi no hacia
+// nada. Se lee de config_sistema para que ese ajuste sirva de verdad.
+async function getRequisitoPartidos() {
+  const { rows } = await pool.query(
+    `SELECT valor FROM config_sistema WHERE clave = 'partidos_para_crear_equipo'`
+  );
+  const n = parseInt(rows[0]?.valor, 10);
+  return Number.isNaN(n) ? 5 : n;
+}
+
 // GET /api/equipos?q=&deporte=&ciudad=
 const buscarEquipos = asyncHandler(async (req, res) => {
   const { q, deporte, ciudad } = req.query;
@@ -58,10 +70,20 @@ const obtenerEquipo = asyncHandler(async (req, res) => {
 const crearEquipo = asyncHandler(async (req, res) => {
   const { nombre, deporte = 'futbol', ciudad, escudo_url } = req.body;
 
-  // Verificar unlock: necesita 5+ partidos jugados
-  const { rows: [u] } = await pool.query('SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]);
-  if ((u?.partidos_jugados || 0) < 5)
-    return res.status(403).json({ error: 'Necesitas al menos 5 partidos jugados para crear un equipo', partidos_jugados: u?.partidos_jugados || 0 });
+  // Verificar unlock: requisito configurable desde el admin panel
+  const [{ rows: [u] }, requerido] = await Promise.all([
+    pool.query('SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]),
+    getRequisitoPartidos(),
+  ]);
+  const partidosJugados = u?.partidos_jugados || 0;
+  if (partidosJugados < requerido)
+    return res.status(403).json({
+      error: requerido > 0
+        ? `Necesitas al menos ${requerido} partido${requerido === 1 ? '' : 's'} jugado${requerido === 1 ? '' : 's'} para crear un equipo`
+        : 'No puedes crear un equipo en este momento',
+      partidos_jugados: partidosJugados,
+      requerido,
+    });
 
   const { rows: yaCapitan } = await pool.query(
     `SELECT id FROM equipos WHERE capitan_id = $1 AND estado = 'activo'`, [req.usuario.id]
@@ -219,12 +241,13 @@ const salirEquipo = asyncHandler(async (req, res) => {
 
 // GET /api/equipos/puede-crear — verifica si el usuario puede crear equipo
 const puedeCrearEquipo = asyncHandler(async (req, res) => {
-  const { rows: [u] } = await pool.query(
-    'SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]
-  );
+  const [{ rows: [u] }, requerido] = await Promise.all([
+    pool.query('SELECT partidos_jugados FROM usuarios WHERE id=$1', [req.usuario.id]),
+    getRequisitoPartidos(),
+  ]);
   const pj = u?.partidos_jugados || 0;
-  const puede = pj >= 5;
-  res.json({ puede, partidos_jugados: pj, requerido: 5, faltantes: Math.max(0, 5 - pj) });
+  const puede = pj >= requerido;
+  res.json({ puede, partidos_jugados: pj, requerido, faltantes: Math.max(0, requerido - pj) });
 });
 
 module.exports = {
